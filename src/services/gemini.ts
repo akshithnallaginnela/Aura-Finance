@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { FinancialData } from '../utils/mockData';
+import type { FinancialData, SimulatorMode, MacroIndicators, StressScenario } from '../utils/mockData';
 import type { ForecastPoint } from '../utils/forecasting';
 import type { PortfolioMetrics } from '../utils/portfolio';
 
@@ -8,11 +8,18 @@ export async function getGeminiFinancialAdvice(
   data: FinancialData,
   forecast: ForecastPoint[],
   optimalPortfolio: PortfolioMetrics,
-  apiKey: string
+  apiKey: string,
+  mode: SimulatorMode = 'retail',
+  macro?: MacroIndicators,
+  stress?: StressScenario,
+  stressIntensity?: number,
+  stabilityIndex?: number
 ): Promise<string> {
   // Initialize SDK
   const ai = new GoogleGenerativeAI(apiKey);
   const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+  const modeLabel = mode === 'corporate' ? 'Corporate Treasury' : 'Personal Wealth';
 
   // Format asset details
   const assetSummaries = data.assets.map((a, idx) => {
@@ -25,16 +32,45 @@ export async function getGeminiFinancialAdvice(
   const lastForecast = forecast[forecast.length - 1];
   const lowCashMonths = forecast.filter(f => f.expense > f.income).map(f => f.monthName).join(', ');
 
-  // Construct context-rich system prompt
-  const prompt = `You are Aura, an elite AI Financial Strategist and quantitative wealth strategist.
-The user is viewing their AuraFinance wealth dashboard and is asking you a question. You have real-time access to their computed financial state, mathematical cash projections, and portfolio optimization models.
+  // Build macro context
+  const macroContext = macro ? `
+Macroeconomic Environment:
+- **GDP Growth Rate:** ${(macro.gdpGrowth * 100).toFixed(1)}%
+- **CPI Inflation Rate:** ${(macro.inflationRate * 100).toFixed(1)}%
+- **Federal Funds Interest Rate:** ${(macro.interestRate * 100).toFixed(1)}%
+- **Macro Stability Index:** ${stabilityIndex ?? 'N/A'}/100
+${stress && stress !== 'none' ? `- **Active Stress Scenario:** ${stress.replace(/_/g, ' ').toUpperCase()} at ${((stressIntensity || 0) * 100).toFixed(0)}% intensity` : '- **Stress Scenario:** None active (baseline conditions)'}
+` : '';
 
-Here is the user's current financial profile:
-- **Net Worth:** $${data.netWorth.toLocaleString()}
-- **Liquid Cash Balance:** $${data.cashBalance.toLocaleString()}
-- **Risk Tolerance Profile:** ${data.profile.riskTolerance.toUpperCase()}
+  // Build mode-specific profile
+  const profileContext = mode === 'corporate' ? `
+Corporate Treasury Profile:
+- **Monthly Revenue:** $${data.corporateProfile.monthlyRevenue.toLocaleString()}
+- **COGS (Cost of Goods Sold):** $${data.corporateProfile.cogsCost.toLocaleString()}
+- **Operating Expenses (OpEx):** $${data.corporateProfile.opExCost.toLocaleString()}
+- **Capital Expenditures (CapEx):** $${data.corporateProfile.capExCost.toLocaleString()}
+- **Debt Service (Monthly):** $${data.corporateProfile.debtServiceCost.toLocaleString()}
+- **Risk Tolerance Profile:** ${data.corporateProfile.riskTolerance.toUpperCase()}
+` : `
+Personal Financial Profile:
 - **Monthly Fixed Salary:** $${data.profile.monthlySalary.toLocaleString()}
 - **Fixed Monthly Expenses:** Rent: $${data.profile.housingCost.toLocaleString()}, Utilities: $${data.profile.utilityCost.toLocaleString()}, Subscriptions: $${data.profile.subscriptionCost.toLocaleString()}, Other Fixed: $${data.profile.otherFixedCosts.toLocaleString()}
+- **Risk Tolerance Profile:** ${data.profile.riskTolerance.toUpperCase()}
+`;
+
+  // Construct context-rich system prompt
+  const prompt = `You are Aura, an elite AI Financial Strategist and quantitative wealth strategist acting as a **Chief Economic Advisor** for ${modeLabel} management.
+The user is viewing their AuraFinance wealth dashboard in **${modeLabel} Mode** and is asking you a question. You have real-time access to their computed financial state, macro-economic indicators, stress scenario impacts, mathematical cash projections, and portfolio optimization models.
+
+**Simulator Mode:** ${modeLabel}
+
+Here is the user's current state:
+- **Net Worth:** $${data.netWorth.toLocaleString()}
+- **Liquid Cash Balance:** $${data.cashBalance.toLocaleString()}
+
+${profileContext}
+
+${macroContext}
 
 Asset Holdings & Modern Portfolio Theory Allocations:
 ${assetSummaries}
@@ -45,18 +81,21 @@ ${assetSummaries}
 Cash Flow Forecast (Next 12 Months):
 - **Current Cash:** $${data.cashBalance.toLocaleString()}
 - **Projected Cash in 12 Months:** $${lastForecast ? lastForecast.balance.toLocaleString() : 'N/A'}
-${lowCashMonths ? `- **Shortfall/Overspend Warning Months:** ${lowCashMonths} (months where monthly outflows exceed salary inflows)` : '- **Monthly Flow:** Stable positive cash accumulation across all 12 months.'}
+${lowCashMonths ? `- **Shortfall/Overspend Warning Months:** ${lowCashMonths}` : '- **Monthly Flow:** Stable positive cash accumulation across all 12 months.'}
 
 User's Query: "${userQuery}"
 
 Your Task:
-1. Provide a expert-grade, professional, and direct response. Do not use generic filler text or standard disclaimers unless strictly necessary (keep disclaimers extremely brief and at the very bottom).
+1. Provide expert-grade, professional, and direct response tailored to the **${modeLabel}** context.
 2. Ground all numbers and math in the user's profile. Perform calculations when recommending changes.
-3. Use Markdown features to make your reply beautiful:
+3. If macroeconomic data is available, incorporate GDP, inflation, and interest rate analysis into your recommendations.
+4. If a stress scenario is active, explicitly address its impact and provide hedging/mitigation strategies.
+5. ${mode === 'corporate' ? 'For corporate mode: Focus on treasury management, working capital optimization, capital structure decisions, and corporate hedging strategies.' : 'For retail mode: Focus on personal savings, investment strategy, emergency fund adequacy, and compound interest optimization.'}
+6. Use Markdown features to make your reply beautiful:
    - Use headings for structure.
    - Use bold text for key metrics.
-   - Present options, action lists, or tables when explaining saving challenges or asset allocations.
-4. Keep the tone sophisticated, motivating, and mathematically sound (mention concepts like diversification, covariance, seasonal cash flows, and compound interest).
+   - Present options, action lists, or tables when explaining strategies.
+7. Keep the tone sophisticated, motivating, and mathematically sound.
 `;
 
   const result = await model.generateContent(prompt);
