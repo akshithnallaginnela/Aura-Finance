@@ -1,113 +1,127 @@
 # 🌌 AuraFinance — AI Wealth Copilot & Predictive Dashboard
 
-AuraFinance is an advanced personal wealth platform built for the **Elite Coders Open Source Hackathon**. By blending modern quantitative finance algorithms with generative AI, AuraFinance helps users forecast future cash flows, optimize their investment asset allocation using Modern Portfolio Theory, and interact with a highly personalized AI Financial Strategist.
+<div align="center">
+  
+  [![Vite](https://img.shields.io/badge/Vite-8.0-06b6d4?style=for-the-badge&logo=vite&logoColor=fff)](https://vite.dev/)
+  [![React](https://img.shields.io/badge/React-19.0-10b981?style=for-the-badge&logo=react&logoColor=fff)](https://react.dev/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-6366f1?style=for-the-badge&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
+  [![Gemini](https://img.shields.io/badge/Gemini--AI-Active-f43f5e?style=for-the-badge&logo=google-gemini&logoColor=fff)](https://deepmind.google/technologies/gemini/)
 
-The entire interface is built using a custom-engineered, dark-mode-first, glassmorphism design system to deliver a premium, state-of-the-art consumer finance experience.
+</div>
+
+---
+
+## 📌 The Problem
+Traditional consumer finance apps suffer from critical limitations:
+1. **Backward-Looking Data:** They display static charts of *past* transactions but fail to project cash positions into the future.
+2. **Suboptimal Asset Allocation:** Users manually distribute cash across accounts without mathematical backing, leading to inefficient risk-adjusted returns (sub-optimal Sharpe Ratios).
+3. **Generic & Static Advice:** Traditional advisors are expensive, and generic savings tips fail to adjust dynamically to a user's active transactional realities and risk levels.
+4. **Poor UI Adaptability:** Multi-column financial interfaces are hard to navigate on mobile, resulting in friction and low engagement.
+
+---
+
+## 💡 The Solution: AuraFinance
+AuraFinance is an advanced personal wealth copilot built to solve these issues. It combines quantitative mathematical engines with generative AI inside a responsive, glassmorphic layout:
+
+```mermaid
+graph TD
+    A[Simulated Ledger & State] --> B(Holt-Winters Forecasting Engine)
+    A --> C(MPT Markowitz Portfolio Optimizer)
+    A --> D(Aura Gemini Copilot Advisor)
+    B --> E[12-Month Cash Forecast with 95% Confidence Intervals]
+    C --> F[Efficient Frontier Simulation & Trade Recommendations]
+    D --> G[Hyper-Contextual Advisory & Chat Strategic Guidance]
+    E & F & G --> H[Dark-Mode Glassmorphism Responsive UI]
+```
+
+- **🔮 Time-Series Projection:** Uses a **Holt-Winters Seasonal Additive Model** to project cash reserves 12 months ahead, showing confidence bands so users can identify cash flow bottlenecks *before* they occur.
+- **📈 Portfolio Optimization:** Implements **Mean-Variance Optimization** directly in TypeScript. It runs a Monte Carlo simulation ($1,200+$ portfolios) to locate the Maximum Sharpe Ratio portfolio and suggest rebalancing trades.
+- **💬 Strategic AI Copilot:** Powered by Google's **Gemini AI**, this conversational strategist ingests active ledger states, forecasting outputs, and optimal portfolio data to give hyper-customized savings challenges and analysis.
+- **⚡ Responsive Glassmorphic Layout:** Built with a custom vanilla CSS system that adapts to mobile (bottom tab navigation), tablet, and desktop (multi-column widgets) with hardware-accelerated animations.
 
 ---
 
 ## 🌟 Key Features
 
-*   **📊 Dynamic Wealth Dashboard:** A unified view of net worth, liquidity ratios, asset-to-liability spreads, and transaction velocity.
-*   **🔮 Time-Series Cash Flow Forecasting:** Uses mathematical models (Holt-Winters Exponential Smoothing) to project cash reserves, savings rates, and potential financial bottlenecks 12 months into the future.
-*   **📈 MPT Portfolio Optimizer:** Implements Mean-Variance Optimization (Markowitz Model) directly in TypeScript, calculating the Efficient Frontier and proposing trade updates to maximize your Sharpe Ratio.
-*   **💬 Aura Copilot (Generative AI Advisor):** A premium chat interface powered by Gemini, trained to analyze simulated ledger data and offer structured savings challenges, market analysis, and tailored cash-flow recommendations.
-*   **⚡ Premium Glassmorphic Design:** Customized vanilla CSS dashboard leveraging deep slates, emerald overlays, responsive flex grids, and smooth hardware-accelerated micro-animations.
+*   **📊 Unified Dashboard:** Live tracking of Net Worth, Liquidity Runway, Asset-Liability Spread, and Monthly Spending Velocity.
+*   **✏️ Interactive Ledger:** Filter transactions by category, search logs, and manually add transactions with instant state updates.
+*   **📐 Math Visualizer Sliders:** Fine-tune Holt-Winters smoothing constants ($\alpha$, $\beta$, $\gamma$) and see the forecasting model adapt in real-time.
+*   **🔄 Single-Tap Portfolio Rebalancer:** Executing suggestions instantly triggers asset trades, updating the ledger history and cash balances.
+*   **🔐 Private Keys:** Store your Gemini API Key safely in browser `localStorage` or load from `.env.local` variables.
 
 ---
 
-## 🚀 7-Day Hackathon Roadmap
+## 📱 Responsive Layout Specifications
 
-```mermaid
-gantt
-    title AuraFinance 7-Day Build Schedule
-    dateFormat  YYYY-MM-DD
-    section Scaffolding
-    Project Scaffolding & Design System    :active, day1, 2026-06-01, 1d
-    Mock Data Generator & Global State     : day2, after day1, 1d
-    section Mathematical Engines
-    Time-Series Cash Flow Forecaster       : day3, after day2, 1d
-    MPT Efficient Frontier Portfolio Solver : day4, after day3, 1d
-    section AI & Polish
-    Gemini API Integration & Prompt Tuning : day5, after day4, 1d
-    Glassmorphism Refinement & Responsive UI: day6, after day5, 1d
-    section Launch
-    Optimization, Documentation & Submission: day7, after day6, 1d
-```
+AuraFinance utilizes a custom-engineered breakpoint architecture to render beautifully on any screen size:
 
-*   **📅 Day 1 (Today):** Scaffolding the React + Vite + TS framework. Establishing `index.css` design system token variables (colors, typography, blur strengths). Creating repository and initial commit.
-*   **📅 Day 2:** Creating the financial ledger generator (producing 6 months of historical salary, bills, and discretionary spending) and establishing the context state manager.
-*   **📅 Day 3:** Designing the mathematical cash-flow forecaster using Holt-Winters seasonal math. Integrating area charts for forecast confidence intervals.
-*   **📅 Day 4:** Implementing the Mean-Variance Optimization mathematics. Generating random portfolios for the Efficient Frontier scatter plot, and calculating capital allocation lines.
-*   **📅 Day 5:** Integrating the `@google/generative-ai` SDK. Designing the context-injected prompt layout to send analytics directly to Gemini for hyper-customized advisor recommendations.
-*   **📅 Day 6:** Fine-tuning desktop, tablet, and mobile responsiveness. Implementing custom glassmorphic styling, transitions, and slide animations.
-*   **📅 Day 7:** Writing comprehensive setup instructions, verifying code consistency, testing cross-browser rendering, and preparing the official pull request.
-
----
-
-## 🛠️ Tech Stack & Architecture
-
-*   **Frontend:** React (Vite + TypeScript)
-*   **Styling:** Vanilla CSS (Modern CSS Custom Properties for design system tokens)
-*   **Charts & Visualizations:** Recharts (SVG-based responsive charting)
-*   **AI Integration:** Google Gemini API Client SDK (`@google/generative-ai`)
-*   **Icons:** Lucide React
+| Device Class | Breakpoint | Layout Grid | Key UI Adaptations |
+| :--- | :--- | :--- | :--- |
+| **Desktop** | $> 1024\text{px}$ | 3-column / Multi-column | Large composed charts, side-by-side rebalance suggestions, settings modals. |
+| **Tablet** | $640\text{px} - 1024\text{px}$ | 2-column to 1-column stack | Asset distributions stack above transactions, charts scale to full width. |
+| **Mobile** | $< 640\text{px}$ | 1-column fluid | **Fixed bottom tab bar** with thumb-friendly navigation, sliders expand full-width. |
 
 ---
 
 ## 📐 Mathematical Engines
 
-### 1. Cash-Flow Forecasting (Holt-Winters seasonal model)
-To project cash reserves $Y_{t+h}$, the engine decomposes raw ledger histories into Level ($L_t$), Trend ($T_t$), and Seasonal ($S_t$) indicators:
+<details>
+<summary><b>🔮 Holt-Winters Exponential Cash-Flow Smoothing</b></summary>
+
+Predicts future cash balances $Y_{t+h}$ by decomposing historical ledger balances into Level ($L_t$), Trend ($T_t$), and Seasonal ($S_t$) indicators:
 
 $$\text{Level: } L_t = \alpha (Y_t - S_{t-s}) + (1 - \alpha)(L_{t-1} + T_{t-1})$$
 $$\text{Trend: } T_t = \beta (L_t - L_{t-1}) + (1 - \beta)T_{t-1}$$
 $$\text{Seasonal: } S_t = \gamma (Y_t - L_{t-1} - T_{t-1}) + (1 - \gamma)S_{t-s}$$
 $$\text{Forecast: } \hat{Y}_{t+h} = L_t + hT_t + S_{t+h-s}$$
+</details>
 
-### 2. Portfolio Optimization (Mean-Variance Theory)
-To construct the optimal asset weights vector $\mathbf{w}$, the optimizer solves the Markowitz optimization problem to maximize the Sharpe Ratio ($SR$):
+<details>
+<summary><b>📊 Modern Portfolio Theory (Sharpe Maximizer)</b></summary>
+
+Solves the Markowitz optimization problem to calculate optimal weights vector $\mathbf{w}$ maximizing the Sharpe Ratio ($SR$):
 
 $$\text{Maximize: } SR = \frac{\mathbf{w}^T \boldsymbol{\mu} - R_f}{\sqrt{\mathbf{w}^T \boldsymbol{\Sigma} \mathbf{w}}}$$
-
 $$\text{Subject to: } \sum_{i=1}^n w_i = 1, \quad w_i \ge 0$$
 
-Where:
-*   $\boldsymbol{\mu}$ represents the vector of expected asset class returns.
-*   $\boldsymbol{\Sigma}$ represents the covariance matrix of asset returns.
-*   $R_f$ is the risk-free rate of return (e.g., US Treasury rate).
+Where $\boldsymbol{\mu}$ represents expected returns, $\boldsymbol{\Sigma}$ is the covariance matrix, and $R_f$ is the risk-free rate.
+</details>
 
 ---
 
-## 💻 Installation & Local Development
+## 💻 Setup & Development
 
-### Prerequisites
-Make sure you have Node.js (version 18 or above) installed on your system.
+### Local Installation
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/Aura-Finance.git
+   cd Aura-Finance
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+3. **Run local dev server:**
+   ```bash
+   npm run dev
+   ```
+   *Navigate your browser to `http://localhost:5173`.*
 
-### Steps
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-    cd YOUR_REPO_NAME
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Run development server:**
-    ```bash
-    npm run dev
-    ```
-
-4.  **Open the application:**
-    Open your browser and navigate to `http://localhost:5173`.
+4. **Production Build:**
+   ```bash
+   npm run build
+   ```
 
 ---
 
-## 🤝 Open Source Contribution & License
+## ⚙️ Generative AI Integration
 
-AuraFinance is open-source software licensed under the [MIT License](LICENSE). Contributions, bug reports, and suggestions are welcome!
+To activate the **Aura Copilot** AI advisor:
+1. Click the **Settings** (gear) icon in the top right header.
+2. Paste your **Gemini API Key** (starts with `AIzaSy...`).
+3. Press **Save Changes**. (The key will persist securely in browser cache).
+4. *If no key is configured, Aura will automatically run in local sandbox model mode, simulating advice using offline rule-based financial models.*
+
+---
 
 Built with 💙 by **Akshith Nallaginnela** for the Elite Coders Open Source Hackathon 2026.
