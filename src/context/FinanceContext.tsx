@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { generateMockData } from '../utils/mockData';
-import type { FinancialData, FinancialProfile, Transaction } from '../utils/mockData';
-import { forecastCashFlow } from '../utils/forecasting';
+import type { FinancialData, FinancialProfile, CorporateProfile, Transaction, SimulatorMode, MacroIndicators, StressScenario } from '../utils/mockData';
+import { DEFAULT_MACRO, calculateMacroStabilityIndex } from '../utils/mockData';
+import { forecastCashFlow, forecastCorporateCashFlow } from '../utils/forecasting';
 import type { ForecastPoint } from '../utils/forecasting';
 import { optimizePortfolio, generateEfficientFrontier } from '../utils/portfolio';
 import type { PortfolioMetrics, FrontierPoint } from '../utils/portfolio';
@@ -21,40 +22,77 @@ interface FinanceContextType {
   efficientFrontier: FrontierPoint[];
   chatHistory: ChatMessage[];
   isChatLoading: boolean;
-  activeView: 'dashboard' | 'forecaster' | 'optimizer' | 'advisor';
-  setActiveView: (view: 'dashboard' | 'forecaster' | 'optimizer' | 'advisor') => void;
+  activeView: 'dashboard' | 'forecaster' | 'optimizer' | 'advisor' | 'macro';
+  setActiveView: (view: 'dashboard' | 'forecaster' | 'optimizer' | 'advisor' | 'macro') => void;
   updateProfile: (profile: Partial<FinancialProfile>) => void;
+  updateCorporateProfile: (profile: Partial<CorporateProfile>) => void;
   updateAssetBalance: (id: string, amount: number) => void;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
   sendAdvisorMessage: (message: string, apiKey?: string) => Promise<void>;
   clearChat: () => void;
+  // Macro & Simulator controls
+  simulatorMode: SimulatorMode;
+  setSimulatorMode: (mode: SimulatorMode) => void;
+  macroIndicators: MacroIndicators;
+  setMacroIndicators: (macro: MacroIndicators) => void;
+  stressScenario: StressScenario;
+  setStressScenario: (scenario: StressScenario) => void;
+  stressIntensity: number;
+  setStressIntensity: (intensity: number) => void;
+  macroStabilityIndex: number;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<FinancialData>(() => generateMockData());
+  const [simulatorMode, setSimulatorModeState] = useState<SimulatorMode>('retail');
+  const [macroIndicators, setMacroIndicators] = useState<MacroIndicators>({ ...DEFAULT_MACRO });
+  const [stressScenario, setStressScenario] = useState<StressScenario>('none');
+  const [stressIntensity, setStressIntensity] = useState(0.5);
+  
+  const [data, setData] = useState<FinancialData>(() => generateMockData('retail'));
   const [forecast, setForecast] = useState<ForecastPoint[]>([]);
   const [optimalPortfolio, setOptimalPortfolio] = useState<PortfolioMetrics>({ expectedReturn: 0, volatility: 0, sharpeRatio: 0, weights: [] });
   const [efficientFrontier, setEfficientFrontier] = useState<FrontierPoint[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const [activeView, setActiveView] = useState<'dashboard' | 'forecaster' | 'optimizer' | 'advisor'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'forecaster' | 'optimizer' | 'advisor' | 'macro'>('dashboard');
 
-  // Load calculations on data/profile change
+  // Macro stability index (derived)
+  const macroStabilityIndex = calculateMacroStabilityIndex(macroIndicators, stressScenario, stressIntensity);
+
+  // When mode switches, regenerate the entire dataset
+  const setSimulatorMode = useCallback((mode: SimulatorMode) => {
+    setSimulatorModeState(mode);
+    setData(generateMockData(mode));
+  }, []);
+
+  // Load calculations on data/profile/macro change
   useEffect(() => {
     // 1. Run Cash Flow Forecast
-    const fc = forecastCashFlow(data.transactions, data.cashBalance, data.profile, 12);
+    let fc: ForecastPoint[];
+    if (simulatorMode === 'corporate') {
+      fc = forecastCorporateCashFlow(
+        data.transactions, data.cashBalance, data.corporateProfile, 12,
+        macroIndicators, stressScenario, stressIntensity
+      );
+    } else {
+      fc = forecastCashFlow(
+        data.transactions, data.cashBalance, data.profile, 12,
+        macroIndicators, stressScenario, stressIntensity
+      );
+    }
     setForecast(fc);
 
     // 2. Run Portfolio Optimizer
-    const optimal = optimizePortfolio(data.assets, data.profile.riskTolerance);
+    const tolerance = simulatorMode === 'corporate' ? data.corporateProfile.riskTolerance : data.profile.riskTolerance;
+    const optimal = optimizePortfolio(data.assets, tolerance, 0.04, macroIndicators, stressScenario, stressIntensity);
     setOptimalPortfolio(optimal);
 
     // 3. Generate Efficient Frontier
-    const frontier = generateEfficientFrontier(data.assets, 100);
+    const frontier = generateEfficientFrontier(data.assets, 100, 0.04, macroIndicators, stressScenario, stressIntensity);
     setEfficientFrontier(frontier);
-  }, [data]);
+  }, [data, macroIndicators, stressScenario, stressIntensity, simulatorMode]);
 
   // Handle profile edits (Salary, housing, etc.)
   const updateProfile = (profileUpdates: Partial<FinancialProfile>) => {
@@ -63,6 +101,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return {
         ...prev,
         profile: updatedProfile
+      };
+    });
+  };
+
+  // Handle corporate profile edits
+  const updateCorporateProfile = (profileUpdates: Partial<CorporateProfile>) => {
+    setData(prev => {
+      const updatedProfile = { ...prev.corporateProfile, ...profileUpdates };
+      return {
+        ...prev,
+        corporateProfile: updatedProfile
       };
     });
   };
@@ -132,28 +181,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // Clear chat logs
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
+    const label = simulatorMode === 'corporate' ? 'Corporate Treasury' : 'Personal Wealth';
     setChatHistory([
       {
         id: 'msg_welcome',
         sender: 'aura',
-        content: `Greetings! I am **Aura**, your AI Wealth Strategist. 🌌 
+        content: `Greetings! I am **Aura**, your AI ${label} Strategist. 🌌 
 
 I have analyzed your current financial metrics:
 *   **Net Worth:** $${data.netWorth.toLocaleString()}
 *   **Liquid Cash:** $${data.cashBalance.toLocaleString()}
-*   **Assigned Risk Profile:** ${data.profile.riskTolerance.toUpperCase()}
+*   **Assigned Risk Profile:** ${(simulatorMode === 'corporate' ? data.corporateProfile.riskTolerance : data.profile.riskTolerance).toUpperCase()}
+*   **Macro Stability Index:** ${macroStabilityIndex}/100
 
-I have built your 12-month **Cash Flow Projection** and **Modern Portfolio Efficient Frontier**. How can I assist you with your wealth strategy today?`,
+I have built your 12-month **Cash Flow Projection** and **Modern Portfolio Efficient Frontier**. How can I assist you with your ${label.toLowerCase()} strategy today?`,
         timestamp: new Date()
       }
     ]);
-  };
+  }, [data, simulatorMode, macroStabilityIndex]);
 
   // Seed welcome message on load
   useEffect(() => {
     clearChat();
-  }, []);
+  }, [clearChat]);
 
   // AI Advisor Chat Client
   const sendAdvisorMessage = async (text: string, apiKey?: string) => {
@@ -173,24 +224,53 @@ I have built your 12-month **Cash Flow Projection** and **Modern Portfolio Effic
       let aiResponseText = '';
 
       if (apiKey) {
-        // We'll call the actual service inside services/gemini.ts when it's created
         const { getGeminiFinancialAdvice } = await import('../services/gemini');
-        aiResponseText = await getGeminiFinancialAdvice(text, data, forecast, optimalPortfolio, apiKey);
+        aiResponseText = await getGeminiFinancialAdvice(
+          text, data, forecast, optimalPortfolio, apiKey,
+          simulatorMode, macroIndicators, stressScenario, stressIntensity, macroStabilityIndex
+        );
       } else {
         // Local intelligence fallback simulator
         await new Promise(resolve => setTimeout(resolve, 1500));
         
         const lowerText = text.toLowerCase();
+        const modeLabel = simulatorMode === 'corporate' ? 'Corporate' : 'Personal';
         
-        if (lowerText.includes('optimize') || lowerText.includes('portfolio') || lowerText.includes('mpt') || lowerText.includes('weights')) {
-          const currentAllocations = data.assets.map(a => {
+        if (lowerText.includes('macro') || lowerText.includes('economy') || lowerText.includes('gdp') || lowerText.includes('inflation')) {
+          aiResponseText = `### Macro-Economic Assessment 🌐
+
+**Current Macro State:**
+| Indicator | Value | Status |
+| :--- | :--- | :--- |
+| **GDP Growth** | ${(macroIndicators.gdpGrowth * 100).toFixed(1)}% | ${macroIndicators.gdpGrowth >= 0.02 ? '✅ Healthy' : '⚠️ Weak'} |
+| **Inflation Rate** | ${(macroIndicators.inflationRate * 100).toFixed(1)}% | ${macroIndicators.inflationRate <= 0.04 ? '✅ Controlled' : '🔴 Elevated'} |
+| **Interest Rate** | ${(macroIndicators.interestRate * 100).toFixed(1)}% | ${macroIndicators.interestRate <= 0.06 ? '✅ Manageable' : '⚠️ Restrictive'} |
+
+**Macro Stability Index:** ${macroStabilityIndex}/100
+${stressScenario !== 'none' ? `\n⚠️ **Active Stress Scenario:** ${stressScenario.replace(/_/g, ' ').toUpperCase()} at ${(stressIntensity * 100).toFixed(0)}% intensity.` : ''}
+
+**${modeLabel} Strategy Recommendations:**
+${macroIndicators.inflationRate > 0.04 
+  ? '1. **Hedge inflation:** Increase commodity and inflation-protected security allocation.\n2. **Reduce long-duration bonds:** They lose value when inflation rises.'
+  : '1. **Balanced allocation:** Current inflation is within target range.\n2. **Consider extending bond duration** for yield pickup.'}
+${macroIndicators.interestRate > 0.06 
+  ? '\n3. **Lock in high yields:** Money market and short-term treasury positions benefit from high rates.'
+  : ''}`;
+        } else if (lowerText.includes('stress') || lowerText.includes('disaster') || lowerText.includes('crash') || lowerText.includes('black swan')) {
+          aiResponseText = `### Black Swan Stress Analysis 🦢
+
+${stressScenario === 'none' 
+  ? 'No stress scenario is currently active. Navigate to the **Macro Simulator** tab to trigger a Black Swan event and see how your portfolio and cash flows respond.\n\n**Available scenarios:**\n- 🦠 **Pandemic:** Revenue drops, costs spike\n- 🚢 **Supply Chain Shock:** Commodity inflation, production delays\n- 📈 **Rate Hike:** Borrowing costs surge, bonds devalue\n- 📉 **Market Crash:** Equities and crypto plummet'
+  : `**Active Scenario:** ${stressScenario.replace(/_/g, ' ')} at **${(stressIntensity * 100).toFixed(0)}%** intensity\n\n**Impact Summary:**\n- Macro Stability Index dropped to **${macroStabilityIndex}/100**\n- Portfolio expected return adjusted to **${(optimalPortfolio.expectedReturn * 100).toFixed(2)}%**\n- 12-month cash forecast endpoint: **$${forecast.length > 0 ? forecast[forecast.length - 1].balance.toLocaleString() : 'N/A'}**\n\n**Recommended ${modeLabel} Hedging Actions:**\n1. Increase cash buffer by 20-30%\n2. Shift equity allocation to defensive sectors\n3. Consider put options or inverse ETFs for downside protection`}`;
+        } else if (lowerText.includes('optimize') || lowerText.includes('portfolio') || lowerText.includes('mpt') || lowerText.includes('weights')) {
+          const currentAllocations = data.assets.map((a, idx) => {
             const pct = (a.balance / data.netWorth) * 100;
-            return `*   **${a.symbol} (${a.name}):** Current ${pct.toFixed(1)}% vs. Target ${(optimalPortfolio.weights[data.assets.indexOf(a)] * 100).toFixed(1)}%`;
+            return `*   **${a.symbol} (${a.name}):** Current ${pct.toFixed(1)}% vs. Target ${(optimalPortfolio.weights[idx] * 100).toFixed(1)}%`;
           }).join('\n');
 
-          aiResponseText = `### Portfolio Optimization Analysis (Markowitz Model) 📈
+          aiResponseText = `### ${modeLabel} Portfolio Optimization Analysis (Markowitz Model) 📈
 
-Based on your target **${data.profile.riskTolerance}** risk profile, our optimizer has evaluated the asset class covariances to find the maximum Sharpe ratio portfolio.
+Based on your target **${(simulatorMode === 'corporate' ? data.corporateProfile.riskTolerance : data.profile.riskTolerance)}** risk profile, our optimizer has evaluated the asset class covariances to find the maximum Sharpe ratio portfolio.
 
 #### Current vs. Recommended Allocations:
 ${currentAllocations}
@@ -200,41 +280,41 @@ ${currentAllocations}
 2.  **Portfolio Volatility (Risk):** ${(optimalPortfolio.volatility * 100).toFixed(2)}%
 3.  **Maximum Portfolio Sharpe Ratio:** ${optimalPortfolio.sharpeRatio.toFixed(2)}
 
-To align with this boundary, consider rebalancing assets from your over-weighted slots (like crypto/cash) into standard bonds and S&P index shares. Let me know if you want me to simulate a specific trade!`;
-        } else if (lowerText.includes('forecast') || lowerText.includes('cash') || lowerText.includes('dip') || lowerText.includes('future')) {
+${stressScenario !== 'none' ? `\n> ⚠️ These recommendations factor in the active **${stressScenario.replace(/_/g, ' ')}** stress scenario at ${(stressIntensity * 100).toFixed(0)}% intensity.` : ''}`;
+        } else if (lowerText.includes('forecast') || lowerText.includes('cash') || lowerText.includes('dip') || lowerText.includes('future') || lowerText.includes('runway')) {
           const targetDip = forecast.find(f => f.expense > f.income);
+          const income = simulatorMode === 'corporate' ? data.corporateProfile.monthlyRevenue : data.profile.monthlySalary;
           
-          aiResponseText = `### Cash Flow & Runway Forecast 🔮
+          aiResponseText = `### ${modeLabel} Cash Flow & Runway Forecast 🔮
 
-Analyzing your 12-month projections, your average monthly cash inflow is **$${data.profile.monthlySalary.toLocaleString()}** against fixed operational costs of **$${(data.profile.housingCost + data.profile.utilityCost + data.profile.subscriptionCost + data.profile.otherFixedCosts).toLocaleString()}**.
+Analyzing your 12-month projections, your average monthly ${simulatorMode === 'corporate' ? 'revenue' : 'cash inflow'} is **$${income.toLocaleString()}**.
 
 ${targetDip 
-  ? `⚠️ **Identified Bottleneck Month:** In **${targetDip.monthName}**, our algorithms detect a potential drop in savings capacity due to seasonal expenses (e.g. holiday or summer holiday adjustments).` 
-  : `✅ **Positive cash flow:** Your runway is excellent. You are saving an average of **$${(data.profile.monthlySalary - forecast[0].expense).toLocaleString()}** per month.`}
+  ? `⚠️ **Identified Bottleneck Month:** In **${targetDip.monthName}**, our algorithms detect a potential drop in savings capacity.` 
+  : `✅ **Positive cash flow:** Your runway is excellent across all 12 projected months.`}
 
-#### Ways to optimize runway:
-*   **Review Subscriptions:** You currently spend $${data.profile.subscriptionCost} monthly. Deactivating unused SaaS tools adds direct liquidity.
-*   **Risk Mitigation:** Ensure you hold at least 3-6 months of fixed expenses ($${((data.profile.housingCost + data.profile.utilityCost + data.profile.subscriptionCost + data.profile.otherFixedCosts) * 3).toLocaleString()}) in your CASH account before deploying additional cash to equities.`;
+**12-Month Cash Endpoint:** $${forecast.length > 0 ? forecast[forecast.length - 1].balance.toLocaleString() : 'N/A'}
+${stressScenario !== 'none' ? `\n> 📊 Forecast includes macro stress adjustments from the **${stressScenario.replace(/_/g, ' ')}** scenario.` : ''}`;
         } else if (lowerText.includes('challenge') || lowerText.includes('saving') || lowerText.includes('save')) {
-          aiResponseText = `### 🌌 Savings Challenge: The 30-Day "Cash Flow Optimizer"
+          aiResponseText = `### 🌌 ${modeLabel} Savings Challenge: The 30-Day Optimizer
 
 I have tailored a challenge matching your financial behavior:
 
 | Challenge Action | Expected Savings | Difficulty |
 | :--- | :--- | :--- |
-| **SaaS Audit:** Cancel 1 unused streaming/cloud sub | $15–$25 | Easy |
-| **Dining Cap:** Limit Friday dining to $50 max | $80 | Medium |
-| **Utility Save:** Smart thermostat adjustments | $30 | Easy |
-| **Subtotal Savings:** | **$135 / month** | |
+| **SaaS Audit:** Cancel 1 unused service | $${simulatorMode === 'corporate' ? '5,000' : '15–$25'} | Easy |
+| **${simulatorMode === 'corporate' ? 'Vendor Renegotiation' : 'Dining Cap'}** | $${simulatorMode === 'corporate' ? '12,000' : '80'} | Medium |
+| **${simulatorMode === 'corporate' ? 'Energy Optimization' : 'Utility Save'}** | $${simulatorMode === 'corporate' ? '3,000' : '30'} | Easy |
 
-Deploying this extra **$135/month** directly to S&P 500 equities (averaging 9% return) over 10 years would yield **~$26,100**! Shall we update your profile to simulate this?`;
+Shall we update your profile to simulate these savings?`;
         } else {
           aiResponseText = `I have received your query. To give you the best tactical advice:
 1.  Ask me **"Optimize my portfolio"** to review your Modern Portfolio Theory weights.
 2.  Ask me **"Explain my cash flow dip"** to search for seasonal savings blocks.
-3.  Ask me **"Suggest a savings challenge"** to deploy compound interest micro-challenges.
+3.  Ask me **"Analyze the macro economy"** to review GDP, inflation, and rate impacts.
+4.  Ask me **"What if a market crash happens?"** to stress-test your position.
 
-*Tip: Connect your Gemini API key in the top settings bar to enable full generative analysis of your specific financial goals!*`;
+*Tip: Connect your Gemini API key in the settings to enable full generative analysis!*`;
         }
       }
 
@@ -271,10 +351,20 @@ Deploying this extra **$135/month** directly to S&P 500 equities (averaging 9% r
         activeView,
         setActiveView,
         updateProfile,
+        updateCorporateProfile,
         updateAssetBalance,
         addTransaction,
         sendAdvisorMessage,
-        clearChat
+        clearChat,
+        simulatorMode,
+        setSimulatorMode,
+        macroIndicators,
+        setMacroIndicators,
+        stressScenario,
+        setStressScenario,
+        stressIntensity,
+        setStressIntensity,
+        macroStabilityIndex
       }}
     >
       {children}
