@@ -7,7 +7,8 @@ import {
   User, 
   TrendingUp, 
   PiggyBank, 
-  Scale 
+  Scale,
+  Activity
 } from 'lucide-react';
 
 // Custom lightweight parser to format Gemini markdown output (headers, bold, lists, and tables)
@@ -148,15 +149,13 @@ export const AuraAdvisor: React.FC = () => {
     const query = inputText;
     setInputText('');
     
-    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || (import.meta.env.VITE_GEMINI_API_KEY as string) || undefined;
-    await sendAdvisorMessage(query, key);
+    await sendAdvisorMessage(query);
   };
 
   // Quick Action Chips
   const handleChipClick = async (chipText: string) => {
     if (isChatLoading) return;
-    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || (import.meta.env.VITE_GEMINI_API_KEY as string) || undefined;
-    await sendAdvisorMessage(chipText, key);
+    await sendAdvisorMessage(chipText);
   };
 
   return (
@@ -292,23 +291,23 @@ export const AuraAdvisor: React.FC = () => {
           <button 
             className="glass-btn glass-btn-secondary" 
             style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', gap: '6px' }}
-            onClick={() => handleChipClick('Optimize my portfolio weights')}
+            onClick={() => handleChipClick('Analyze the current Random Forest prediction for this stock.')}
           >
-            <Scale size={14} color="var(--accent-primary)" /> Optimize Portfolio
+            <TrendingUp size={14} color="var(--accent-primary)" /> Analyze Forecast
           </button>
           <button 
             className="glass-btn glass-btn-secondary" 
             style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', gap: '6px' }}
-            onClick={() => handleChipClick('Explain my cash flow dip')}
+            onClick={() => handleChipClick('What are the key technical risks for this asset right now?')}
           >
-            <TrendingUp size={14} color="var(--accent-secondary)" /> Analyze Cash Runway
+            <Scale size={14} color="var(--accent-secondary)" /> Assess Risks
           </button>
           <button 
             className="glass-btn glass-btn-secondary" 
             style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', gap: '6px' }}
-            onClick={() => handleChipClick('Suggest a savings challenge')}
+            onClick={() => handleChipClick('Summarize the recent price volatility and momentum.')}
           >
-            <PiggyBank size={14} color="var(--accent-success)" /> Get Savings Challenge
+            <Activity size={14} color="var(--accent-success)" /> Check Momentum
           </button>
         </div>
       )}

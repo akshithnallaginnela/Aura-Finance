@@ -24,7 +24,7 @@ if %errorlevel% EQU 0 (
         uv venv .venv
     )
     echo [INFO] Installing requirements via uv...
-    uv pip install -r requirements.txt
+    uv pip install flask scikit-learn pandas flask-cors numpy scipy yfinance
 ) else (
     echo [INFO] 'uv' not found. Falling back to standard virtualenv + pip.
     if not exist .venv (
@@ -34,7 +34,7 @@ if %errorlevel% EQU 0 (
     echo [INFO] Installing requirements via pip...
     call .venv\Scripts\activate
     python -m pip install --upgrade pip
-    pip install -r requirements.txt
+    pip install flask scikit-learn pandas flask-cors numpy scipy yfinance
 )
 
 echo [SUCCESS] Dependencies satisfied. Starting Flask server on port 5000...

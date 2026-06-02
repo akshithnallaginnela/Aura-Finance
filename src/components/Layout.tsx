@@ -16,11 +16,8 @@ import {
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { activeView, setActiveView, data } = useFinance();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [savedKey, setSavedKey] = useState('');
-  
+  const { activeView, setActiveView, activeTicker, stockData } = useFinance();
+  const currentPrice = stockData && stockData.length > 0 ? stockData[stockData.length - 1].Close : 0;
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('AURA_THEME') as 'light' | 'dark') || 'light';
   });
@@ -29,31 +26,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('AURA_THEME', theme);
   }, [theme]);
-
-  // Load key from localStorage
-  useEffect(() => {
-    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
-    setSavedKey(key);
-    setApiKeyInput(key ? '••••••••••••••••••••••••' : '');
-  }, []);
-
-  const handleSaveKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (apiKeyInput.trim() === '') {
-      localStorage.removeItem('AURA_GEMINI_API_KEY');
-      setSavedKey('');
-    } else if (!apiKeyInput.includes('•')) {
-      localStorage.setItem('AURA_GEMINI_API_KEY', apiKeyInput);
-      setSavedKey(apiKeyInput);
-    }
-    setIsSettingsOpen(false);
-  };
-
-  const handleRemoveKey = () => {
-    localStorage.removeItem('AURA_GEMINI_API_KEY');
-    setSavedKey('');
-    setApiKeyInput('');
-  };
 
   return (
     <div className="app-container">
@@ -106,18 +78,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <span className="nav-label">Aura Advisor</span>
             </div>
           </nav>
-
-          {/* Settings Trigger at Bottom */}
-          <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-card)', paddingTop: '16px' }}>
-            <div 
-              className="nav-item"
-              onClick={() => setIsSettingsOpen(true)}
-              style={{ color: savedKey ? 'var(--accent-success)' : 'var(--text-muted)' }}
-            >
-              <Settings size={20} />
-              <span className="nav-label">AI Engine Config</span>
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -164,35 +124,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
 
-            {/* Networth Badge */}
+            {/* Stock Tracker Badge */}
             <div className="glass-panel" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', borderRadius: '8px' }}>
               <Coins size={16} color="var(--accent-secondary)" />
-              <span>Net Worth: <strong style={{ color: 'var(--text-main)' }}>${data.netWorth.toLocaleString()}</strong></span>
-            </div>
-
-            {/* AI Engine Badge */}
-            <div 
-              className="glass-panel" 
-              onClick={() => setIsSettingsOpen(true)}
-              style={{ 
-                padding: '8px 16px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                fontSize: '0.85rem', 
-                borderRadius: '8px',
-                cursor: 'pointer',
-                borderColor: savedKey ? 'var(--accent-success)' : 'var(--accent-primary)'
-              }}
-            >
-              <span style={{ 
-                width: '8px', 
-                height: '8px', 
-                borderRadius: '50%', 
-                background: savedKey ? 'var(--accent-success)' : 'var(--accent-primary)',
-                boxShadow: savedKey ? '0 0 8px var(--accent-success)' : '0 0 8px var(--accent-primary)'
-              }}></span>
-              <span>AI Mode: <strong>{savedKey ? 'Gemini 1.5 Cloud' : 'Local Fallback'}</strong></span>
+              <span>{activeTicker}: <strong style={{ color: 'var(--text-main)' }}>${currentPrice.toFixed(2)}</strong></span>
             </div>
           </div>
         </header>
@@ -202,71 +137,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {children}
         </div>
       </main>
-
-      {/* Settings Modal */}
-      {isSettingsOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 99
-        }}>
-          <div className="glass-panel" style={{ width: '480px', padding: '28px', position: 'relative' }}>
-            <button 
-              onClick={() => setIsSettingsOpen(false)}
-              className="glass-btn-text" 
-              style={{ position: 'absolute', right: '20px', top: '20px' }}
-            >
-              <X size={20} />
-            </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <Key size={22} color="var(--accent-primary)" />
-              <h3 style={{ fontSize: '1.25rem' }}>AI Strategist Config</h3>
-            </div>
-
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '20px' }}>
-              AuraFinance uses Gemini API to perform custom prompt analysis on your transactions. Paste your **Gemini API Key** below to connect the cloud strategist, or clear it to use the local mathematical logic fallback.
-            </p>
-
-            <form onSubmit={handleSaveKey}>
-              <div style={{ marginBottom: '24px' }}>
-                <label className="glass-label">Gemini API Key</label>
-                <input 
-                  type="password" 
-                  className="glass-input" 
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder="Enter API Key (e.g. AIzaSy...)"
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                {savedKey && (
-                  <button 
-                    type="button" 
-                    onClick={handleRemoveKey}
-                    className="glass-btn glass-btn-secondary" 
-                    style={{ borderColor: 'var(--accent-danger)' }}
-                  >
-                    Clear Key
-                  </button>
-                )}
-                <button type="submit" className="glass-btn">
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
