@@ -32,7 +32,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   // Load key from localStorage
   useEffect(() => {
-    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || '';
+    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
     setSavedKey(key);
     setApiKeyInput(key ? '••••••••••••••••••••••••' : '');
   }, []);

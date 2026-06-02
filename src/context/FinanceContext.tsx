@@ -411,11 +411,12 @@ I have built your 12-month **Cash Flow Projection** and **Modern Portfolio Effic
 
     try {
       let aiResponseText = '';
+      const activeKey = apiKey || (import.meta.env.VITE_GEMINI_API_KEY as string) || '';
 
-      if (apiKey) {
+      if (activeKey) {
         const { getGeminiFinancialAdvice } = await import('../services/gemini');
         aiResponseText = await getGeminiFinancialAdvice(
-          text, data, forecast, optimalPortfolio, apiKey,
+          text, data, forecast, optimalPortfolio, activeKey,
           simulatorMode, macroIndicators, stressScenario, stressIntensity, macroStabilityIndex,
           {
             activeModel,

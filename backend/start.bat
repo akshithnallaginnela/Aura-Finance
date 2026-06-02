@@ -8,7 +8,7 @@ echo ========================================================
 
 :: Check for python
 where python >nul 2>nul
-if %errorlevel% neq 0 (
+if %errorlevel% NEQ 0 (
     echo [ERROR] Python is not installed or not in PATH!
     echo Please install Python 3.10+ and add it to system PATH.
     pause
@@ -17,7 +17,7 @@ if %errorlevel% neq 0 (
 
 :: Check for uv
 where uv >nul 2>nul
-if %errorlevel% eq 0 (
+if %errorlevel% EQU 0 (
     echo [INFO] Detected fast Python package manager 'uv'.
     if not exist .venv (
         echo [INFO] Creating virtual environment with uv...

@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 
 implementation_plan.md 
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.venv
+__pycache__/
+*.pyc

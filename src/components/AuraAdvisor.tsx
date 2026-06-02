@@ -123,7 +123,7 @@ const formatBoldText = (text: string) => {
   const parts = text.split(/\*\*([^*]+)\*\*/g);
   return parts.map((part, idx) => {
     // Alternate standard text and bold text
-    return idx % 2 === 1 ? <strong key={idx} style={{ color: '#fff', fontWeight: '700' }}>{part}</strong> : part;
+    return idx % 2 === 1 ? <strong key={idx} style={{ color: 'var(--text-main)', fontWeight: '700' }}>{part}</strong> : part;
   });
 };
 
@@ -148,14 +148,14 @@ export const AuraAdvisor: React.FC = () => {
     const query = inputText;
     setInputText('');
     
-    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || undefined;
+    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || (import.meta.env.VITE_GEMINI_API_KEY as string) || undefined;
     await sendAdvisorMessage(query, key);
   };
 
   // Quick Action Chips
   const handleChipClick = async (chipText: string) => {
     if (isChatLoading) return;
-    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || undefined;
+    const key = localStorage.getItem('AURA_GEMINI_API_KEY') || (import.meta.env.VITE_GEMINI_API_KEY as string) || undefined;
     await sendAdvisorMessage(chipText, key);
   };
 
