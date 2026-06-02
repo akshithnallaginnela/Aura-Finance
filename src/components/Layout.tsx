@@ -10,7 +10,9 @@ import {
   Key, 
   X,
   Coins,
-  Cpu
+  Cpu,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -18,6 +20,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [savedKey, setSavedKey] = useState('');
+  
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('AURA_THEME') as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('AURA_THEME', theme);
+  }, [theme]);
 
   // Load key from localStorage
   useEffect(() => {
@@ -131,11 +142,32 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
 
           {/* Quick Stats & AI Engine Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* Theme Toggle Button */}
+            <button 
+              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+              style={{ 
+                padding: '8px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-card)',
+                color: 'var(--text-main)',
+                transition: 'all 0.2s ease',
+                outline: 'none'
+              }}
+              title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+
             {/* Networth Badge */}
             <div className="glass-panel" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', borderRadius: '8px' }}>
               <Coins size={16} color="var(--accent-secondary)" />
-              <span>Net Worth: <strong style={{ color: '#fff' }}>${data.netWorth.toLocaleString()}</strong></span>
+              <span>Net Worth: <strong style={{ color: 'var(--text-main)' }}>${data.netWorth.toLocaleString()}</strong></span>
             </div>
 
             {/* AI Engine Badge */}
