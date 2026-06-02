@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 implementation_plan.md 
-
+ENTERPRISE_ARCHITECTURE_PLAN.md
 # Environment Variables
 .env
 .env.local
