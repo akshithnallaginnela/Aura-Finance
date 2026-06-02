@@ -231,7 +231,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 24px;
   z-index: 10;
   border-right: 1px solid var(--border-card);
-  background: hsla(240, 20%, 4%, 0.65);
+  background: var(--bg-sidebar);
   backdrop-filter: blur(30px);
 }
 
@@ -268,14 +268,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .nav-item:hover {
   color: var(--text-main);
-  background: hsla(0, 0%, 100%, 0.04);
+  background: var(--bg-input);
+  transform: translateX(4px);
 }
 
 .nav-item.active {
   color: var(--text-main);
-  background: hsla(270, 85%, 65%, 0.1);
-  border-color: hsla(270, 85%, 65%, 0.2);
-  box-shadow: inset 0 0 10px hsla(270, 85%, 65%, 0.05);
+  background: var(--accent-primary-glow);
+  border-color: var(--accent-primary);
 }
 
 /* KPI Card Styles */
@@ -292,6 +292,13 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px var(--shadow-card);
+  border-color: var(--accent-primary-glow);
 }
 
 .kpi-card::before {
