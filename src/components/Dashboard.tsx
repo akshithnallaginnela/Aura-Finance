@@ -15,29 +15,54 @@ import {
   ShieldCheck, 
   Activity, 
   Wallet, 
-  LineChart as ChartIcon, 
   PlusCircle, 
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  Cpu,
+  Brain,
+  AlertTriangle
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { data, forecast, setActiveView } = useFinance();
+  const { 
+    data, 
+    forecast, 
+    setActiveView, 
+    // AIML states
+    activeModel,
+    aimlAccuracy,
+    aimlAnomalies,
+    aimlFeatureImportance,
+    isBackendConnected
+  } = useFinance();
 
   // Summarize stats
-  const totalInvested = data.assets
-    .filter(a => a.category !== 'Cash')
-    .reduce((sum, a) => sum + a.balance, 0);
-
   const forecastEnd = forecast.length > 0 ? forecast[forecast.length - 1].balance : data.cashBalance;
-  const monthlySavings = data.profile.monthlySalary - (
-    data.profile.housingCost + 
-    data.profile.utilityCost + 
-    data.profile.subscriptionCost + 
-    data.profile.otherFixedCosts
-  );
+  
+  const incomeVal = data.mode === 'corporate' ? data.corporateProfile.monthlyRevenue : data.profile.monthlySalary;
+  const expenseVal = sumFixedExpenses();
 
-  // Identify any forecast alerts (months where projected expenses > salary)
+  function sumFixedExpenses() {
+    if (data.mode === 'corporate') {
+      return (
+        data.corporateProfile.cogsCost +
+        data.corporateProfile.opExCost +
+        data.corporateProfile.capExCost +
+        data.corporateProfile.debtServiceCost
+      );
+    } else {
+      return (
+        data.profile.housingCost + 
+        data.profile.utilityCost + 
+        data.profile.subscriptionCost + 
+        data.profile.otherFixedCosts
+      );
+    }
+  }
+
+  const monthlySavings = incomeVal - expenseVal;
+
+  // Identify any forecast alerts (months where projected expenses > income)
   const lowCashAlerts = forecast.filter(f => f.expense > f.income);
 
   // Format currency helper
@@ -70,7 +95,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* 1. KPI Cards */}
+      {/* 1. KPI Cards Row */}
       <section className="kpi-grid">
         <div className="glass-panel kpi-card glass-panel-glow-purple">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -96,18 +121,7 @@ export const Dashboard: React.FC = () => {
           </span>
         </div>
 
-        <div className="glass-panel kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="kpi-title">Invested Funds</span>
-            <ChartIcon size={20} color="var(--accent-success)" />
-          </div>
-          <span className="kpi-value" style={{ marginTop: '8px' }}>{fmt(totalInvested)}</span>
-          <span className="kpi-trend" style={{ color: 'var(--text-muted)' }}>
-            <span>{((totalInvested / data.netWorth) * 100).toFixed(0)}% of Assets Deploy</span>
-          </span>
-        </div>
-
-        <div className="glass-panel kpi-card" style={{ borderColor: forecastEnd < data.cashBalance ? 'var(--accent-warning)' : 'var(--border-card)' }}>
+        <div className="glass-panel kpi-card glass-panel-glow-yellow">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="kpi-title">12M Cash Forecast</span>
             <TrendingUp size={20} color="var(--accent-warning)" />
@@ -116,6 +130,18 @@ export const Dashboard: React.FC = () => {
           <span className="kpi-trend" style={{ color: forecastEnd >= data.cashBalance ? 'var(--accent-success)' : 'var(--accent-warning)' }}>
             {forecastEnd >= data.cashBalance ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
             <span>{forecastEnd >= data.cashBalance ? 'Growth projected' : 'Runway decay predicted'}</span>
+          </span>
+        </div>
+
+        {/* New AIML Intelligence guard card */}
+        <div className="glass-panel kpi-card glass-panel-glow-green" onClick={() => setActiveView('macro')} style={{ cursor: 'pointer' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="kpi-title">AIML Forecaster</span>
+            <Brain size={20} color="var(--accent-success)" />
+          </div>
+          <span className="kpi-value" style={{ marginTop: '8px' }}>{aimlAccuracy}%</span>
+          <span className="kpi-trend" style={{ color: isBackendConnected ? 'var(--accent-success)' : 'var(--text-muted)' }}>
+            <span>Model: {activeModel.toUpperCase()} ({isBackendConnected ? 'Python' : 'JS Fallback'})</span>
           </span>
         </div>
       </section>
@@ -128,10 +154,12 @@ export const Dashboard: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <div>
               <h3 style={{ fontSize: '1.2rem' }}>Cash Runway Projection</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '2px' }}>Holt-Winters time series modeling with 95% error margin band</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                {activeModel === 'holt-winters' ? 'Holt-Winters Seasonal Additive' : activeModel === 'neural' ? 'MLP Feedforward Neural Network' : 'ARIMA Autoregressive'} model prediction
+              </p>
             </div>
             <button className="glass-btn-text" onClick={() => setActiveView('forecaster')} style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              Details <ArrowRight size={14} />
+              Runway Predictor <ArrowRight size={14} />
             </button>
           </div>
 
@@ -197,9 +225,12 @@ export const Dashboard: React.FC = () => {
                 Bond: 'var(--accent-secondary)',
                 Crypto: 'var(--accent-warning)',
                 Commodity: '#fb7185',
-                Cash: 'var(--accent-success)'
+                Cash: 'var(--accent-success)',
+                Treasury: 'var(--accent-primary)',
+                'Money Market': '#818cf8',
+                'Corporate Bond': '#a855f7'
               };
-              const color = colorMap[a.category];
+              const color = colorMap[a.category] || 'var(--text-dim)';
 
               return (
                 <div key={a.id} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -218,109 +249,163 @@ export const Dashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Bottom Row: Smart Alerts and Recent Transactions */}
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', flexWrap: 'wrap' }}>
+      {/* 3. Bottom Row: Smart Alerts, Feature Importance, and Ledger */}
+      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: '24px', flexWrap: 'wrap' }}>
         
-        {/* AI Financial Health Watch */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldCheck size={20} color="var(--accent-success)" />
-            Aura Intelligence Guard
+        {/* Column 1: AI Financial Health Watch */}
+        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <h3 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShieldCheck size={18} color="var(--accent-success)" />
+            Aura Intel Guard
           </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, contentVisibility: 'auto' }}>
             {lowCashAlerts.length > 0 ? (
-              <div className="glass-panel" style={{ 
-                padding: '16px', 
-                background: 'rgba(239, 68, 68, 0.04)', 
+              <div className="glass-panel animate-pulse" style={{ 
+                padding: '12px', 
+                background: 'rgba(239, 68, 68, 0.03)', 
                 borderColor: 'rgba(239, 68, 68, 0.15)',
                 display: 'flex',
-                gap: '14px',
+                gap: '10px',
                 borderRadius: '8px'
               }}>
-                <ShieldAlert size={24} color="var(--accent-danger)" style={{ flexShrink: 0 }} />
+                <ShieldAlert size={20} color="var(--accent-danger)" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-main)' }}>Expected Cash Reserves Contraction</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4', marginTop: '4px' }}>
-                    Due to seasonal variables, projected expense rates cross income margins in **{lowCashAlerts[0].monthName}**. Click **Runway Predictor** to adjust recurring costs and test savings scenarios.
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Cash Runways Contraction</h4>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.3', marginTop: '2px' }}>
+                    Expenses exceed inflows in **{lowCashAlerts[0].monthName}**. Adjust macro variables in the simulator view to mitigate.
                   </p>
                 </div>
               </div>
             ) : (
               <div className="glass-panel" style={{ 
-                padding: '16px', 
-                background: 'rgba(16, 185, 129, 0.04)', 
+                padding: '12px', 
+                background: 'rgba(16, 185, 129, 0.03)', 
                 borderColor: 'rgba(16, 185, 129, 0.15)',
                 display: 'flex',
-                gap: '14px',
+                gap: '10px',
                 borderRadius: '8px'
               }}>
-                <ShieldCheck size={24} color="var(--accent-success)" style={{ flexShrink: 0 }} />
+                <ShieldCheck size={20} color="var(--accent-success)" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#fff' }}>Cash Flows Stable</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4', marginTop: '4px' }}>
-                    Your income surpasses total recurring expenses for all projected 12 months. Your current runway margin is excellent, allowing safe extra allocation to investments.
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#fff' }}>Stable Net Cash Flow</h4>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.3', marginTop: '2px' }}>
+                    Your income surpasses total recurring expenses for all projected 12 months. Runway margin is stable.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* MPT Recommendation Alert */}
-            <div className="glass-panel" style={{ 
-              padding: '16px', 
-              background: 'rgba(147, 51, 234, 0.04)', 
-              borderColor: 'rgba(147, 51, 234, 0.15)',
-              display: 'flex',
-              gap: '14px',
-              borderRadius: '8px'
-            }}>
-              <TrendingUp size={24} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
-              <div>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#fff' }}>Portfolio Optimality Available</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4', marginTop: '4px' }}>
-                  Your current portfolio lies below the Markowitz Efficient Frontier. Running MPT rebalancing will improve your expected return without increasing risk. Talk to Aura in the **Aura Advisor** tab for a detailed strategy.
-                </p>
+            {/* Anomaly Alerts KPI card */}
+            {aimlAnomalies.length > 0 ? (
+              <div className="glass-panel" style={{ 
+                padding: '12px', 
+                background: 'rgba(245, 158, 11, 0.03)', 
+                borderColor: 'rgba(245, 158, 11, 0.2)',
+                display: 'flex',
+                gap: '10px',
+                borderRadius: '8px'
+              }}>
+                <AlertTriangle size={20} color="var(--accent-warning)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#fff' }}>Outliers Flagged</h4>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.3', marginTop: '2px' }}>
+                    **{aimlAnomalies.length} spending anomalies** detected by Z-Score engine. Review red indicators in transaction ledger.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="glass-panel" style={{ 
+                padding: '12px', 
+                background: 'rgba(99, 102, 241, 0.03)', 
+                borderColor: 'rgba(99, 102, 241, 0.15)',
+                display: 'flex',
+                gap: '10px',
+                borderRadius: '8px'
+              }}>
+                <Cpu size={20} color="var(--accent-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#fff' }}>Ledger Normalcy Verified</h4>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.3', marginTop: '2px' }}>
+                    All recent transactions lie within standard statistical bounds (Z-Score &lt; 2.2).
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Recent Ledger Entries */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '1.2rem' }}>Recent Transactions</h3>
-            <button className="glass-btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => setActiveView('advisor')}>
-              <PlusCircle size={14} /> Add Transaction
+        {/* Column 2: Macro Feature Importance */}
+        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Cpu size={18} color="var(--accent-primary)" />
+              ML Regressor Importance
+            </h3>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>Factors driving projected portfolio volatility (Random Forest Importance)</p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, justifyContent: 'center' }}>
+            {aimlFeatureImportance.slice(0, 4).map((f, idx) => {
+              const colors = ['var(--accent-warning)', 'var(--accent-primary)', 'var(--accent-secondary)', 'var(--text-muted)'];
+              return (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <span style={{ fontWeight: '600' }}>{f.name}</span>
+                    <span style={{ fontWeight: '700' }}>{f.importance.toFixed(1)}%</span>
+                  </div>
+                  <div style={{ height: '5px', background: 'hsla(0, 0%, 100%, 0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: `${f.importance}%`, height: '100%', background: colors[idx % 4], borderRadius: '3px' }}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Column 3: Recent Ledger Entries */}
+        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h3 style={{ fontSize: '1.15rem' }}>Transaction Ledger</h3>
+            <button className="glass-btn" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => setActiveView('advisor')}>
+              <PlusCircle size={12} /> Add
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto', maxHeight: '240px' }}>
-            {data.transactions.slice(0, 5).map(t => (
-              <div 
-                key={t.id} 
-                className="glass-panel" 
-                style={{ 
-                  padding: '12px 16px', 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  background: 'hsla(0, 0%, 100%, 0.01)',
-                  borderRadius: '8px'
-                }}
-              >
-                <div>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: '600' }}>{t.description}</h4>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{t.date} • {t.category}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto', maxHeight: '230px' }}>
+            {data.transactions.slice(0, 5).map(t => {
+              const isAnomaly = aimlAnomalies.includes(t.id);
+              return (
+                <div 
+                  key={t.id} 
+                  className={`glass-panel ${isAnomaly ? 'glass-panel-anomaly' : ''}`}
+                  style={{ 
+                    padding: '10px 14px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    background: isAnomaly ? 'rgba(239, 68, 68, 0.04)' : 'hsla(0, 0%, 100%, 0.01)',
+                    borderColor: isAnomaly ? 'rgba(239, 68, 68, 0.25)' : 'var(--border-card)',
+                    borderRadius: '8px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {isAnomaly && <AlertTriangle size={14} color="var(--accent-danger)" style={{ flexShrink: 0 }} />}
+                    <div>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: '600' }}>{t.description}</h4>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{t.date} • {t.category}</span>
+                    </div>
+                  </div>
+                  <div style={{ 
+                    fontWeight: '700', 
+                    fontSize: '0.9rem',
+                    color: t.type === 'income' ? 'var(--accent-success)' : isAnomaly ? 'var(--accent-danger)' : 'var(--text-main)' 
+                  }}>
+                    {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
+                  </div>
                 </div>
-                <div style={{ 
-                  fontWeight: '700', 
-                  fontSize: '0.95rem',
-                  color: t.type === 'income' ? 'var(--accent-success)' : 'var(--text-main)' 
-                }}>
-                  {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

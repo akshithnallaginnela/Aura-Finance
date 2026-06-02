@@ -16,7 +16,8 @@ import {
   ShieldCheck, 
   Scale, 
   TrendingUp,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Cpu
 } from 'lucide-react';
 
 export const PortfolioOptimizer: React.FC = () => {
@@ -25,7 +26,11 @@ export const PortfolioOptimizer: React.FC = () => {
     efficientFrontier, 
     optimalPortfolio, 
     updateProfile, 
-    updateAssetBalance 
+    updateCorporateProfile,
+    updateAssetBalance,
+    simulatorMode,
+    aimlClusters,
+    aimlFeatureImportance
   } = useFinance();
 
   const fmt = (val: number) => `$${val.toLocaleString()}`;
@@ -33,27 +38,36 @@ export const PortfolioOptimizer: React.FC = () => {
 
   // Calculate current portfolio return & volatility
   const totalAssetsVal = data.netWorth;
-  const currentWeights = data.assets.map(a => a.balance / totalAssetsVal);
+  const currentWeights = data.assets.map(a => a.balance / (totalAssetsVal || 1));
   
   // Calculate current performance
   const currentMetrics = getPortfolioMetrics(currentWeights, data.assets, 0.04);
 
+  const activeTolerance = simulatorMode === 'corporate' 
+    ? data.corporateProfile.riskTolerance 
+    : data.profile.riskTolerance;
+
+  const handleRiskChange = (level: 'conservative' | 'moderate' | 'aggressive') => {
+    if (simulatorMode === 'corporate') {
+      updateCorporateProfile({ riskTolerance: level });
+    } else {
+      updateProfile({ riskTolerance: level });
+    }
+  };
+
   // Construct chart data
-  // 1. Efficient frontier scatter points
   const scatterPoints = efficientFrontier.map(p => ({
     x: Number((p.volatility * 100).toFixed(2)),
     y: Number((p.returnVal * 100).toFixed(2)),
     name: 'Simulated Portfolio'
   }));
 
-  // 2. Add Current point
   const currentPoint = {
     x: Number((currentMetrics.volatility * 100).toFixed(2)),
     y: Number((currentMetrics.expectedReturn * 100).toFixed(2)),
     name: 'Current Portfolio'
   };
 
-  // 3. Add Optimal point
   const optimalPoint = {
     x: Number((optimalPortfolio.volatility * 100).toFixed(2)),
     y: Number((optimalPortfolio.expectedReturn * 100).toFixed(2)),
@@ -67,7 +81,7 @@ export const PortfolioOptimizer: React.FC = () => {
     const optimalWeight = optimalPortfolio.weights[idx] || 0;
     const diffVal = (optimalWeight - currentWeight) * totalAssetsVal;
     
-    if (Math.abs(diffVal) > 100) { // filter out minor shifts
+    if (Math.abs(diffVal) > 100) {
       rebalanceSteps.push({
         asset: asset.symbol,
         action: diffVal > 0 ? 'buy' : 'sell',
@@ -97,17 +111,17 @@ export const PortfolioOptimizer: React.FC = () => {
             {['conservative', 'moderate', 'aggressive'].map((level) => (
               <button
                 key={level}
-                onClick={() => updateProfile({ riskTolerance: level as any })}
+                onClick={() => handleRiskChange(level as any)}
                 className="glass-btn"
                 style={{
                   flex: 1,
                   padding: '8px 10px',
                   fontSize: '0.75rem',
                   textTransform: 'uppercase',
-                  background: data.profile.riskTolerance === level 
+                  background: activeTolerance === level 
                     ? 'var(--accent-primary)' 
                     : 'hsla(0, 0%, 100%, 0.02)',
-                  borderColor: data.profile.riskTolerance === level 
+                  borderColor: activeTolerance === level 
                     ? 'var(--accent-primary)' 
                     : 'var(--border-card)',
                   justifyContent: 'center'
@@ -127,23 +141,44 @@ export const PortfolioOptimizer: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {data.assets.map((asset) => (
-              <div key={asset.id} className="glass-slider-group" style={{ marginBottom: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: '600' }}>{asset.symbol} <span style={{ color: 'var(--text-dim)', fontWeight: '400' }}>({asset.name})</span></span>
-                  <span style={{ fontWeight: '700' }}>{fmt(asset.balance)}</span>
+            {data.assets.map((asset) => {
+              const clusterLabel = aimlClusters[asset.symbol] || 'Safe Haven';
+              let badgeColor = 'rgba(16, 185, 129, 0.1)';
+              let textHex = 'var(--accent-success)';
+              if (clusterLabel === 'Speculative') {
+                badgeColor = 'rgba(239, 68, 68, 0.1)';
+                textHex = 'var(--accent-danger)';
+              } else if (clusterLabel === 'Growth') {
+                badgeColor = 'rgba(99, 102, 241, 0.1)';
+                textHex = 'var(--accent-primary)';
+              } else if (clusterLabel === 'Defensive') {
+                badgeColor = 'rgba(245, 158, 11, 0.1)';
+                textHex = 'var(--accent-warning)';
+              }
+
+              return (
+                <div key={asset.id} className="glass-slider-group" style={{ marginBottom: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {asset.symbol} 
+                      <span className="badge mini" style={{ backgroundColor: badgeColor, color: textHex, fontSize: '0.65rem' }}>
+                        {clusterLabel}
+                      </span>
+                    </span>
+                    <span style={{ fontWeight: '700' }}>{fmt(asset.balance)}</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="40000" 
+                    step="500"
+                    className="glass-range"
+                    value={asset.balance}
+                    onChange={(e) => updateAssetBalance(asset.id, Number(e.target.value))}
+                  />
                 </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="40000" 
-                  step="500"
-                  className="glass-range"
-                  value={asset.balance}
-                  onChange={(e) => updateAssetBalance(asset.id, Number(e.target.value))}
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -217,21 +252,21 @@ export const PortfolioOptimizer: React.FC = () => {
           </div>
         </div>
 
-        {/* Optimizations Recommendations Panel */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+        {/* Optimizations Recommendations Panels Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
           
-          {/* Detailed Allocation Comparer */}
-          <div className="glass-panel" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Current vs. Optimal Weights</h3>
+          {/* Column 1: Detailed Allocation Comparer */}
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: '16px' }}>Current vs. Target Weights</h3>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {data.assets.map((asset, idx) => {
                 const currentWeight = currentWeights[idx];
                 const optimalWeight = optimalPortfolio.weights[idx] || 0;
                 
                 return (
                   <div key={asset.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                       <span style={{ fontWeight: '600' }}>{asset.symbol}</span>
                       <span>Curr: {pct(currentWeight)} | <strong style={{ color: 'var(--accent-success)' }}>Opt: {pct(optimalWeight)}</strong></span>
                     </div>
@@ -252,11 +287,36 @@ export const PortfolioOptimizer: React.FC = () => {
             </div>
           </div>
 
-          {/* Trade instructions list */}
-          <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          {/* Column 2: Macro Feature Importance (Random Forest) */}
+          <div className="glass-panel" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <ArrowRightLeft size={18} color="var(--accent-primary)" />
-              <h3 style={{ fontSize: '1.1rem' }}>Rebalancing Execution</h3>
+              <Cpu size={16} color="var(--accent-primary)" />
+              <h3 style={{ fontSize: '1.05rem' }}>ML Volatility Drivers</h3>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {aimlFeatureImportance.map((f, idx) => {
+                const colors = ['var(--accent-warning)', 'var(--accent-primary)', 'var(--accent-secondary)', 'var(--text-muted)'];
+                return (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                      <span style={{ fontWeight: '600' }}>{f.name}</span>
+                      <span style={{ fontWeight: '700' }}>{f.importance.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ height: '6px', background: 'hsla(0, 0%, 100%, 0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${f.importance}%`, height: '100%', background: colors[idx % 4], borderRadius: '3px' }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Column 3: Trade instructions list */}
+          <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <ArrowRightLeft size={16} color="var(--accent-primary)" />
+              <h3 style={{ fontSize: '1rem' }}>Rebalancing Trades</h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto', maxHeight: '160px' }}>
@@ -266,8 +326,8 @@ export const PortfolioOptimizer: React.FC = () => {
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center', 
-                    fontSize: '0.85rem',
-                    padding: '8px 12px',
+                    fontSize: '0.8rem',
+                    padding: '6px 10px',
                     background: 'hsla(0, 0%, 100%, 0.01)',
                     borderLeft: `3px solid ${step.action === 'buy' ? 'var(--accent-success)' : 'var(--accent-danger)'}`,
                     borderRadius: '4px'
@@ -279,9 +339,9 @@ export const PortfolioOptimizer: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '10px' }}>
-                  <ShieldCheck size={18} color="var(--accent-success)" style={{ flexShrink: 0 }} />
-                  <span>Your portfolio matches target optimization. No trade adjustments needed.</span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', color: 'var(--text-muted)', fontSize: '0.75rem', padding: '10px' }}>
+                  <ShieldCheck size={16} color="var(--accent-success)" style={{ flexShrink: 0 }} />
+                  <span>Portfolio matches target optimization. No trades needed.</span>
                 </div>
               )}
             </div>

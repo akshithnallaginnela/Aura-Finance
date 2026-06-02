@@ -9,7 +9,8 @@ import {
   Sparkles, 
   Key, 
   X,
-  Coins
+  Coins,
+  Cpu
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -80,6 +81,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <span className="nav-label">MPT Optimizer</span>
             </div>
             <div 
+              className={`nav-item ${activeView === 'macro' ? 'active' : ''}`}
+              onClick={() => setActiveView('macro')}
+            >
+              <Cpu size={20} />
+              <span className="nav-label">AIML Lab</span>
+            </div>
+            <div 
               className={`nav-item ${activeView === 'advisor' ? 'active' : ''}`}
               onClick={() => setActiveView('advisor')}
             >
@@ -118,7 +126,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               Wealth Engine Dashboard
             </span>
             <h2 style={{ fontSize: '1.75rem', fontWeight: '700', marginTop: '4px', textTransform: 'capitalize' }}>
-              {activeView === 'dashboard' ? 'Overview' : activeView === 'forecaster' ? 'Cash Flow Forecasting' : activeView === 'optimizer' ? 'Markowitz Optimizer' : 'Aura AI Copilot'}
+              {activeView === 'dashboard' ? 'Overview' : activeView === 'forecaster' ? 'Cash Flow Forecasting' : activeView === 'optimizer' ? 'Markowitz Optimizer' : activeView === 'macro' ? 'AIML Lab & Simulator' : 'Aura AI Copilot'}
             </h2>
           </div>
 

@@ -3,6 +3,17 @@ import type { FinancialData, SimulatorMode, MacroIndicators, StressScenario } fr
 import type { ForecastPoint } from '../utils/forecasting';
 import type { PortfolioMetrics } from '../utils/portfolio';
 
+export interface AimlContextData {
+  activeModel: 'holt-winters' | 'neural' | 'arima';
+  aimlAccuracy: number;
+  aimlAnomalies: string[];
+  aimlClusters: Record<string, string>;
+  aimlFeatureImportance: { name: string; importance: number }[];
+  disasterRisks: Record<string, number>;
+  investRecommendations: string[];
+  isBackendConnected: boolean;
+}
+
 export async function getGeminiFinancialAdvice(
   userQuery: string,
   data: FinancialData,
@@ -13,7 +24,8 @@ export async function getGeminiFinancialAdvice(
   macro?: MacroIndicators,
   stress?: StressScenario,
   stressIntensity?: number,
-  stabilityIndex?: number
+  stabilityIndex?: number,
+  aimlContext?: AimlContextData
 ): Promise<string> {
   // Initialize SDK
   const ai = new GoogleGenerativeAI(apiKey);
@@ -58,8 +70,27 @@ Personal Financial Profile:
 - **Risk Tolerance Profile:** ${data.profile.riskTolerance.toUpperCase()}
 `;
 
+  // Build AIML Context
+  const aimlContextText = aimlContext ? `
+AIML Machine Learning Predictions & Statistics:
+- **Active Forecasting Model:** ${aimlContext.activeModel.toUpperCase()} (${aimlContext.isBackendConnected ? 'Python MLP/ARIMA Server' : 'Client Offline Fallback'})
+- **Backtesting Prediction Accuracy:** ${aimlContext.aimlAccuracy}%
+- **Flagged Transaction Outliers (Z-Score > 2.2):** ${aimlContext.aimlAnomalies.length} flagged transaction IDs
+- **K-Means Asset Risk Clusters:**
+${Object.entries(aimlContext.aimlClusters).map(([sym, cluster]) => `  - ${sym}: ${cluster}`).join('\n')}
+- **Volatility Risk Drivers (Random Forest Importance):**
+${aimlContext.aimlFeatureImportance.map(f => `  - ${f.name}: ${f.importance}%`).join('\n')}
+- **Calculated Natural Disaster Risks:**
+  - Earthquake Risk Index: ${aimlContext.disasterRisks.earthquake}%
+  - Flood Risk Index: ${aimlContext.disasterRisks.flood}%
+  - Pandemic Risk Index: ${aimlContext.disasterRisks.pandemic}%
+  - Supply Chain Shock Risk Index: ${aimlContext.disasterRisks.supplyChain}%
+- **Quantitative Investment Suggestions (from Public Datasets simulation):**
+${aimlContext.investRecommendations.map(r => `  - ${r}`).join('\n')}
+` : '';
+
   // Construct context-rich system prompt
-  const prompt = `You are Aura, an elite AI Financial Strategist and quantitative wealth strategist acting as a **Chief Economic Advisor** for ${modeLabel} management.
+  const prompt = `You are Aura, an elite AI Financial Strategist and quantitative wealth strategist acting as a **Chief Economic Advisor & Quantitative Research Analyst** for ${modeLabel} management.
 The user is viewing their AuraFinance wealth dashboard in **${modeLabel} Mode** and is asking you a question. You have real-time access to their computed financial state, macro-economic indicators, stress scenario impacts, mathematical cash projections, and portfolio optimization models.
 
 **Simulator Mode:** ${modeLabel}
@@ -71,6 +102,8 @@ Here is the user's current state:
 ${profileContext}
 
 ${macroContext}
+
+${aimlContextText}
 
 Asset Holdings & Modern Portfolio Theory Allocations:
 ${assetSummaries}
@@ -86,10 +119,10 @@ ${lowCashMonths ? `- **Shortfall/Overspend Warning Months:** ${lowCashMonths}` :
 User's Query: "${userQuery}"
 
 Your Task:
-1. Provide expert-grade, professional, and direct response tailored to the **${modeLabel}** context.
+1. Provide expert-grade, professional, and direct response tailored to the **${modeLabel}** context. Speak in the language of a Quantitative Analyst, referring to K-Means clusters, Z-score outliers, Random Forest importances, and backtesting accuracy metrics where relevant.
 2. Ground all numbers and math in the user's profile. Perform calculations when recommending changes.
 3. If macroeconomic data is available, incorporate GDP, inflation, and interest rate analysis into your recommendations.
-4. If a stress scenario is active, explicitly address its impact and provide hedging/mitigation strategies.
+4. If a stress scenario or disaster risks are elevated, explicitly address their impact and provide hedging/mitigation strategies.
 5. ${mode === 'corporate' ? 'For corporate mode: Focus on treasury management, working capital optimization, capital structure decisions, and corporate hedging strategies.' : 'For retail mode: Focus on personal savings, investment strategy, emergency fund adequacy, and compound interest optimization.'}
 6. Use Markdown features to make your reply beautiful:
    - Use headings for structure.
@@ -101,3 +134,4 @@ Your Task:
   const result = await model.generateContent(prompt);
   return result.response.text();
 }
+

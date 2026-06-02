@@ -12,16 +12,28 @@ import {
 import { 
   Sliders, 
   Plus, 
-  Calendar
+  Calendar,
+  Brain
 } from 'lucide-react';
 
 export const CashFlowForecaster: React.FC = () => {
-  const { data, forecast, updateProfile, addTransaction } = useFinance();
+  const { 
+    data, 
+    forecast, 
+    updateProfile, 
+    updateCorporateProfile,
+    addTransaction,
+    simulatorMode,
+    activeModel,
+    setActiveModel,
+    aimlAccuracy,
+    isBackendConnected
+  } = useFinance();
   
   // Simulated transaction input states
   const [desc, setDesc] = useState('');
   const [amt, setAmt] = useState('');
-  const [cat, setCat] = useState<'Salary' | 'Shopping' | 'Other'>('Other');
+  const [cat, setCat] = useState<'Salary' | 'Revenue' | 'Shopping' | 'OpEx' | 'Other'>('Other');
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
 
   // Format helper
@@ -44,7 +56,7 @@ export const CashFlowForecaster: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '28px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.2fr', gap: '28px' }}>
       
       {/* 1. Left Controls: Sliders and Simulator */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -53,93 +65,169 @@ export const CashFlowForecaster: React.FC = () => {
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
             <Sliders size={20} color="var(--accent-primary)" />
-            <h3 style={{ fontSize: '1.15rem' }}>Forecaster Variable Knobs</h3>
+            <h3 style={{ fontSize: '1.15rem' }}>{simulatorMode === 'corporate' ? 'Treasury Knobs' : 'Forecaster Knobs'}</h3>
           </div>
 
-          {/* Monthly Salary */}
-          <div className="glass-slider-group">
-            <div className="slider-header">
-              <span className="glass-label" style={{ marginBottom: 0 }}>Monthly Salary</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.monthlySalary)}</span>
-            </div>
-            <input 
-              type="range" 
-              min="1000" 
-              max="15000" 
-              step="100"
-              className="glass-range"
-              value={data.profile.monthlySalary}
-              onChange={(e) => updateProfile({ monthlySalary: Number(e.target.value) })}
-            />
-          </div>
+          {simulatorMode === 'corporate' ? (
+            /* Corporate Sliders */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Monthly Revenue */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Monthly Revenue</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--accent-success)' }}>{fmt(data.corporateProfile.monthlyRevenue)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="10000" 
+                  max="200000" 
+                  step="1000"
+                  className="glass-range"
+                  value={data.corporateProfile.monthlyRevenue}
+                  onChange={(e) => updateCorporateProfile({ monthlyRevenue: Number(e.target.value) })}
+                />
+              </div>
 
-          {/* Housing Cost */}
-          <div className="glass-slider-group">
-            <div className="slider-header">
-              <span className="glass-label" style={{ marginBottom: 0 }}>Rent / Mortgage</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.housingCost)}</span>
-            </div>
-            <input 
-              type="range" 
-              min="200" 
-              max="5000" 
-              step="50"
-              className="glass-range"
-              value={data.profile.housingCost}
-              onChange={(e) => updateProfile({ housingCost: Number(e.target.value) })}
-            />
-          </div>
+              {/* Operating Expenses (OpEx) */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Operating Expenses (OpEx)</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.corporateProfile.opExCost)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="10000" 
+                  max="250000" 
+                  step="1000"
+                  className="glass-range"
+                  value={data.corporateProfile.opExCost}
+                  onChange={(e) => updateCorporateProfile({ opExCost: Number(e.target.value) })}
+                />
+              </div>
 
-          {/* Utilities */}
-          <div className="glass-slider-group">
-            <div className="slider-header">
-              <span className="glass-label" style={{ marginBottom: 0 }}>Utilities</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.utilityCost)}</span>
-            </div>
-            <input 
-              type="range" 
-              min="50" 
-              max="1000" 
-              step="10"
-              className="glass-range"
-              value={data.profile.utilityCost}
-              onChange={(e) => updateProfile({ utilityCost: Number(e.target.value) })}
-            />
-          </div>
+              {/* Cost of Goods Sold (COGS) */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Cost of Goods Sold (COGS)</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.corporateProfile.cogsCost)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="50000" 
+                  max="400000" 
+                  step="2000"
+                  className="glass-range"
+                  value={data.corporateProfile.cogsCost}
+                  onChange={(e) => updateCorporateProfile({ cogsCost: Number(e.target.value) })}
+                />
+              </div>
 
-          {/* Subscriptions */}
-          <div className="glass-slider-group">
-            <div className="slider-header">
-              <span className="glass-label" style={{ marginBottom: 0 }}>Subscriptions</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.subscriptionCost)}</span>
+              {/* Capital Expenditures (CapEx) */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Capital Expenditures (CapEx)</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.corporateProfile.capExCost)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="5000" 
+                  max="150000" 
+                  step="1000"
+                  className="glass-range"
+                  value={data.corporateProfile.capExCost}
+                  onChange={(e) => updateCorporateProfile({ capExCost: Number(e.target.value) })}
+                />
+              </div>
             </div>
-            <input 
-              type="range" 
-              min="0" 
-              max="500" 
-              step="5"
-              className="glass-range"
-              value={data.profile.subscriptionCost}
-              onChange={(e) => updateProfile({ subscriptionCost: Number(e.target.value) })}
-            />
-          </div>
+          ) : (
+            /* Retail Sliders */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Monthly Salary */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Monthly Salary</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--accent-success)' }}>{fmt(data.profile.monthlySalary)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="1000" 
+                  max="15000" 
+                  step="100"
+                  className="glass-range"
+                  value={data.profile.monthlySalary}
+                  onChange={(e) => updateProfile({ monthlySalary: Number(e.target.value) })}
+                />
+              </div>
 
-          {/* Other Fixed Bills */}
-          <div className="glass-slider-group">
-            <div className="slider-header">
-              <span className="glass-label" style={{ marginBottom: 0 }}>Other Fixed Bills</span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.otherFixedCosts)}</span>
+              {/* Housing Cost */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Rent / Mortgage</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.housingCost)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="200" 
+                  max="5000" 
+                  step="50"
+                  className="glass-range"
+                  value={data.profile.housingCost}
+                  onChange={(e) => updateProfile({ housingCost: Number(e.target.value) })}
+                />
+              </div>
+
+              {/* Utilities */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Utilities</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.utilityCost)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="50" 
+                  max="1000" 
+                  step="10"
+                  className="glass-range"
+                  value={data.profile.utilityCost}
+                  onChange={(e) => updateProfile({ utilityCost: Number(e.target.value) })}
+                />
+              </div>
+
+              {/* Subscriptions */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Subscriptions</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.subscriptionCost)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="500" 
+                  step="5"
+                  className="glass-range"
+                  value={data.profile.subscriptionCost}
+                  onChange={(e) => updateProfile({ subscriptionCost: Number(e.target.value) })}
+                />
+              </div>
+
+              {/* Other Fixed Bills */}
+              <div className="glass-slider-group">
+                <div className="slider-header">
+                  <span className="glass-label" style={{ marginBottom: 0 }}>Other Fixed Bills</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>{fmt(data.profile.otherFixedCosts)}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="3000" 
+                  step="50"
+                  className="glass-range"
+                  value={data.profile.otherFixedCosts}
+                  onChange={(e) => updateProfile({ otherFixedCosts: Number(e.target.value) })}
+                />
+              </div>
             </div>
-            <input 
-              type="range" 
-              min="0" 
-              max="3000" 
-              step="50"
-              className="glass-range"
-              value={data.profile.otherFixedCosts}
-              onChange={(e) => updateProfile({ otherFixedCosts: Number(e.target.value) })}
-            />
-          </div>
+          )}
         </div>
 
         {/* Transaction Simulator */}
@@ -161,7 +249,7 @@ export const CashFlowForecaster: React.FC = () => {
                 className="glass-input" 
                 value={desc} 
                 onChange={(e) => setDesc(e.target.value)} 
-                placeholder="e.g. MacBook Pro M4 Upgrade" 
+                placeholder="e.g. Equipment Liquidation / Emergency Fund" 
                 required 
               />
             </div>
@@ -174,7 +262,7 @@ export const CashFlowForecaster: React.FC = () => {
                   className="glass-input" 
                   value={amt} 
                   onChange={(e) => setAmt(e.target.value)} 
-                  placeholder="2499" 
+                  placeholder="2500" 
                   required 
                 />
               </div>
@@ -188,7 +276,7 @@ export const CashFlowForecaster: React.FC = () => {
                   onChange={(e) => {
                     const val = e.target.value as 'income' | 'expense';
                     setTxType(val);
-                    setCat(val === 'income' ? 'Salary' : 'Shopping');
+                    setCat(val === 'income' ? (simulatorMode === 'corporate' ? 'Revenue' : 'Salary') : 'Shopping');
                   }}
                 >
                   <option value="expense">Expense (-)</option>
@@ -210,7 +298,46 @@ export const CashFlowForecaster: React.FC = () => {
         
         {/* Forecaster Chart */}
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '20px' }}>12-Month Projected Liquidity</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.2rem' }}>12-Month Projected Liquidity</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                Mode: {activeModel.toUpperCase()} ({isBackendConnected ? 'Python Backend' : 'Client JS Offline'})
+              </p>
+            </div>
+            
+            {/* Quick model switcher pill-bar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span className="badge" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(99, 102, 241, 0.05)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.15)', fontSize: '0.75rem' }}>
+                <Brain size={12} />
+                Acc: {aimlAccuracy}%
+              </span>
+
+              <div style={{ display: 'flex', background: 'hsla(0, 0%, 100%, 0.03)', borderRadius: '30px', padding: '3px', border: '1px solid var(--border-card)' }}>
+                <button 
+                  className={`glass-tab-btn mini ${activeModel === 'holt-winters' ? 'active' : ''}`}
+                  onClick={() => setActiveModel('holt-winters')}
+                  style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                >
+                  HW
+                </button>
+                <button 
+                  className={`glass-tab-btn mini ${activeModel === 'neural' ? 'active' : ''}`}
+                  onClick={() => setActiveModel('neural')}
+                  style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                >
+                  NN
+                </button>
+                <button 
+                  className={`glass-tab-btn mini ${activeModel === 'arima' ? 'active' : ''}`}
+                  onClick={() => setActiveModel('arima')}
+                  style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                >
+                  ARIMA
+                </button>
+              </div>
+            </div>
+          </div>
           
           <div style={{ width: '100%', height: '320px' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -227,10 +354,11 @@ export const CashFlowForecaster: React.FC = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsla(0, 0%, 100%, 0.05)" />
                 <XAxis dataKey="monthName" stroke="var(--text-dim)" fontSize={11} tickLine={false} />
-                <YAxis stroke="var(--text-dim)" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <YAxis stroke="var(--text-dim)" fontSize={11} tickLine={false} tickFormatter={(v) => `$${v.toLocaleString()}`} />
                 <Tooltip 
                   contentStyle={{ background: 'var(--bg-panel)', borderColor: 'var(--border-card)', borderRadius: '8px' }} 
                   labelStyle={{ color: 'var(--text-muted)' }}
+                  formatter={(v: any) => [fmt(v), 'Cash']}
                 />
                 <Area 
                   type="monotone" 
@@ -278,7 +406,7 @@ export const CashFlowForecaster: React.FC = () => {
                 {forecast.map((f) => {
                   const netSave = f.income - f.expense;
                   return (
-                    <tr key={f.monthIndex} style={{ borderBottom: '1px solid hsla(0, 0%, 100%, 0.03)', height: '48px' }}>
+                    <tr key={f.monthName} style={{ borderBottom: '1px solid hsla(0, 0%, 100%, 0.03)', height: '48px' }}>
                       <td style={{ padding: '12px 16px', fontWeight: '600' }}>{f.monthName}</td>
                       <td style={{ padding: '12px 16px', color: 'var(--accent-success)' }}>{fmt(f.income)}</td>
                       <td style={{ padding: '12px 16px' }}>{fmt(f.expense)}</td>
