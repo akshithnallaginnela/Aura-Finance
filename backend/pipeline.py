@@ -147,6 +147,9 @@ def analyze_fundamentals(ticker_symbol):
         publisher = provider.get('displayName', content.get('publisher', 'Unknown'))
         if title:
             headlines.append(f"- {title} (Source: {publisher})")
+            
+    if not headlines:
+        return 0.0, "No parseable news headlines were found for this asset today."
         
     news_text = "\n".join(headlines)
     

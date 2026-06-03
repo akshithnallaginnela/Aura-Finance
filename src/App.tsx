@@ -3,7 +3,6 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { AuraAdvisor } from './components/AuraAdvisor';
 import { Optimizer } from './components/Optimizer';
-import { AimlLab } from './components/AimlLab';
 
 function AppContent() {
   const { activeView } = useFinance();
@@ -13,7 +12,6 @@ function AppContent() {
       {activeView === 'dashboard' && <Dashboard />}
       {activeView === 'advisor' && <AuraAdvisor />}
       {activeView === 'optimizer' && <Optimizer />}
-      {activeView === 'macro' && <AimlLab />}
       {/* 
         Runway Predictor (forecaster) can remain under construction 
         or be mapped to something else later.

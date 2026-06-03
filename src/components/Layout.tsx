@@ -22,9 +22,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'forecaster' as const, label: 'Runway Predictor', icon: LineChart },
     { id: 'optimizer' as const, label: 'MPT Optimizer', icon: PieChart },
-    { id: 'macro' as const, label: 'AIML Lab', icon: Cpu },
     { id: 'advisor' as const, label: 'Aura Advisor', icon: MessageSquare },
   ];
 
@@ -113,9 +111,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </span>
             <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: '4px', color: 'var(--text-main)' }}>
               {activeView === 'dashboard' ? 'Market Overview' 
-                : activeView === 'forecaster' ? 'Cash Flow Forecasting' 
                 : activeView === 'optimizer' ? 'Portfolio Optimizer' 
-                : activeView === 'macro' ? 'AIML Lab & Simulator' 
                 : 'Aura AI Copilot'}
             </h2>
           </div>

@@ -235,7 +235,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>Fundamental Analysis</h3>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Powered by Gemini AI</span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Proprietary News Intelligence Engine</span>
               </div>
             </div>
             {lastUpdated && (
