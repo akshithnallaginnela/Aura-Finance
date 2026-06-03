@@ -169,7 +169,7 @@ def analyze_fundamentals(ticker_symbol):
         return 0.0, "Fundamental analysis is currently unavailable."
 
 def run_pipeline():
-    print(f"🚀 Starting Enterprise ML Pipeline at {datetime.now()}...")
+    print(f"Starting Enterprise ML Pipeline at {datetime.now()}...")
     init_db()
     
     for symbol in NIFTY_50:
@@ -198,7 +198,7 @@ def run_pipeline():
         # Sleep to avoid rate limits
         time.sleep(2)
         
-    print("\n✅ Pipeline Execution Completed Successfully!")
+    print("\nPipeline Execution Completed Successfully!")
 
 if __name__ == "__main__":
     run_pipeline()
