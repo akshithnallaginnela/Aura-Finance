@@ -23,11 +23,18 @@ if not api_key:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-# Define target universe (Nifty 50 Subset)
+# Define target universe — Full Nifty 50 (as of 2025-2026)
 NIFTY_50 = [
     "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS",
     "HINDUNILVR.NS", "SBIN.NS", "BAJFINANCE.NS", "BHARTIARTL.NS", "ITC.NS",
-    "TATAMOTORS.NS", "MRF.NS"
+    "KOTAKBANK.NS", "LT.NS", "AXISBANK.NS", "ASIANPAINT.NS", "MARUTI.NS",
+    "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "NESTLEIND.NS", "WIPRO.NS",
+    "BAJAJFINSV.NS", "POWERGRID.NS", "NTPC.NS", "JSWSTEEL.NS", "TATASTEEL.NS",
+    "M&M.NS", "HCLTECH.NS", "ADANIENT.NS", "ADANIPORTS.NS", "TECHM.NS",
+    "INDUSINDBK.NS", "ONGC.NS", "COALINDIA.NS", "BPCL.NS", "GRASIM.NS",
+    "DIVISLAB.NS", "DRREDDY.NS", "CIPLA.NS", "EICHERMOT.NS", "APOLLOHOSP.NS",
+    "HEROMOTOCO.NS", "TATACONSUM.NS", "BRITANNIA.NS", "HINDALCO.NS", "SBILIFE.NS",
+    "HDFCLIFE.NS", "SHRIRAMFIN.NS", "BAJAJ-AUTO.NS", "MRF.NS", "TRENT.NS"
 ]
 
 def add_technical_indicators(df):
@@ -134,9 +141,12 @@ def analyze_fundamentals(ticker_symbol):
         
     headlines = []
     for item in news[:10]: # Top 10 articles
-        title = item.get('title', '')
-        publisher = item.get('publisher', '')
-        headlines.append(f"- {title} (Source: {publisher})")
+        content = item.get('content', item) # Handle both old and new format
+        title = content.get('title', '')
+        provider = content.get('provider', {})
+        publisher = provider.get('displayName', content.get('publisher', 'Unknown'))
+        if title:
+            headlines.append(f"- {title} (Source: {publisher})")
         
     news_text = "\n".join(headlines)
     
@@ -158,15 +168,25 @@ def analyze_fundamentals(ticker_symbol):
     }}
     """
     
-    try:
-        response = model.generate_content(prompt)
-        # Parse JSON from response
-        raw_text = response.text.replace('```json', '').replace('```', '').strip()
-        result = json.loads(raw_text)
-        return float(result.get("sentiment_score", 0.0)), str(result.get("summary", "Analysis completed."))
-    except Exception as e:
-        print(f"[{ticker_symbol}] Gemini Error: {e}")
-        return 0.0, "Fundamental analysis is currently unavailable."
+    # Add retry logic for Gemini rate limits (429)
+    max_retries = 3
+    retry_delay = 15 # Wait 15 seconds before retrying (free tier is 15 requests/min)
+    
+    for attempt in range(max_retries):
+        try:
+            response = model.generate_content(prompt)
+            # Parse JSON from response
+            raw_text = response.text.replace('```json', '').replace('```', '').strip()
+            result = json.loads(raw_text)
+            return float(result.get("sentiment_score", 0.0)), str(result.get("summary", "Analysis completed."))
+        except Exception as e:
+            if "429" in str(e) or "Quota exceeded" in str(e):
+                if attempt < max_retries - 1:
+                    print(f"[{ticker_symbol}] Gemini Rate Limit hit. Waiting {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    continue
+            print(f"[{ticker_symbol}] Gemini Error: {e}")
+            return 0.0, "Fundamental analysis is currently unavailable due to API limits or errors."
 
 def run_pipeline():
     print(f"Starting Enterprise ML Pipeline at {datetime.now()}...")

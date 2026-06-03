@@ -26,6 +26,9 @@ interface FinanceContextType {
   setActiveTicker: (ticker: string) => void;
   stockData: StockDataPoint[];
   stockForecast: ForecastPoint[];
+  sentimentScore: number | null;
+  fundamentalSummary: string | null;
+  lastUpdated: string | null;
   isLoadingData: boolean;
   errorData: string | null;
   fetchStockData: (ticker: string) => Promise<void>;
@@ -44,9 +47,12 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 const BACKEND_URL = 'http://localhost:5000';
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeTicker, setActiveTicker] = useState('AAPL');
+  const [activeTicker, setActiveTicker] = useState('RELIANCE.NS');
   const [stockData, setStockData] = useState<StockDataPoint[]>([]);
   const [stockForecast, setStockForecast] = useState<ForecastPoint[]>([]);
+  const [sentimentScore, setSentimentScore] = useState<number | null>(null);
+  const [fundamentalSummary, setFundamentalSummary] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [errorData, setErrorData] = useState<string | null>(null);
 
@@ -70,6 +76,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const data = await response.json();
       setStockData(data.historical || []);
       setStockForecast(data.forecast || []);
+      setSentimentScore(data.sentiment_score ?? null);
+      setFundamentalSummary(data.fundamental_summary || null);
+      setLastUpdated(data.last_updated || null);
       setActiveTicker(ticker.toUpperCase());
     } catch (err: any) {
       setErrorData(err.message || 'Error fetching data');
@@ -81,7 +90,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Fetch initial data
   useEffect(() => {
-    fetchStockData('AAPL');
+    fetchStockData('RELIANCE.NS');
   }, [fetchStockData]);
 
   const sendAdvisorMessage = async (message: string) => {
@@ -143,6 +152,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setActiveTicker,
       stockData,
       stockForecast,
+      sentimentScore,
+      fundamentalSummary,
+      lastUpdated,
       isLoadingData,
       errorData,
       fetchStockData,

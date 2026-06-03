@@ -1,139 +1,128 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { 
   LayoutDashboard, 
   LineChart, 
   PieChart, 
   MessageSquare, 
-  Settings, 
   Sparkles, 
-  Key, 
-  X,
   Coins,
   Cpu,
-  Sun,
-  Moon
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { activeView, setActiveView, activeTicker, stockData } = useFinance();
   const currentPrice = stockData && stockData.length > 0 ? stockData[stockData.length - 1].Close : 0;
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('AURA_THEME') as 'light' | 'dark') || 'light';
-  });
+  const prevPrice = stockData && stockData.length > 1 ? stockData[stockData.length - 2].Close : 0;
+  const change = currentPrice - prevPrice;
+  const changePct = prevPrice > 0 ? (change / prevPrice) * 100 : 0;
+  const isUp = change >= 0;
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('AURA_THEME', theme);
-  }, [theme]);
+  const navItems = [
+    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'forecaster' as const, label: 'Runway Predictor', icon: LineChart },
+    { id: 'optimizer' as const, label: 'MPT Optimizer', icon: PieChart },
+    { id: 'macro' as const, label: 'AIML Lab', icon: Cpu },
+    { id: 'advisor' as const, label: 'Aura Advisor', icon: MessageSquare },
+  ];
 
   return (
     <div className="app-container">
-      {/* Sidebar Navigation */}
+      {/* Sidebar */}
       <aside className="sidebar">
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 8px' }}>
-            <Sparkles size={26} color="var(--accent-primary)" style={{ filter: 'drop-shadow(0 0 8px var(--accent-primary))' }} />
-            <h1 className="logo-text" style={{ fontSize: '1.4rem', fontWeight: '800', background: 'linear-gradient(135deg, #fff 30%, var(--accent-primary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              AuraFinance
-            </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ 
+              width: 36, height: 36, borderRadius: 'var(--radius-md)',
+              background: 'var(--accent-primary-light)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center' 
+            }}>
+              <Sparkles size={20} color="var(--accent-primary)" />
+            </div>
+            <span className="logo-text">Aura Finance</span>
           </div>
 
-          {/* Navigation Links */}
+          {/* Divider */}
+          <div style={{ height: 1, background: 'var(--border-card)', margin: '12px 0 16px' }} />
+
+          {/* Navigation */}
           <nav className="nav-menu">
-            <div 
-              className={`nav-item ${activeView === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveView('dashboard')}
-            >
-              <LayoutDashboard size={20} />
-              <span className="nav-label">Dashboard</span>
-            </div>
-            <div 
-              className={`nav-item ${activeView === 'forecaster' ? 'active' : ''}`}
-              onClick={() => setActiveView('forecaster')}
-            >
-              <LineChart size={20} />
-              <span className="nav-label">Runway Predictor</span>
-            </div>
-            <div 
-              className={`nav-item ${activeView === 'optimizer' ? 'active' : ''}`}
-              onClick={() => setActiveView('optimizer')}
-            >
-              <PieChart size={20} />
-              <span className="nav-label">MPT Optimizer</span>
-            </div>
-            <div 
-              className={`nav-item ${activeView === 'macro' ? 'active' : ''}`}
-              onClick={() => setActiveView('macro')}
-            >
-              <Cpu size={20} />
-              <span className="nav-label">AIML Lab</span>
-            </div>
-            <div 
-              className={`nav-item ${activeView === 'advisor' ? 'active' : ''}`}
-              onClick={() => setActiveView('advisor')}
-            >
-              <MessageSquare size={20} />
-              <span className="nav-label">Aura Advisor</span>
-            </div>
+            {navItems.map(item => (
+              <div 
+                key={item.id}
+                className={`nav-item ${activeView === item.id ? 'active' : ''}`}
+                onClick={() => setActiveView(item.id)}
+              >
+                <item.icon size={18} />
+                <span className="nav-label">{item.label}</span>
+              </div>
+            ))}
           </nav>
+
+          {/* Sidebar Footer — Active Ticker Badge */}
+          <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+            <div style={{ 
+              padding: '16px', 
+              borderRadius: 'var(--radius-md)', 
+              background: 'var(--bg-base)',
+              border: '1px solid var(--border-subtle)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <Coins size={16} color="var(--accent-secondary)" />
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tracking</span>
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px' }}>{activeTicker}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)' }}>
+                  {currentPrice > 1000 ? `₹${currentPrice.toLocaleString('en-IN', {maximumFractionDigits: 2})}` : `$${currentPrice.toFixed(2)}`}
+                </span>
+                <span style={{ 
+                  fontSize: '0.78rem', fontWeight: 600,
+                  color: isUp ? 'var(--accent-success)' : 'var(--accent-danger)',
+                  display: 'flex', alignItems: 'center', gap: '2px',
+                  padding: '2px 6px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isUp ? 'var(--accent-success-light)' : 'var(--accent-danger-light)'
+                }}>
+                  {isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                  {Math.abs(changePct).toFixed(2)}%
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="main-content">
-        {/* Header Bar */}
+        {/* Header */}
         <header style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '32px',
-          borderBottom: '1px solid var(--border-card)',
-          paddingBottom: '20px'
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+          marginBottom: '32px', paddingBottom: '20px',
+          borderBottom: '1px solid var(--border-subtle)'
         }}>
           <div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Wealth Engine Dashboard
+            <span style={{ 
+              fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dim)',
+              textTransform: 'uppercase', letterSpacing: '0.06em' 
+            }}>
+              Wealth Intelligence Platform
             </span>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '700', marginTop: '4px', textTransform: 'capitalize' }}>
-              {activeView === 'dashboard' ? 'Overview' : activeView === 'forecaster' ? 'Cash Flow Forecasting' : activeView === 'optimizer' ? 'Markowitz Optimizer' : activeView === 'macro' ? 'AIML Lab & Simulator' : 'Aura AI Copilot'}
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: '4px', color: 'var(--text-main)' }}>
+              {activeView === 'dashboard' ? 'Market Overview' 
+                : activeView === 'forecaster' ? 'Cash Flow Forecasting' 
+                : activeView === 'optimizer' ? 'Portfolio Optimizer' 
+                : activeView === 'macro' ? 'AIML Lab & Simulator' 
+                : 'Aura AI Copilot'}
             </h2>
-          </div>
-
-          {/* Quick Stats & AI Engine Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* Theme Toggle Button */}
-            <button 
-              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
-              style={{ 
-                padding: '8px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-card)',
-                color: 'var(--text-main)',
-                transition: 'all 0.2s ease',
-                outline: 'none'
-              }}
-              title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
-            >
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-
-            {/* Stock Tracker Badge */}
-            <div className="glass-panel" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', borderRadius: '8px' }}>
-              <Coins size={16} color="var(--accent-secondary)" />
-              <span>{activeTicker}: <strong style={{ color: 'var(--text-main)' }}>${currentPrice.toFixed(2)}</strong></span>
-            </div>
           </div>
         </header>
 
-        {/* Dynamic Inner View */}
-        <div className="animate-fade-in-up">
+        {/* Dynamic View */}
+        <div className="animate-fade-in-up" style={{ flex: 1 }}>
           {children}
         </div>
       </main>
