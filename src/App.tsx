@@ -2,6 +2,8 @@ import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { AuraAdvisor } from './components/AuraAdvisor';
+import { Optimizer } from './components/Optimizer';
+import { AimlLab } from './components/AimlLab';
 
 function AppContent() {
   const { activeView } = useFinance();
@@ -10,12 +12,13 @@ function AppContent() {
     <Layout>
       {activeView === 'dashboard' && <Dashboard />}
       {activeView === 'advisor' && <AuraAdvisor />}
+      {activeView === 'optimizer' && <Optimizer />}
+      {activeView === 'macro' && <AimlLab />}
       {/* 
-        Other views like forecaster, optimizer, and macro were deprecated 
-        as part of the shift to real stock data. We can add them back later 
-        if we build ML features for them.
+        Runway Predictor (forecaster) can remain under construction 
+        or be mapped to something else later.
       */}
-      {['forecaster', 'optimizer', 'macro'].includes(activeView) && (
+      {activeView === 'forecaster' && (
         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           <h2>This view is currently under construction.</h2>
           <p>We are migrating this tool to use real financial data and machine learning.</p>
