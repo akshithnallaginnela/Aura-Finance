@@ -178,18 +178,25 @@ def analyze_fundamentals(ticker_symbol):
     for attempt in range(max_retries):
         try:
             response = model.generate_content(prompt)
-            # Parse JSON from response
             raw_text = response.text.replace('```json', '').replace('```', '').strip()
-            result = json.loads(raw_text)
-            return float(result.get("sentiment_score", 0.0)), str(result.get("summary", "Analysis completed."))
+            
+            try:
+                result = json.loads(raw_text)
+                return float(result.get("sentiment_score", 0.0)), str(result.get("summary", "Analysis completed."))
+            except json.JSONDecodeError:
+                # If Gemini failed to return JSON, at least return the text it generated!
+                return 0.0, raw_text.replace('{', '').replace('}', '').strip()
+                
         except Exception as e:
             if "429" in str(e) or "Quota exceeded" in str(e):
                 if attempt < max_retries - 1:
-                    print(f"[{ticker_symbol}] Gemini Rate Limit hit. Waiting {retry_delay} seconds...")
+                    print(f"[{ticker_symbol}] Gemini Rate Limit hit. Waiting {retry_delay} seconds...", flush=True)
                     time.sleep(retry_delay)
                     continue
-            print(f"[{ticker_symbol}] Gemini Error: {e}")
+            print(f"[{ticker_symbol}] Gemini Error: {e}", flush=True)
             return 0.0, "Fundamental analysis is currently unavailable due to API limits or errors."
+            
+    return 0.0, "Fundamental analysis is currently unavailable due to API limits."
 
 def run_pipeline():
     print(f"Starting Enterprise ML Pipeline at {datetime.now()}...")
