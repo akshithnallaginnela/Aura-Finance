@@ -91,11 +91,15 @@ def advisor_strategy():
     historical = req.get('historical', [])
     forecast = req.get('forecast', [])
     
-    api_key = os.environ.get('VITE_GEMINI_API_KEY')
-    if not api_key:
+    api_keys_str = os.environ.get('VITE_GEMINI_API_KEYS') or os.environ.get('VITE_GEMINI_API_KEY')
+    if not api_keys_str:
         return jsonify({
             "response": "Error: Gemini API Key is missing in the backend .env file."
         }), 400
+        
+    api_keys = [k.strip() for k in api_keys_str.split(',') if k.strip()]
+    import random
+    api_key = random.choice(api_keys)
         
     import google.generativeai as genai
     try:

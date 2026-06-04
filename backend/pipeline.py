@@ -17,11 +17,11 @@ env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # Configure Gemini
-api_key = os.environ.get('VITE_GEMINI_API_KEY')
-if not api_key:
-    raise ValueError("VITE_GEMINI_API_KEY is not set in the root .env file.")
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-2.5-flash')
+api_keys_str = os.environ.get('VITE_GEMINI_API_KEYS') or os.environ.get('VITE_GEMINI_API_KEY')
+if not api_keys_str:
+    raise ValueError("VITE_GEMINI_API_KEYS or VITE_GEMINI_API_KEY is not set in the root .env file.")
+api_keys = [k.strip() for k in api_keys_str.split(',') if k.strip()]
+import random
 
 # Define target universe — Full Nifty 50 (as of 2025-2026)
 NIFTY_50 = [
@@ -72,6 +72,7 @@ def fetch_and_train(ticker_symbol):
     # Handle timezone aware datetimes by making them naive or converting to string
     df['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
     df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+    df[['Open', 'High', 'Low', 'Close']] = df[['Open', 'High', 'Low', 'Close']].round(2)
     
     df = add_technical_indicators(df)
     
@@ -177,6 +178,9 @@ def analyze_fundamentals(ticker_symbol):
     
     for attempt in range(max_retries):
         try:
+            import google.generativeai as genai
+            genai.configure(api_key=random.choice(api_keys))
+            model = genai.GenerativeModel('gemini-2.5-flash')
             response = model.generate_content(prompt)
             raw_text = response.text.replace('```json', '').replace('```', '').strip()
             
