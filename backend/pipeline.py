@@ -4,11 +4,13 @@ import json
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from sklearn.ensemble import RandomForestRegressor
 from datetime import datetime, timedelta
 import google.generativeai as genai
 from pathlib import Path
 from dotenv import load_dotenv
+import torch
+from chronos import ChronosPipeline
+from transformers import pipeline as hf_pipeline
 
 from database import init_db, upsert_analysis
 
@@ -37,6 +39,24 @@ NIFTY_50 = [
     "HDFCLIFE.NS", "SHRIRAMFIN.NS", "BAJAJ-AUTO.NS", "MRF.NS", "TRENT.NS"
 ]
 
+print("Initializing Hugging Face Models...")
+try:
+    chronos = ChronosPipeline.from_pretrained(
+        "amazon/chronos-t5-mini",
+        device_map="cpu",
+        torch_dtype=torch.float32,
+    )
+except Exception as e:
+    print(f"Failed to load Chronos: {e}")
+    chronos = None
+
+try:
+    finbert = hf_pipeline("sentiment-analysis", model="ProsusAI/finbert")
+except Exception as e:
+    print(f"Failed to load FinBERT: {e}")
+    finbert = None
+
+
 def add_technical_indicators(df):
     """Adds advanced technical indicators like RSI and MACD to the dataframe."""
     # EMA 20 and 50
@@ -60,7 +80,7 @@ def add_technical_indicators(df):
     return df
 
 def fetch_and_train(ticker_symbol):
-    """Fetches 1y historical data, enhances features, trains RF, and predicts 30 days."""
+    """Fetches 1y historical data, enhances features, and predicts 30 days using Chronos Hugging Face model."""
     ticker = yf.Ticker(ticker_symbol)
     df = ticker.history(period="1y")
     
@@ -76,64 +96,40 @@ def fetch_and_train(ticker_symbol):
     
     df = add_technical_indicators(df)
     
-    # We will use the past 14 days of OHLCV + Indicators to predict the next day
-    lookback = 14
-    closes = df['Close'].values
-    emas = df['EMA_20'].values
-    rsis = df['RSI'].values
-    
-    X, y = [], []
-    for i in range(lookback, len(df) - 1):
-        window_features = []
-        window_features.extend(closes[i-lookback:i])
-        window_features.extend(emas[i-lookback:i])
-        window_features.extend(rsis[i-lookback:i])
-        X.append(window_features)
-        y.append(closes[i])
-        
-    X = np.array(X)
-    y = np.array(y)
-    
-    if len(X) == 0:
+    if chronos is None:
         return df, []
 
-    rf = RandomForestRegressor(n_estimators=100, random_state=42)
-    rf.fit(X, y)
+    # Use Chronos for Time Series prediction
+    # Prepare historical context (closing prices)
+    context = torch.tensor(df['Close'].values, dtype=torch.float32)
+    prediction_length = 30
     
-    # Predict next 30 days
-    last_window_closes = list(closes[-lookback:])
-    last_window_emas = list(emas[-lookback:])
-    last_window_rsis = list(rsis[-lookback:])
+    try:
+        # Generate forecast with chronos
+        forecast = chronos.predict(context.unsqueeze(0), prediction_length=prediction_length)
+        # forecast has shape (1, num_samples, prediction_length), take median
+        median_forecast = np.median(forecast[0].numpy(), axis=0)
+    except Exception as e:
+        print(f"Chronos prediction failed for {ticker_symbol}: {e}")
+        median_forecast = [df['Close'].iloc[-1]] * prediction_length
     
     predictions = []
     current_date = datetime.strptime(df['Date'].iloc[-1], '%Y-%m-%d')
     
-    for _ in range(30):
-        # Shift forward one day, skipping weekends ideally, but for simplicity +1 day
+    for val in median_forecast:
+        # Shift forward one day, skipping weekends
         current_date += timedelta(days=1)
-        if current_date.weekday() >= 5: # Skip weekends
-            continue
+        while current_date.weekday() >= 5: # Skip weekends
+            current_date += timedelta(days=1)
             
-        x_input = []
-        x_input.extend(last_window_closes[-lookback:])
-        x_input.extend(last_window_emas[-lookback:])
-        x_input.extend(last_window_rsis[-lookback:])
-        
-        pred_close = rf.predict([x_input])[0]
-        
         predictions.append({
             "Date": current_date.strftime('%Y-%m-%d'),
-            "PredictedClose": round(pred_close, 2)
+            "PredictedClose": round(float(val), 2)
         })
         
-        last_window_closes.append(pred_close)
-        last_window_emas.append(pred_close) # Simple mock for future EMAs
-        last_window_rsis.append(50.0) # Simple mock for future RSIs
-        
     return df, predictions
-
 def analyze_fundamentals(ticker_symbol):
-    """Fetches recent news and sends to Gemini for Sentiment Scoring."""
+    """Fetches recent news, uses FinBERT for Sentiment Scoring, and Gemini for Summary."""
     ticker = yf.Ticker(ticker_symbol)
     news = ticker.news
     
@@ -147,27 +143,41 @@ def analyze_fundamentals(ticker_symbol):
         provider = content.get('provider', {})
         publisher = provider.get('displayName', content.get('publisher', 'Unknown'))
         if title:
-            headlines.append(f"- {title} (Source: {publisher})")
+            headlines.append(f"{title} (Source: {publisher})")
             
     if not headlines:
         return 0.0, "No parseable news headlines were found for this asset today."
         
-    news_text = "\n".join(headlines)
-    
+    # Calculate FinBERT sentiment score
+    finbert_score = 0.0
+    if finbert:
+        try:
+            results = finbert(headlines)
+            total_score = 0
+            for res in results:
+                if res['label'] == 'positive':
+                    total_score += res['score']
+                elif res['label'] == 'negative':
+                    total_score -= res['score']
+            finbert_score = float(total_score / len(results))
+        except Exception as e:
+            print(f"FinBERT error for {ticker_symbol}: {e}")
+
+    # Use Gemini to generate a summary
+    news_text = "\n".join([f"- {h}" for h in headlines])
     prompt = f"""
     You are an elite quantitative financial analyst specializing in the Indian Stock Market.
     Analyze the following recent news headlines for the stock {ticker_symbol}.
+    The calculated AI sentiment score (using FinBERT) is {finbert_score:.2f} (from -1.0 to 1.0).
     
     News Headlines:
     {news_text}
     
     Your task:
-    1. Score the fundamental sentiment of these headlines from -1.0 (Extremely Bearish) to 1.0 (Extremely Bullish).
-    2. Provide a 2-3 sentence fundamental summary of why the stock might move.
-    
+    Provide a 2-3 sentence fundamental summary of why the stock might move, taking the sentiment score into context.
     You MUST return the output in this EXACT JSON format, nothing else:
     {{
-        "sentiment_score": 0.5,
+        "sentiment_score": {finbert_score:.2f},
         "summary": "Your short summary here."
     }}
     """
@@ -186,10 +196,9 @@ def analyze_fundamentals(ticker_symbol):
             
             try:
                 result = json.loads(raw_text)
-                return float(result.get("sentiment_score", 0.0)), str(result.get("summary", "Analysis completed."))
+                return float(result.get("sentiment_score", finbert_score)), str(result.get("summary", "Analysis completed."))
             except json.JSONDecodeError:
-                # If Gemini failed to return JSON, at least return the text it generated!
-                return 0.0, raw_text.replace('{', '').replace('}', '').strip()
+                return finbert_score, raw_text.replace('{', '').replace('}', '').strip()
                 
         except Exception as e:
             if "429" in str(e) or "Quota exceeded" in str(e):
@@ -198,9 +207,9 @@ def analyze_fundamentals(ticker_symbol):
                     time.sleep(retry_delay)
                     continue
             print(f"[{ticker_symbol}] Gemini Error: {e}", flush=True)
-            return 0.0, "Fundamental analysis is currently unavailable due to API limits or errors."
+            return finbert_score, "Fundamental analysis summary unavailable due to API limits or errors."
             
-    return 0.0, "Fundamental analysis is currently unavailable due to API limits."
+    return finbert_score, "Fundamental analysis summary unavailable due to API limits."
 
 def run_pipeline():
     print(f"Starting Enterprise ML Pipeline at {datetime.now()}...")
