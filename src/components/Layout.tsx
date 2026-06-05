@@ -2,15 +2,14 @@ import React from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { 
   LayoutDashboard, 
-  LineChart, 
   PieChart, 
   MessageSquare, 
   Sparkles, 
   Coins,
-  Cpu,
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
+
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { activeView, setActiveView, activeTicker, stockData } = useFinance();

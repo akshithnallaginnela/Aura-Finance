@@ -13,7 +13,6 @@ import {
   TrendingUp,
   TrendingDown,
   Search,
-  Activity,
   AlertCircle,
   Newspaper,
   Clock,
@@ -61,7 +60,7 @@ export const Dashboard: React.FC = () => {
 
   // ─── Flash animation reset ──────────────────────────────────────────
   useEffect(() => {
-    const timers: NodeJS.Timeout[] = [];
+    const timers: any[] = [];
     watchlist.forEach(item => {
       const el = tickerRefs.current.get(item.ticker);
       if (el && item.flashClass) {
@@ -98,13 +97,6 @@ export const Dashboard: React.FC = () => {
       return date >= cutoff;
     });
   };
-
-  // Combine historical and forecast for the chart
-  const allHistorical = [...(stockData || [])].map(d => ({
-    ...d,
-    Date: new Date(d.Date).toLocaleDateString(),
-    type: 'historical'
-  }));
 
   const filteredHistorical = filterByTimeRange(stockData || []).map(d => ({
     ...d,

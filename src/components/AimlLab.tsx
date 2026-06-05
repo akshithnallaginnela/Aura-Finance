@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Cpu, Database, Activity, Zap, Shield, Radio, Brain, BarChart3 } from 'lucide-react';
+import { Terminal, Zap, Shield, Brain } from 'lucide-react';
 
 export const AimlLab: React.FC = () => {
   const [metrics, setMetrics] = useState<any>(null);
