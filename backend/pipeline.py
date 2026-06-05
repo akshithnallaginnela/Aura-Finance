@@ -227,37 +227,11 @@ def analyze_fundamentals(ticker_symbol):
             response = model.generate_content(prompt)
             raw_text = response.text.replace('```json', '').replace('```', '').strip()
             
-    api_keys = [k.strip() for k in api_keys_str.split(',') if k.strip()]
-    import random
-    api_key = random.choice(api_keys)
-        
-    import google.generativeai as genai
-    try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
-        current_price = historical[-1]['Close'] if historical else 'Unknown'
-        future_price = forecast[-1]['PredictedClose'] if forecast else 'Unknown'
-        
-        system_context = f"""
-You are Aura, an elite quantitative financial analyst AI.
-The user is asking about the stock ticker: {ticker}.
-Current Price: {current_price}
-Our internal Ensemble AI model (Chronos Foundation Model + XGBoost + LSTM Neural Network) predicts the price will be {future_price} in approximately 6 months.
-
-Analyze this data and answer the user's prompt. Keep it professional, concise, and focused on market dynamics.
-User Prompt: {prompt}
-"""
-        
-        response = model.generate_content(system_context)
-        return jsonify({
-            "response": response.text
-        })
-    except Exception as e:
-        print(f"Gemini API Error: {e}")
-        return jsonify({
-            "response": f"Sorry, I encountered an error communicating with the AI model: {str(e)}"
-        }), 500
+            try:
+                result = json.loads(raw_text)
+                return float(result.get("sentiment_score", finbert_score)), str(result.get("summary", "Analysis completed.")), disaster_risk, len(headlines)
+            except json.JSONDecodeError:
+                return finbert_score, raw_text.replace('{', '').replace('}', '').strip(), disaster_risk, len(headlines)
                 
         except Exception as e:
             if "429" in str(e) or "Quota exceeded" in str(e):
@@ -266,9 +240,9 @@ User Prompt: {prompt}
                     time.sleep(retry_delay)
                     continue
             print(f"  [{ticker_symbol}] Gemini Error: {e}", flush=True)
-            return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk
+            return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk, len(headlines)
             
-    return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk
+    return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk, len(headlines)
 
 
 # ─── Main Pipeline ─────────────────────────────────────────────────────────────
