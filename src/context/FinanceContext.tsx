@@ -117,40 +117,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [marketIndex, setMarketIndex] = useState<MarketDataPoint[]>(() => generateMarketIndex());
 
-  // Live price ticking — every 2 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWatchlist(prev => prev.map(item => {
-        const delta = (Math.random() - 0.5) * item.price * 0.004; // ±0.2%
-        const newPrice = Math.round((item.price + delta) * 100) / 100;
-        const change = newPrice - item.prevPrice;
-        const changePct = (change / item.prevPrice) * 100;
-        const flashClass = delta >= 0 ? 'price-up' : 'price-down';
-        return {
-          ...item,
-          prevPrice: item.price,
-          price: newPrice,
-          change: Math.round(change * 100) / 100,
-          changePct: Math.round(changePct * 100) / 100,
-          flashClass,
-        };
-      }));
 
-      // Also tick the market index last point
-      setMarketIndex(prev => {
-        const updated = [...prev];
-        const last = updated[updated.length - 1];
-        const delta = (Math.random() - 0.48) * 30;
-        updated[updated.length - 1] = {
-          ...last,
-          value: Math.round((last.value + delta) * 100) / 100,
-        };
-        return updated;
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Portfolio value = sum of all watchlist prices × 10 units each
   const portfolioValue = watchlist.reduce((sum, item) => sum + item.price * 10, 0);
