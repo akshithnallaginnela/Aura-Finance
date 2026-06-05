@@ -301,7 +301,7 @@ def run_pipeline():
         time.sleep(2)
         
     print(f"\n{'='*60}")
-    print(f"  Pipeline Execution Completed Successfully!")
+    print(f"  Pipeline Execution Cycle Completed Successfully!")
     print(f"  Time: {datetime.now()}")
     print(f"{'='*60}\n")
 
@@ -351,4 +351,15 @@ def repredict_ticker(ticker_symbol, new_sentiment=None, new_disaster_risk=None, 
 
 
 if __name__ == "__main__":
-    run_pipeline()
+    while True:
+        try:
+            run_pipeline()
+            print("Sleeping for 4 hours before the next pipeline cycle...")
+            time.sleep(4 * 60 * 60)  # 4 hours
+        except KeyboardInterrupt:
+            print("Pipeline stopped by user.")
+            break
+        except Exception as e:
+            print(f"Pipeline encountered a critical error: {e}")
+            print("Retrying in 10 minutes...")
+            time.sleep(10 * 60)

@@ -34,3 +34,6 @@ Hugging_face.md
 .venv
 __pycache__/
 *.pyc
+
+
+run.bat
