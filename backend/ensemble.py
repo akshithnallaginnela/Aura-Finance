@@ -199,9 +199,12 @@ def transformer_forecast(closes, prediction_length=130):
 # Model 3: XGBoost Gradient Boosted Trees (20% weight)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def xgboost_forecast(closes, emas, rsis, macds, prediction_length=130):
+def xgboost_forecast(closes, emas, rsis, macds, prediction_length=130,
+                     sentiment_score=0.0, disaster_risk=0.0, news_count=0):
     """
-    XGBoost regressor trained on technical indicator features.
+    XGBoost regressor trained on technical indicator features + news sentiment.
+    Sentiment, disaster risk, and news volume are injected as features so the
+    model can learn their relationship to price movement.
     """
     lookback = 14
     
@@ -215,6 +218,8 @@ def xgboost_forecast(closes, emas, rsis, macds, prediction_length=130):
         features.extend(emas[i-lookback:i])
         features.extend(rsis[i-lookback:i])
         features.extend(macds[i-lookback:i])
+        # News features (constant for historical rows — latest values)
+        features.extend([sentiment_score, disaster_risk, float(news_count)])
         X.append(features)
         y.append(closes[i + 1])
     
@@ -250,6 +255,7 @@ def xgboost_forecast(closes, emas, rsis, macds, prediction_length=130):
             features.extend(current_emas[-lookback:])
             features.extend(current_rsis[-lookback:])
             features.extend(current_macds[-lookback:])
+            features.extend([sentiment_score, disaster_risk, float(news_count)])
             
             pred = model.predict([features])[0]
             predictions.append(pred)
@@ -271,10 +277,11 @@ def xgboost_forecast(closes, emas, rsis, macds, prediction_length=130):
 # Model 4: LightGBM Gradient Boosting (15% weight)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def lightgbm_forecast(closes, emas, rsis, macds, prediction_length=130):
+def lightgbm_forecast(closes, emas, rsis, macds, prediction_length=130,
+                      sentiment_score=0.0, disaster_risk=0.0, news_count=0):
     """
     LightGBM — leaf-wise tree growth often outperforms XGBoost on tabular data.
-    Uses the same technical indicator features but different boosting algorithm.
+    Uses technical indicator features + news sentiment as input.
     """
     lookback = 14
     
@@ -288,6 +295,7 @@ def lightgbm_forecast(closes, emas, rsis, macds, prediction_length=130):
         features.extend(emas[i-lookback:i])
         features.extend(rsis[i-lookback:i])
         features.extend(macds[i-lookback:i])
+        features.extend([sentiment_score, disaster_risk, float(news_count)])
         X.append(features)
         y.append(closes[i + 1])
     
@@ -325,6 +333,7 @@ def lightgbm_forecast(closes, emas, rsis, macds, prediction_length=130):
             features.extend(current_emas[-lookback:])
             features.extend(current_rsis[-lookback:])
             features.extend(current_macds[-lookback:])
+            features.extend([sentiment_score, disaster_risk, float(news_count)])
             
             pred = model.predict([features])[0]
             predictions.append(pred)
