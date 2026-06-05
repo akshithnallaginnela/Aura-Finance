@@ -477,9 +477,12 @@ MODEL_NAMES = {
     "lstm": "PyTorch LSTM (2-Layer RNN)"
 }
 
-def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130):
+def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130,
+                     sentiment_score=0.0, disaster_risk=0.0, news_count=0):
     """
     Runs all 5 models and combines into a weighted ensemble.
+    Sentiment, disaster risk, and news volume are passed as features
+    to the tree-based models (XGBoost + LightGBM).
     
     Returns:
         dict with keys: median, upper_band, lower_band (numpy arrays)
@@ -496,11 +499,13 @@ def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130
     print(f"  [Ensemble] Running Transformer Encoder (weight={WEIGHTS['transformer']})...")
     transformer_preds = transformer_forecast(closes, prediction_length)
     
-    print(f"  [Ensemble] Running XGBoost (weight={WEIGHTS['xgboost']})...")
-    xgb_preds = xgboost_forecast(closes, emas, rsis, macds, prediction_length)
+    print(f"  [Ensemble] Running XGBoost (weight={WEIGHTS['xgboost']}, sentiment={sentiment_score:.2f})...")
+    xgb_preds = xgboost_forecast(closes, emas, rsis, macds, prediction_length,
+                                  sentiment_score, disaster_risk, news_count)
     
-    print(f"  [Ensemble] Running LightGBM (weight={WEIGHTS['lightgbm']})...")
-    lgbm_preds = lightgbm_forecast(closes, emas, rsis, macds, prediction_length)
+    print(f"  [Ensemble] Running LightGBM (weight={WEIGHTS['lightgbm']}, sentiment={sentiment_score:.2f})...")
+    lgbm_preds = lightgbm_forecast(closes, emas, rsis, macds, prediction_length,
+                                    sentiment_score, disaster_risk, news_count)
     
     print(f"  [Ensemble] Running PyTorch LSTM (weight={WEIGHTS['lstm']})...")
     lstm_preds = lstm_forecast(closes, prediction_length)
@@ -528,7 +533,7 @@ def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130
     lower_band = np.minimum(chronos_result["p10"], ensemble_median - 1.5 * model_std)
     lower_band = np.maximum(lower_band, 0)
     
-    print(f"  [Ensemble] Complete. 5 models combined.")
+    print(f"  [Ensemble] Complete. 5 models combined (news features injected into XGB+LGBM).")
     print(f"    Median[0]={ensemble_median[0]:.2f}, Upper[0]={upper_band[0]:.2f}, Lower[0]={lower_band[0]:.2f}")
     
     return {
@@ -538,39 +543,91 @@ def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130
     }
 
 
-def apply_sentiment_adjustment(forecast_dict, sentiment_score, disaster_risk=0.0):
+def apply_sentiment_adjustment(forecast_dict, sentiment_score, disaster_risk=0.0, news_count=0):
     """
-    Adjusts the ensemble forecast based on news sentiment and disaster risk.
+    Adjusts the ensemble forecast based on news sentiment, disaster risk,
+    and news volume with intelligent asymmetric band shaping.
     
-    - Positive sentiment: shifts median up slightly (max +3%)
-    - Negative sentiment: shifts median down (max -5%)
-    - Disaster risk (0-1): widens bands and pulls median down (max -10%)
-    
-    The adjustment tapers over time (strong near-term, fades long-term).
+    Key improvements over naive linear scaling:
+    1. Asymmetric bands: negative news crushes the lower band, barely touches upper
+    2. Disaster risk models real crash dynamics (sharp downside, limited upside)
+    3. News volume = volatility signal (more headlines = wider near-term bands)
+    4. sqrt(t) decay instead of linear taper (more realistic uncertainty growth)
     """
     median = forecast_dict["median"].copy()
     upper = forecast_dict["upper_band"].copy()
     lower = forecast_dict["lower_band"].copy()
     n = len(median)
     
-    taper = np.linspace(1.0, 0.2, n)
+    # Time decay: sqrt-based — uncertainty grows like sqrt(t) in real markets
+    # Near-term adjustments are strong, fading over the forecast horizon
+    t = np.arange(1, n + 1, dtype=float)
+    decay = 1.0 / (1.0 + 0.15 * np.sqrt(t))  # Starts ~1.0, decays to ~0.35 at t=130
     
+    # ─── 1. MEDIAN SHIFT (sentiment-driven directional bias) ───────────────
     if sentiment_score >= 0:
-        sentiment_shift = sentiment_score * 0.03
+        # Positive sentiment: cautious upward shift (max +5%)
+        median_shift = sentiment_score * 0.05 * decay
     else:
-        sentiment_shift = sentiment_score * 0.05
+        # Negative sentiment: stronger downward shift (max -8%)
+        median_shift = sentiment_score * 0.08 * decay
     
-    sentiment_multiplier = 1.0 + sentiment_shift * taper
+    median = median * (1.0 + median_shift)
     
-    disaster_shift = disaster_risk * 0.10
-    disaster_multiplier = 1.0 - disaster_shift * taper
+    # ─── 2. DISASTER RISK (asymmetric crash modeling) ──────────────────────
+    if disaster_risk > 0:
+        # Disasters pull median DOWN hard (up to -15%)
+        disaster_median_drag = disaster_risk * 0.15 * decay
+        median = median * (1.0 - disaster_median_drag)
+        
+        # Lower band collapses much harder (up to -25%)
+        disaster_lower_crush = disaster_risk * 0.25 * decay
+        lower = lower * (1.0 - disaster_lower_crush)
+        
+        # Upper band barely moves (up to +3%) — stocks rarely moon during disasters
+        disaster_upper_lift = disaster_risk * 0.03 * decay
+        upper = upper * (1.0 + disaster_upper_lift)
     
-    median = median * sentiment_multiplier * disaster_multiplier
-    
-    band_widener = 1.0 + disaster_risk * 0.5 * taper
+    # ─── 3. ASYMMETRIC BAND SHAPING (sentiment-driven) ────────────────────
     half_width = (upper - lower) / 2.0
-    upper = median + half_width * band_widener
-    lower = median - half_width * band_widener
+    center = (upper + lower) / 2.0
+    
+    if sentiment_score < -0.1:
+        # Bearish: widen lower band, tighten upper band
+        severity = min(abs(sentiment_score), 1.0)
+        lower_expansion = 1.0 + severity * 0.20 * decay  # Lower goes further down
+        upper_contraction = 1.0 - severity * 0.08 * decay  # Upper pulls closer to median
+        upper = center + half_width * upper_contraction
+        lower = center - half_width * lower_expansion
+    elif sentiment_score > 0.1:
+        # Bullish: widen upper band, tighten lower band  
+        severity = min(sentiment_score, 1.0)
+        upper_expansion = 1.0 + severity * 0.15 * decay  # Upper goes further up
+        lower_contraction = 1.0 - severity * 0.10 * decay  # Lower pulls closer to median
+        upper = center + half_width * upper_expansion
+        lower = center - half_width * lower_contraction
+    
+    # ─── 4. NEWS VOLUME AS VOLATILITY SIGNAL ──────────────────────────────
+    if news_count > 0:
+        # More headlines = more uncertainty = wider bands near-term
+        # 0-3 headlines: minimal effect, 4-8: moderate, 8+: high volatility
+        volume_factor = min(news_count / 5.0, 2.0)  # Capped at 2x
+        
+        # Only affects first 30 days significantly
+        volume_decay = np.exp(-t / 30.0)  # Exponential decay over ~30 days
+        volume_widening = 1.0 + volume_factor * 0.06 * volume_decay
+        
+        half_width_new = (upper - lower) / 2.0
+        center_new = (upper + lower) / 2.0
+        upper = center_new + half_width_new * volume_widening
+        lower = center_new - half_width_new * volume_widening
+    
+    # ─── Safety: ensure lower band never goes negative ────────────────────
+    lower = np.maximum(lower, 0)
+    
+    # Ensure upper > median > lower
+    upper = np.maximum(upper, median * 1.001)
+    lower = np.minimum(lower, median * 0.999)
     lower = np.maximum(lower, 0)
     
     return {
