@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Cpu, Database, Activity, Code, Zap } from 'lucide-react';
+import { Terminal, Cpu, Database, Activity, Zap, Shield, Radio, Brain, BarChart3 } from 'lucide-react';
 
 export const AimlLab: React.FC = () => {
   const [metrics, setMetrics] = useState<any>(null);
@@ -44,7 +44,7 @@ export const AimlLab: React.FC = () => {
   return (
     <div className="glass-panel" style={{ 
       padding: '0', 
-      background: '#0d1117', // Github dark background
+      background: '#0d1117',
       color: '#c9d1d9',
       fontFamily: '"JetBrains Mono", "Fira Code", monospace',
       overflow: 'hidden',
@@ -57,7 +57,7 @@ export const AimlLab: React.FC = () => {
         borderBottom: '1px solid #30363d'
       }}>
         <Terminal size={18} color="#8b949e" />
-        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#8b949e' }}>Aura ML Pipeline / system.log</span>
+        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#8b949e' }}>Aura Ensemble Engine / system.log</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
           <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f56' }} />
           <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ffbd2e' }} />
@@ -67,78 +67,131 @@ export const AimlLab: React.FC = () => {
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
-        {/* Scikit-Learn Model Stats */}
+        {/* Ensemble Models */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#58a6ff' }}>
-            <Cpu size={18} />
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Random Forest Regressor (Technical)</span>
+            <Brain size={18} />
+            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Ensemble Prediction Engine (3 Models)</span>
           </div>
           
           <div style={{ background: '#010409', padding: '16px', borderRadius: '6px', border: '1px solid #21262d' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-              <div>
-                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>N_ESTIMATORS</div>
-                <div style={{ color: '#79c0ff', fontSize: '1.2rem', fontWeight: 600 }}>{metrics.random_forest.n_estimators}</div>
-              </div>
-              <div>
-                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>R2 SCORE (ACCURACY)</div>
-                <div style={{ color: '#3fb950', fontSize: '1.2rem', fontWeight: 600 }}>{(metrics.random_forest.r2_score * 100).toFixed(1)}%</div>
-              </div>
-              <div>
-                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>AVG MSE</div>
-                <div style={{ color: '#d2a8ff', fontSize: '1.2rem', fontWeight: 600 }}>{metrics.random_forest.average_mse}</div>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {metrics.ensemble?.models?.map((m: any, idx: number) => {
+                const colors = ['#58a6ff', '#3fb950', '#d2a8ff'];
+                return (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ minWidth: '260px' }}>
+                      <div style={{ color: colors[idx], fontSize: '0.9rem', fontWeight: 600 }}>{m.name}</div>
+                      <div style={{ color: '#8b949e', fontSize: '0.75rem', marginTop: '2px' }}>{m.type}</div>
+                    </div>
+                    <div style={{ flex: 1, height: '10px', background: '#21262d', borderRadius: '5px', overflow: 'hidden' }}>
+                      <div style={{ 
+                        width: `${m.weight * 100}%`, 
+                        height: '100%', 
+                        background: colors[idx], 
+                        borderRadius: '5px',
+                        transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                    <div style={{ minWidth: '45px', fontSize: '0.85rem', color: colors[idx], textAlign: 'right', fontWeight: 600 }}>
+                      {(m.weight * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '8px' }}>FEATURE IMPORTANCE (LIVE)</div>
-            {metrics.random_forest.feature_importance.map((f: any) => (
-              <div key={f.feature} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <div style={{ width: '120px', fontSize: '0.85rem' }}>{f.feature}</div>
-                <div style={{ flex: 1, height: '8px', background: '#21262d', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${f.importance * 100}%`, height: '100%', background: '#58a6ff', borderRadius: '4px' }} />
-                </div>
-                <div style={{ width: '40px', fontSize: '0.85rem', color: '#79c0ff', textAlign: 'right' }}>{(f.importance * 100).toFixed(0)}%</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #21262d' }}>
+              <div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>FORECAST HORIZON</div>
+                <div style={{ color: '#79c0ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.ensemble?.forecast_horizon}</div>
               </div>
-            ))}
+              <div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>CONFIDENCE BANDS</div>
+                <div style={{ color: '#3fb950', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.ensemble?.confidence_bands}</div>
+              </div>
+              <div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>SENTIMENT ENGINE</div>
+                <div style={{ color: '#d2a8ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.ensemble?.sentiment_engine}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Gemini Model Stats */}
+        {/* News Sentinel Status */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#ff7b72' }}>
-            <Zap size={18} />
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Google Gemini AI (Fundamental)</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#3fb950' }}>
+            <Shield size={18} />
+            <span style={{ fontWeight: 700, fontSize: '1rem' }}>24/7 News Sentinel Agent</span>
+            <span style={{ 
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '3px 10px', borderRadius: '12px',
+              background: 'rgba(63, 185, 80, 0.15)', color: '#3fb950',
+              fontSize: '0.75rem', fontWeight: 600
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3fb950', animation: 'pulse 2s infinite' }} />
+              LIVE
+            </span>
           </div>
           
           <div style={{ background: '#010409', padding: '16px', borderRadius: '6px', border: '1px solid #21262d' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
               <div>
-                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>MODEL VERSION</div>
-                <div style={{ color: '#79c0ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini.model_version}</div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>STATUS</div>
+                <div style={{ color: '#3fb950', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.news_sentinel?.status}</div>
               </div>
               <div>
-                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>LATENCY</div>
-                <div style={{ color: '#d2a8ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini.last_latency_ms}ms</div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>POLL INTERVAL</div>
+                <div style={{ color: '#79c0ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.news_sentinel?.poll_interval}</div>
+              </div>
+              <div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>COVERAGE</div>
+                <div style={{ color: '#d2a8ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.news_sentinel?.coverage}</div>
+              </div>
+            </div>
+            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #21262d' }}>
+              <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>TRIGGER BEHAVIOR</div>
+              <div style={{ color: '#f0883e', fontSize: '0.85rem', fontWeight: 600 }}>{metrics.news_sentinel?.trigger}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Gemini Stats */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#ff7b72' }}>
+            <Zap size={18} />
+            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Google Gemini AI (Fundamental Summarizer)</span>
+          </div>
+          
+          <div style={{ background: '#010409', padding: '16px', borderRadius: '6px', border: '1px solid #21262d' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>MODEL VERSION</div>
+                <div style={{ color: '#79c0ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini?.model_version}</div>
+              </div>
+              <div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>ROLE</div>
+                <div style={{ color: '#d2a8ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini?.role}</div>
               </div>
               <div>
                 <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>RATE LIMIT STATUS</div>
-                <div style={{ color: '#3fb950', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini.rate_limit_status}</div>
+                <div style={{ color: '#3fb950', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini?.rate_limit_status}</div>
               </div>
-            </div>
-
-            <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '8px' }}>BASE SYSTEM PROMPT</div>
-            <div style={{ padding: '12px', background: '#0d1117', border: '1px solid #30363d', borderRadius: '4px', fontSize: '0.85rem', color: '#a5d6ff', lineHeight: 1.5 }}>
-              {metrics.gemini.system_prompt}
             </div>
           </div>
         </div>
 
         {/* Console logs */}
         <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#8b949e', lineHeight: 1.6 }}>
-          <div>[INFO] Connect to SQLite Database (Cloud)... OK</div>
-          <div>[INFO] Training Random Forest Models... OK</div>
-          <div>[INFO] Batch fetching News from yfinance... OK</div>
-          <div>[INFO] Awaiting frontend WebSocket connections on port 5000...</div>
+          <div>[INFO] Loading 5-Model Ensemble Engine... OK</div>
+          <div>[INFO] Chronos-T5-Small Foundation Model: Loaded (35% weight)</div>
+          <div>[INFO] PyTorch Transformer Encoder: Loaded (20% weight)</div>
+          <div>[INFO] XGBoost Gradient Boosted Trees: Loaded (20% weight)</div>
+          <div>[INFO] LightGBM Leaf-wise Boosting: Loaded (15% weight)</div>
+          <div>[INFO] PyTorch LSTM (2-Layer RNN): Loaded (10% weight)</div>
+          <div>[INFO] FinBERT Sentiment Engine: Loaded</div>
+          <div>[INFO] News Sentinel: Active — polling every 5 min</div>
+          <div>[INFO] Awaiting frontend connections on port 5000...</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
             <span style={{ width: 8, height: 8, background: '#3fb950', borderRadius: '50%', animation: 'pulse 2s infinite' }} />
             <span style={{ color: '#3fb950' }}>System is fully operational</span>

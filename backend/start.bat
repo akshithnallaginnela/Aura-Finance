@@ -4,6 +4,7 @@ cd %~dp0
 
 echo ========================================================
 echo   AuraFinance - Starting Python AIML Backend Server     
+echo   + 24/7 News Sentinel Agent
 echo ========================================================
 
 :: Check for python
@@ -24,7 +25,7 @@ if %errorlevel% EQU 0 (
         uv venv .venv
     )
     echo [INFO] Installing requirements via uv...
-    uv pip install flask scikit-learn pandas flask-cors numpy scipy yfinance
+    uv pip install flask scikit-learn pandas flask-cors numpy scipy yfinance xgboost transformers torch chronos-forecasting waitress python-dotenv psycopg2-binary google-generativeai
 ) else (
     echo [INFO] 'uv' not found. Falling back to standard virtualenv + pip.
     if not exist .venv (
@@ -34,11 +35,24 @@ if %errorlevel% EQU 0 (
     echo [INFO] Installing requirements via pip...
     call .venv\Scripts\activate
     python -m pip install --upgrade pip
-    pip install flask scikit-learn pandas flask-cors numpy scipy yfinance
+    pip install flask scikit-learn pandas flask-cors numpy scipy yfinance xgboost transformers torch chronos-forecasting waitress python-dotenv psycopg2-binary google-generativeai
 )
 
-echo [SUCCESS] Dependencies satisfied. Starting Flask server on port 5000...
+echo [SUCCESS] Dependencies satisfied.
+
+:: Activate venv
+call .venv\Scripts\activate
+
+:: Initialize database schema
+echo [INFO] Initializing database schema...
+python database.py
+
+:: Start the News Sentinel in the background
+echo [INFO] Starting 24/7 News Sentinel Agent in background...
+start "Aura News Sentinel" cmd /c "call .venv\Scripts\activate && python news_sentinel.py"
+
+:: Start Flask server (foreground)
+echo [INFO] Starting Flask API server on port 5000...
 set FLASK_APP=app.py
 set FLASK_DEBUG=1
-call .venv\Scripts\activate
 python app.py

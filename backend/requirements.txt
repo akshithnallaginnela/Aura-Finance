@@ -8,3 +8,5 @@ transformers
 torch
 chronos-forecasting
 waitress
+xgboost
+lightgbm

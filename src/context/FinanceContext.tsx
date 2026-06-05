@@ -12,6 +12,8 @@ export interface StockDataPoint {
 export interface ForecastPoint {
   Date: string;
   PredictedClose: number;
+  UpperBand?: number;
+  LowerBand?: number;
 }
 
 export interface ChatMessage {
@@ -28,6 +30,7 @@ interface FinanceContextType {
   stockForecast: ForecastPoint[];
   sentimentScore: number | null;
   fundamentalSummary: string | null;
+  disasterRiskScore: number;
   lastUpdated: string | null;
   isLoadingData: boolean;
   errorData: string | null;
@@ -52,6 +55,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [stockForecast, setStockForecast] = useState<ForecastPoint[]>([]);
   const [sentimentScore, setSentimentScore] = useState<number | null>(null);
   const [fundamentalSummary, setFundamentalSummary] = useState<string | null>(null);
+  const [disasterRiskScore, setDisasterRiskScore] = useState(0.0);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [errorData, setErrorData] = useState<string | null>(null);
@@ -78,6 +82,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setStockForecast(data.forecast || []);
       setSentimentScore(data.sentiment_score ?? null);
       setFundamentalSummary(data.fundamental_summary || null);
+      setDisasterRiskScore(data.disaster_risk_score ?? 0.0);
       setLastUpdated(data.last_updated || null);
       setActiveTicker(ticker.toUpperCase());
     } catch (err: any) {
@@ -154,6 +159,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       stockForecast,
       sentimentScore,
       fundamentalSummary,
+      disasterRiskScore,
       lastUpdated,
       isLoadingData,
       errorData,

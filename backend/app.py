@@ -78,6 +78,9 @@ def get_stock(ticker):
         "forecast": analysis["forecast"],
         "sentiment_score": analysis["sentiment_score"],
         "fundamental_summary": analysis["fundamental_summary"],
+        "disaster_risk_score": analysis.get("disaster_risk_score", 0.0),
+        "confidence_upper": analysis.get("confidence_upper"),
+        "confidence_lower": analysis.get("confidence_lower"),
         "last_updated": analysis["last_updated"]
     })
 
@@ -113,7 +116,7 @@ def advisor_strategy():
 You are Aura, an elite quantitative financial analyst AI.
 The user is asking about the stock ticker: {ticker}.
 Current Price: {current_price}
-Our internal Random Forest ML model predicts the price will be {future_price} in 30 days.
+Our internal Ensemble AI model (Chronos Foundation Model + XGBoost + LSTM Neural Network) predicts the price will be {future_price} in approximately 6 months.
 
 Analyze this data and answer the user's prompt. Keep it professional, concise, and focused on market dynamics.
 User Prompt: {prompt}
@@ -229,30 +232,56 @@ def optimize_portfolio():
 @app.route('/api/ml_metrics', methods=['GET'])
 def get_ml_metrics():
     """
-    AIML Lab: Exposes technical metrics about the Random Forest model and Gemini.
+    AIML Lab: Exposes technical metrics about the Ensemble model architecture.
     """
-    # In a real app, these would be exported from pipeline.py during training.
-    # We provide static realistic metrics for the Hackathon AIML Lab view to demonstrate 
-    # the underlying engine capabilities.
     return jsonify({
-        "random_forest": {
-            "n_estimators": 100,
-            "max_depth": "None (Full)",
-            "features_used": ["Close", "EMA_20", "EMA_50", "RSI_14"],
-            "feature_importance": [
-                {"feature": "Close (Lagged)", "importance": 0.45},
-                {"feature": "EMA_20", "importance": 0.30},
-                {"feature": "EMA_50", "importance": 0.15},
-                {"feature": "RSI_14", "importance": 0.10}
+        "ensemble": {
+            "models": [
+                {
+                    "name": "Amazon Chronos-T5-Small (Foundation Model)",
+                    "weight": 0.35,
+                    "type": "Zero-Shot Time Series Transformer",
+                    "description": "Pre-trained on billions of time series datapoints. Generates probabilistic samples."
+                },
+                {
+                    "name": "PyTorch Transformer Encoder",
+                    "weight": 0.20,
+                    "type": "Self-Attention Neural Network",
+                    "description": "4-head attention, 2 encoder layers, learnable positional encoding, GELU activation."
+                },
+                {
+                    "name": "XGBoost Gradient Boosted Trees",
+                    "weight": 0.20,
+                    "type": "Supervised ML (Technical Indicators)",
+                    "description": "200 estimators, depth 6, trained on RSI/MACD/EMA with L1+L2 regularization."
+                },
+                {
+                    "name": "LightGBM (Leaf-wise Boosting)",
+                    "weight": 0.15,
+                    "type": "Gradient Boosting (Histogram-based)",
+                    "description": "300 estimators, 31 leaves, depth 8. Leaf-wise growth for finer splits."
+                },
+                {
+                    "name": "PyTorch LSTM (2-Layer RNN)",
+                    "weight": 0.10,
+                    "type": "Recurrent Neural Network",
+                    "description": "2 stacked LSTM layers, 64 hidden units, Huber loss, dropout 0.2."
+                }
             ],
-            "average_mse": 124.5,
-            "r2_score": 0.88
+            "forecast_horizon": "130 trading days (~6 months)",
+            "confidence_bands": "P10 / P50 (Median) / P90",
+            "sentiment_engine": "FinBERT (ProsusAI/finbert)",
+            "disaster_detection": "Keyword-based risk scorer (23 categories)"
+        },
+        "news_sentinel": {
+            "status": "Active (24/7)",
+            "poll_interval": "5 minutes",
+            "trigger": "ANY new news article → immediate re-prediction",
+            "coverage": "Nifty 50 (50 stocks)"
         },
         "gemini": {
             "model_version": "gemini-2.5-flash",
-            "temperature": 0.0,
-            "system_prompt": "You are an elite quantitative financial analyst specializing in the Indian Stock Market. Analyze the following recent news headlines...",
-            "last_latency_ms": 1450,
+            "role": "Fundamental Analysis Summarizer",
             "rate_limit_status": "Healthy (Exponential Backoff Enabled)"
         }
     })

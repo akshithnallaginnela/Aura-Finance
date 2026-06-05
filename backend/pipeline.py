@@ -1,3 +1,10 @@
+"""
+Aura Finance — Enterprise ML Pipeline
+======================================
+Fetches historical data for Nifty 50, runs the 3-model ensemble,
+applies FinBERT sentiment adjustment, and stores results in the database.
+"""
+
 import os
 import time
 import json
@@ -9,9 +16,11 @@ import google.generativeai as genai
 from pathlib import Path
 from dotenv import load_dotenv
 import torch
+import random
+
 from chronos import ChronosPipeline
 from transformers import pipeline as hf_pipeline
-
+from ensemble import ensemble_predict, apply_sentiment_adjustment
 from database import init_db, upsert_analysis
 
 # Load the .env file from the root directory
@@ -23,7 +32,6 @@ api_keys_str = os.environ.get('VITE_GEMINI_API_KEYS') or os.environ.get('VITE_GE
 if not api_keys_str:
     raise ValueError("VITE_GEMINI_API_KEYS or VITE_GEMINI_API_KEY is not set in the root .env file.")
 api_keys = [k.strip() for k in api_keys_str.split(',') if k.strip()]
-import random
 
 # Define target universe — Full Nifty 50 (as of 2025-2026)
 NIFTY_50 = [
@@ -39,37 +47,48 @@ NIFTY_50 = [
     "HDFCLIFE.NS", "SHRIRAMFIN.NS", "BAJAJ-AUTO.NS", "MRF.NS", "TRENT.NS"
 ]
 
+# Disaster keywords for risk scoring
+DISASTER_KEYWORDS = [
+    "earthquake", "flood", "tsunami", "cyclone", "hurricane", "pandemic",
+    "war", "sanctions", "crash", "recession", "default", "bankruptcy",
+    "terror", "attack", "explosion", "scam", "fraud", "crisis",
+    "shutdown", "strike", "embargo", "tariff", "inflation surge"
+]
+
+# ─── Initialize Hugging Face Models ───────────────────────────────────────────
+
 print("Initializing Hugging Face Models...")
 try:
     chronos = ChronosPipeline.from_pretrained(
-        "amazon/chronos-t5-mini",
+        "amazon/chronos-t5-small",
         device_map="cpu",
         torch_dtype=torch.float32,
     )
+    print("[OK] Chronos-T5-Small loaded.")
 except Exception as e:
-    print(f"Failed to load Chronos: {e}")
+    print(f"[WARN] Failed to load Chronos: {e}")
     chronos = None
 
 try:
     finbert = hf_pipeline("sentiment-analysis", model="ProsusAI/finbert")
+    print("[OK] FinBERT loaded.")
 except Exception as e:
-    print(f"Failed to load FinBERT: {e}")
+    print(f"[WARN] Failed to load FinBERT: {e}")
     finbert = None
 
 
+# ─── Technical Indicators ─────────────────────────────────────────────────────
+
 def add_technical_indicators(df):
     """Adds advanced technical indicators like RSI and MACD to the dataframe."""
-    # EMA 20 and 50
     df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
     df['EMA_50'] = df['Close'].ewm(span=50, adjust=False).mean()
 
-    # MACD
     ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
     ema_26 = df['Close'].ewm(span=26, adjust=False).mean()
     df['MACD'] = ema_12 - ema_26
     df['MACD_Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
 
-    # RSI (14-day)
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
@@ -79,66 +98,70 @@ def add_technical_indicators(df):
     df = df.fillna(0)
     return df
 
+
+# ─── Fetch Data + Ensemble Prediction ─────────────────────────────────────────
+
+PREDICTION_LENGTH = 130  # ~6 months of trading days
+
 def fetch_and_train(ticker_symbol):
-    """Fetches 1y historical data, enhances features, and predicts 30 days using Chronos Hugging Face model."""
+    """
+    Fetches 2Y historical data, runs the 3-model ensemble, 
+    and returns long-term forecast with confidence bands.
+    """
     ticker = yf.Ticker(ticker_symbol)
-    df = ticker.history(period="1y")
+    df = ticker.history(period="2y")
     
     if df.empty:
         print(f"[{ticker_symbol}] No data found.")
         return None, None
     
     df = df.reset_index()
-    # Handle timezone aware datetimes by making them naive or converting to string
     df['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
     df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
     df[['Open', 'High', 'Low', 'Close']] = df[['Open', 'High', 'Low', 'Close']].round(2)
     
     df = add_technical_indicators(df)
     
-    if chronos is None:
-        return df, []
-
-    # Use Chronos for Time Series prediction
-    # Prepare historical context (closing prices)
-    context = torch.tensor(df['Close'].values, dtype=torch.float32)
-    prediction_length = 30
+    # Run ensemble prediction
+    print(f"  Running Ensemble Prediction ({PREDICTION_LENGTH} days)...")
+    result = ensemble_predict(chronos, df, prediction_length=PREDICTION_LENGTH)
     
-    try:
-        # Generate forecast with chronos
-        forecast = chronos.predict(context.unsqueeze(0), prediction_length=prediction_length)
-        # forecast has shape (1, num_samples, prediction_length), take median
-        median_forecast = np.median(forecast[0].numpy(), axis=0)
-    except Exception as e:
-        print(f"Chronos prediction failed for {ticker_symbol}: {e}")
-        median_forecast = [df['Close'].iloc[-1]] * prediction_length
-    
+    # Build forecast list with confidence bands
     predictions = []
     current_date = datetime.strptime(df['Date'].iloc[-1], '%Y-%m-%d')
     
-    for val in median_forecast:
-        # Shift forward one day, skipping weekends
+    for i in range(PREDICTION_LENGTH):
         current_date += timedelta(days=1)
-        while current_date.weekday() >= 5: # Skip weekends
+        while current_date.weekday() >= 5:
             current_date += timedelta(days=1)
             
         predictions.append({
             "Date": current_date.strftime('%Y-%m-%d'),
-            "PredictedClose": round(float(val), 2)
+            "PredictedClose": round(float(result["median"][i]), 2),
+            "UpperBand": round(float(result["upper_band"][i]), 2),
+            "LowerBand": round(float(result["lower_band"][i]), 2)
         })
-        
-    return df, predictions
+    
+    return df, predictions, result
+
+
+# ─── Fundamental Analysis with FinBERT ─────────────────────────────────────────
+
 def analyze_fundamentals(ticker_symbol):
-    """Fetches recent news, uses FinBERT for Sentiment Scoring, and Gemini for Summary."""
+    """
+    Fetches recent news, uses FinBERT for sentiment, detects disaster keywords,
+    and uses Gemini for a summary.
+    Returns: (sentiment_score, summary, disaster_risk)
+    """
     ticker = yf.Ticker(ticker_symbol)
     news = ticker.news
     
     if not news:
-        return 0.0, "No recent news found for fundamental analysis."
+        return 0.0, "No recent news found for fundamental analysis.", 0.0
         
     headlines = []
-    for item in news[:10]: # Top 10 articles
-        content = item.get('content', item) # Handle both old and new format
+    for item in news[:10]:
+        content = item.get('content', item)
         title = content.get('title', '')
         provider = content.get('provider', {})
         publisher = provider.get('displayName', content.get('publisher', 'Unknown'))
@@ -146,9 +169,9 @@ def analyze_fundamentals(ticker_symbol):
             headlines.append(f"{title} (Source: {publisher})")
             
     if not headlines:
-        return 0.0, "No parseable news headlines were found for this asset today."
-        
-    # Calculate FinBERT sentiment score
+        return 0.0, "No parseable news headlines were found for this asset today.", 0.0
+    
+    # FinBERT sentiment scoring
     finbert_score = 0.0
     if finbert:
         try:
@@ -161,20 +184,29 @@ def analyze_fundamentals(ticker_symbol):
                     total_score -= res['score']
             finbert_score = float(total_score / len(results))
         except Exception as e:
-            print(f"FinBERT error for {ticker_symbol}: {e}")
-
-    # Use Gemini to generate a summary
+            print(f"  FinBERT error for {ticker_symbol}: {e}")
+    
+    # Disaster risk detection
+    all_text = " ".join(headlines).lower()
+    disaster_hits = sum(1 for kw in DISASTER_KEYWORDS if kw in all_text)
+    disaster_risk = min(disaster_hits * 0.15, 1.0)  # Each keyword adds 0.15, capped at 1.0
+    
+    if disaster_risk > 0:
+        print(f"  [!] Disaster keywords detected! Risk score: {disaster_risk:.2f}")
+    
+    # Gemini summary
     news_text = "\n".join([f"- {h}" for h in headlines])
     prompt = f"""
     You are an elite quantitative financial analyst specializing in the Indian Stock Market.
     Analyze the following recent news headlines for the stock {ticker_symbol}.
     The calculated AI sentiment score (using FinBERT) is {finbert_score:.2f} (from -1.0 to 1.0).
+    Disaster risk detected: {disaster_risk:.2f} (0=none, 1=extreme).
     
     News Headlines:
     {news_text}
     
     Your task:
-    Provide a 2-3 sentence fundamental summary of why the stock might move, taking the sentiment score into context.
+    Provide a 2-3 sentence fundamental summary of why the stock might move, taking the sentiment score and disaster risk into context.
     You MUST return the output in this EXACT JSON format, nothing else:
     {{
         "sentiment_score": {finbert_score:.2f},
@@ -182,13 +214,11 @@ def analyze_fundamentals(ticker_symbol):
     }}
     """
     
-    # Add retry logic for Gemini rate limits (429)
     max_retries = 3
-    retry_delay = 15 # Wait 15 seconds before retrying (free tier is 15 requests/min)
+    retry_delay = 15
     
     for attempt in range(max_retries):
         try:
-            import google.generativeai as genai
             genai.configure(api_key=random.choice(api_keys))
             model = genai.GenerativeModel('gemini-2.5-flash')
             response = model.generate_content(prompt)
@@ -196,52 +226,122 @@ def analyze_fundamentals(ticker_symbol):
             
             try:
                 result = json.loads(raw_text)
-                return float(result.get("sentiment_score", finbert_score)), str(result.get("summary", "Analysis completed."))
+                return float(result.get("sentiment_score", finbert_score)), str(result.get("summary", "Analysis completed.")), disaster_risk
             except json.JSONDecodeError:
-                return finbert_score, raw_text.replace('{', '').replace('}', '').strip()
+                return finbert_score, raw_text.replace('{', '').replace('}', '').strip(), disaster_risk
                 
         except Exception as e:
             if "429" in str(e) or "Quota exceeded" in str(e):
                 if attempt < max_retries - 1:
-                    print(f"[{ticker_symbol}] Gemini Rate Limit hit. Waiting {retry_delay} seconds...", flush=True)
+                    print(f"  [{ticker_symbol}] Gemini Rate Limit hit. Waiting {retry_delay}s...", flush=True)
                     time.sleep(retry_delay)
                     continue
-            print(f"[{ticker_symbol}] Gemini Error: {e}", flush=True)
-            return finbert_score, "Fundamental analysis summary unavailable due to API limits or errors."
+            print(f"  [{ticker_symbol}] Gemini Error: {e}", flush=True)
+            return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk
             
-    return finbert_score, "Fundamental analysis summary unavailable due to API limits."
+    return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk
+
+
+# ─── Main Pipeline ─────────────────────────────────────────────────────────────
 
 def run_pipeline():
-    print(f"Starting Enterprise ML Pipeline at {datetime.now()}...")
+    print(f"\n{'='*60}")
+    print(f"  Starting Aura Enterprise Ensemble Pipeline")
+    print(f"  Time: {datetime.now()}")
+    print(f"  Models: Chronos (35%) + Transformer (20%) + XGBoost (20%) + LightGBM (15%) + LSTM (10%)")
+    print(f"  Forecast Horizon: {PREDICTION_LENGTH} trading days (~6 months)")
+    print(f"{'='*60}\n")
+    
     init_db()
     
-    for symbol in NIFTY_50:
-        print(f"\n--- Analyzing {symbol} ---")
+    for idx, symbol in enumerate(NIFTY_50):
+        print(f"\n[{idx+1}/{len(NIFTY_50)}] --- Analyzing {symbol} ---")
         
-        # 1. Technical Analysis (Machine Learning)
-        print("Training Technical Random Forest Model (RSI/MACD)...")
-        historical_df, forecast = fetch_and_train(symbol)
+        # 1. Technical Analysis (Ensemble ML)
+        result = fetch_and_train(symbol)
         
-        if historical_df is None:
-            print(f"Skipping {symbol} due to missing data.")
+        if result is None or result[0] is None:
+            print(f"  Skipping {symbol} due to missing data.")
             continue
-            
+        
+        historical_df, forecast_with_bands, raw_ensemble = result
         historical_data = historical_df.to_dict('records')
         
-        # 2. Fundamental Analysis (LLM Sentiment)
-        print("Fetching News & Running Gemini Sentiment Analysis...")
-        sentiment, summary = analyze_fundamentals(symbol)
-        print(f"Sentiment Score: {sentiment}")
-        print(f"Summary: {summary}")
+        # 2. Fundamental Analysis (FinBERT + Gemini)
+        print("  Fetching News & Running FinBERT Sentiment...")
+        sentiment, summary, disaster_risk = analyze_fundamentals(symbol)
+        print(f"  Sentiment: {sentiment:.2f} | Disaster Risk: {disaster_risk:.2f}")
         
-        # 3. Store in Database
-        print("Saving to Enterprise SQLite Database...")
-        upsert_analysis(symbol, historical_data, forecast, sentiment, summary)
+        # 3. Apply sentiment and disaster adjustments to the forecast
+        adjusted = apply_sentiment_adjustment(raw_ensemble, sentiment, disaster_risk)
+        
+        # Rebuild forecast list with adjusted values
+        for i, pred in enumerate(forecast_with_bands):
+            pred["PredictedClose"] = round(float(adjusted["median"][i]), 2)
+            pred["UpperBand"] = round(float(adjusted["upper_band"][i]), 2)
+            pred["LowerBand"] = round(float(adjusted["lower_band"][i]), 2)
+        
+        # Extract confidence band arrays for separate DB columns
+        upper_band = [p["UpperBand"] for p in forecast_with_bands]
+        lower_band = [p["LowerBand"] for p in forecast_with_bands]
+        
+        # 4. Store in Database
+        print("  Saving to Database...")
+        upsert_analysis(
+            symbol, historical_data, forecast_with_bands,
+            sentiment, summary, disaster_risk,
+            upper_band, lower_band
+        )
         
         # Sleep to avoid rate limits
         time.sleep(2)
         
-    print("\nPipeline Execution Completed Successfully!")
+    print(f"\n{'='*60}")
+    print(f"  Pipeline Execution Completed Successfully!")
+    print(f"  Time: {datetime.now()}")
+    print(f"{'='*60}\n")
+
+
+# Allow single-ticker re-prediction (used by news sentinel)
+def repredict_ticker(ticker_symbol, new_sentiment=None, new_disaster_risk=None, new_summary=None):
+    """
+    Re-runs the ensemble prediction for a single ticker with updated sentiment.
+    Called by the News Sentinel when new articles are detected.
+    """
+    print(f"\n  [RE-PREDICT] {ticker_symbol} (sentiment={new_sentiment}, disaster={new_disaster_risk})")
+    
+    result = fetch_and_train(ticker_symbol)
+    if result is None or result[0] is None:
+        print(f"  [RE-PREDICT] Failed for {ticker_symbol}")
+        return False
+    
+    historical_df, forecast_with_bands, raw_ensemble = result
+    historical_data = historical_df.to_dict('records')
+    
+    sentiment = new_sentiment if new_sentiment is not None else 0.0
+    disaster_risk = new_disaster_risk if new_disaster_risk is not None else 0.0
+    summary = new_summary if new_summary is not None else "Re-predicted by News Sentinel."
+    
+    # Apply adjustments
+    adjusted = apply_sentiment_adjustment(raw_ensemble, sentiment, disaster_risk)
+    
+    for i, pred in enumerate(forecast_with_bands):
+        pred["PredictedClose"] = round(float(adjusted["median"][i]), 2)
+        pred["UpperBand"] = round(float(adjusted["upper_band"][i]), 2)
+        pred["LowerBand"] = round(float(adjusted["lower_band"][i]), 2)
+    
+    upper_band = [p["UpperBand"] for p in forecast_with_bands]
+    lower_band = [p["LowerBand"] for p in forecast_with_bands]
+    
+    upsert_analysis(
+        ticker_symbol, historical_data, forecast_with_bands,
+        sentiment, summary, disaster_risk,
+        upper_band, lower_band
+    )
+    
+    print(f"  [RE-PREDICT] {ticker_symbol} updated successfully.")
+    return True
+
 
 if __name__ == "__main__":
     run_pipeline()

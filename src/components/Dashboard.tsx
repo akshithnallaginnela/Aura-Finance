@@ -30,6 +30,7 @@ export const Dashboard: React.FC = () => {
     stockForecast, 
     sentimentScore,
     fundamentalSummary,
+    disasterRiskScore,
     lastUpdated,
     fetchStockData, 
     isLoadingData, 
@@ -60,6 +61,8 @@ export const Dashboard: React.FC = () => {
         Date: lastHist.Date,
         Close: lastHist.Close,
         PredictedClose: lastHist.Close,
+        UpperBand: lastHist.Close,
+        LowerBand: lastHist.Close,
         type: 'bridge'
       });
     }
@@ -67,6 +70,8 @@ export const Dashboard: React.FC = () => {
       combinedData.push({
         Date: new Date(f.Date).toLocaleDateString(),
         PredictedClose: f.PredictedClose,
+        UpperBand: f.UpperBand,
+        LowerBand: f.LowerBand,
         type: 'forecast'
       });
     });
@@ -102,7 +107,12 @@ export const Dashboard: React.FC = () => {
           )}
           {data.PredictedClose && (
             <p style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
-              Forecast: {formatPrice(data.PredictedClose)}
+              Forecast (Median): {formatPrice(data.PredictedClose)}
+            </p>
+          )}
+          {data.UpperBand && data.LowerBand && (
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+              Band: {formatPrice(data.LowerBand)} — {formatPrice(data.UpperBand)}
             </p>
           )}
         </div>
@@ -210,11 +220,30 @@ export const Dashboard: React.FC = () => {
             <BarChart3 size={22} color="var(--accent-primary)" />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">30-Day ML Forecast</span>
+            <span className="kpi-label">6-Month Ensemble Forecast</span>
             <span className="kpi-value">
               {stockForecast && stockForecast.length > 0 
                 ? formatPrice(stockForecast[stockForecast.length - 1].PredictedClose)
                 : 'N/A'}
+            </span>
+          </div>
+        </div>
+
+        <div className="glass-panel kpi-card">
+          <div className="kpi-icon-wrapper" style={{ 
+            background: disasterRiskScore > 0.3 ? 'var(--accent-danger-light)' : 'var(--accent-success-light)' 
+          }}>
+            <AlertCircle size={22} color={disasterRiskScore > 0.3 ? 'var(--accent-danger)' : 'var(--accent-success)'} />
+          </div>
+          <div className="kpi-content">
+            <span className="kpi-label">Disaster Risk</span>
+            <span className="kpi-value" style={{ 
+              color: disasterRiskScore > 0.3 ? 'var(--accent-danger)' : 'var(--accent-success)' 
+            }}>
+              {disasterRiskScore > 0.5 ? 'HIGH' : disasterRiskScore > 0.15 ? 'MODERATE' : 'LOW'}
+              <span style={{ fontSize: '0.75rem', marginLeft: '6px', opacity: 0.7 }}>
+                ({(disasterRiskScore * 100).toFixed(0)}%)
+              </span>
             </span>
           </div>
         </div>
@@ -306,17 +335,21 @@ export const Dashboard: React.FC = () => {
       <section className="glass-panel" style={{ padding: '28px', flex: 1, minHeight: '420px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Price History & ML Prediction</h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Last 1 year + 30-day Random Forest forecast</span>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Price History & Ensemble AI Prediction</h3>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Last 2 years + 6-month Ensemble forecast (5 models: Chronos + Transformer + XGBoost + LightGBM + LSTM) with 90% confidence band</span>
           </div>
-          <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem' }}>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: 12, height: 3, borderRadius: 2, background: 'var(--accent-secondary)' }} />
+              <div style={{ width: 12, height: 3, borderRadius: 2, background: '#0d9488' }} />
               <span style={{ color: 'var(--text-dim)' }}>Historical</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: 12, height: 3, borderRadius: 2, background: 'var(--accent-primary)', opacity: 0.7 }} />
-              <span style={{ color: 'var(--text-dim)' }}>Forecast</span>
+              <div style={{ width: 12, height: 3, borderRadius: 2, background: '#6366f1' }} />
+              <span style={{ color: 'var(--text-dim)' }}>Forecast (Median)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: 12, height: 8, borderRadius: 2, background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)' }} />
+              <span style={{ color: 'var(--text-dim)' }}>90% Confidence Band</span>
             </div>
           </div>
         </div>
@@ -374,6 +407,22 @@ export const Dashboard: React.FC = () => {
                   strokeWidth={2}
                   fillOpacity={1} 
                   fill="url(#colorClose)" 
+                  connectNulls
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="UpperBand" 
+                  stroke="none"
+                  fillOpacity={0} 
+                  fill="transparent" 
+                  connectNulls
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="LowerBand" 
+                  stroke="none"
+                  fillOpacity={0.12} 
+                  fill="#6366f1" 
                   connectNulls
                 />
                 <Area 
