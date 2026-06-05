@@ -25,6 +25,7 @@ dist-ssr
 
 implementation_plan.md 
 ENTERPRISE_ARCHITECTURE_PLAN.md
+
 Hugging_face.md
 # Environment Variables
 .env
