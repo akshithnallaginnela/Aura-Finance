@@ -23,6 +23,23 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface WatchlistItem {
+  ticker: string;
+  name: string;
+  exchange: string;
+  price: number;
+  prevPrice: number;
+  change: number;
+  changePct: number;
+  color: string;
+  flashClass: string;
+}
+
+export interface MarketDataPoint {
+  date: string;
+  value: number;
+}
+
 interface FinanceContextType {
   activeTicker: string;
   setActiveTicker: (ticker: string) => void;
@@ -43,6 +60,10 @@ interface FinanceContextType {
   
   activeView: 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor';
   setActiveView: (view: 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor') => void;
+
+  watchlist: WatchlistItem[];
+  marketIndex: MarketDataPoint[];
+  portfolioValue: number;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -63,6 +84,76 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [activeView, setActiveView] = useState<'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor'>('dashboard');
+
+  // ─── Watchlist (simulated live prices) ────────────────────────────────────
+  const DEFAULT_WATCHLIST: WatchlistItem[] = [
+    { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2945.30, change: 0, changePct: 0, color: '#6366f1', flashClass: '' },
+    { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3782.15, change: 0, changePct: 0, color: '#0d9488', flashClass: '' },
+    { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1564.80, change: 0, changePct: 0, color: '#f59e0b', flashClass: '' },
+    { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1723.45, change: 0, changePct: 0, color: '#ef4444', flashClass: '' },
+    { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1285.60, change: 0, changePct: 0, color: '#8b5cf6', flashClass: '' },
+    { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 462.35, change: 0, changePct: 0, color: '#ec4899', flashClass: '' },
+  ];
+
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(DEFAULT_WATCHLIST);
+
+  // Generate synthetic market index data (Nifty-like)
+  const generateMarketIndex = (): MarketDataPoint[] => {
+    const data: MarketDataPoint[] = [];
+    let value = 24850;
+    const now = new Date();
+    for (let i = 90; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      value += (Math.random() - 0.48) * 120; // Slight upward bias
+      value = Math.max(value, 22000);
+      data.push({
+        date: date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+        value: Math.round(value * 100) / 100,
+      });
+    }
+    return data;
+  };
+
+  const [marketIndex, setMarketIndex] = useState<MarketDataPoint[]>(() => generateMarketIndex());
+
+  // Live price ticking — every 2 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWatchlist(prev => prev.map(item => {
+        const delta = (Math.random() - 0.5) * item.price * 0.004; // ±0.2%
+        const newPrice = Math.round((item.price + delta) * 100) / 100;
+        const change = newPrice - item.prevPrice;
+        const changePct = (change / item.prevPrice) * 100;
+        const flashClass = delta >= 0 ? 'price-up' : 'price-down';
+        return {
+          ...item,
+          prevPrice: item.price,
+          price: newPrice,
+          change: Math.round(change * 100) / 100,
+          changePct: Math.round(changePct * 100) / 100,
+          flashClass,
+        };
+      }));
+
+      // Also tick the market index last point
+      setMarketIndex(prev => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        const delta = (Math.random() - 0.48) * 30;
+        updated[updated.length - 1] = {
+          ...last,
+          value: Math.round((last.value + delta) * 100) / 100,
+        };
+        return updated;
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Portfolio value = sum of all watchlist prices × 10 units each
+  const portfolioValue = watchlist.reduce((sum, item) => sum + item.price * 10, 0);
 
   const fetchStockData = useCallback(async (ticker: string) => {
     setIsLoadingData(true);
@@ -169,7 +260,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       sendAdvisorMessage,
       clearChat,
       activeView,
-      setActiveView
+      setActiveView,
+      watchlist,
+      marketIndex,
+      portfolioValue,
     }}>
       {children}
     </FinanceContext.Provider>

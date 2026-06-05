@@ -190,7 +190,8 @@ def run_sentinel():
                     ticker_symbol,
                     new_sentiment=sentiment,
                     new_disaster_risk=disaster_risk,
-                    new_summary=summary
+                    new_summary=summary,
+                    new_news_count=len(new_headlines)
                 )
                 
                 if success:

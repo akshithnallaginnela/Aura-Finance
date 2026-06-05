@@ -260,8 +260,14 @@ def run_pipeline():
     for idx, symbol in enumerate(NIFTY_50):
         print(f"\n[{idx+1}/{len(NIFTY_50)}] --- Analyzing {symbol} ---")
         
-        # 1. Technical Analysis (Ensemble ML)
-        result = fetch_and_train(symbol)
+        # 1. Fundamental Analysis FIRST (FinBERT + Gemini) — so we have sentiment for ML
+        print("  Fetching News & Running FinBERT Sentiment...")
+        sentiment, summary, disaster_risk, news_count = analyze_fundamentals(symbol)
+        print(f"  Sentiment: {sentiment:.2f} | Disaster Risk: {disaster_risk:.2f} | Headlines: {news_count}")
+        
+        # 2. Technical Analysis (Ensemble ML with sentiment as features)
+        result = fetch_and_train(symbol, sentiment_score=sentiment,
+                                 disaster_risk=disaster_risk, news_count=news_count)
         
         if result is None or result[0] is None:
             print(f"  Skipping {symbol} due to missing data.")
@@ -270,13 +276,8 @@ def run_pipeline():
         historical_df, forecast_with_bands, raw_ensemble = result
         historical_data = historical_df.to_dict('records')
         
-        # 2. Fundamental Analysis (FinBERT + Gemini)
-        print("  Fetching News & Running FinBERT Sentiment...")
-        sentiment, summary, disaster_risk = analyze_fundamentals(symbol)
-        print(f"  Sentiment: {sentiment:.2f} | Disaster Risk: {disaster_risk:.2f}")
-        
         # 3. Apply sentiment and disaster adjustments to the forecast
-        adjusted = apply_sentiment_adjustment(raw_ensemble, sentiment, disaster_risk)
+        adjusted = apply_sentiment_adjustment(raw_ensemble, sentiment, disaster_risk, news_count)
         
         # Rebuild forecast list with adjusted values
         for i, pred in enumerate(forecast_with_bands):
@@ -306,14 +307,21 @@ def run_pipeline():
 
 
 # Allow single-ticker re-prediction (used by news sentinel)
-def repredict_ticker(ticker_symbol, new_sentiment=None, new_disaster_risk=None, new_summary=None):
+def repredict_ticker(ticker_symbol, new_sentiment=None, new_disaster_risk=None, new_summary=None, new_news_count=0):
     """
     Re-runs the ensemble prediction for a single ticker with updated sentiment.
     Called by the News Sentinel when new articles are detected.
+    Sentiment is now injected as ML features, not just a post-hoc adjustment.
     """
-    print(f"\n  [RE-PREDICT] {ticker_symbol} (sentiment={new_sentiment}, disaster={new_disaster_risk})")
+    print(f"\n  [RE-PREDICT] {ticker_symbol} (sentiment={new_sentiment}, disaster={new_disaster_risk}, headlines={new_news_count})")
     
-    result = fetch_and_train(ticker_symbol)
+    sentiment = new_sentiment if new_sentiment is not None else 0.0
+    disaster_risk = new_disaster_risk if new_disaster_risk is not None else 0.0
+    summary = new_summary if new_summary is not None else "Re-predicted by News Sentinel."
+    news_count = new_news_count if new_news_count else 0
+    
+    result = fetch_and_train(ticker_symbol, sentiment_score=sentiment,
+                              disaster_risk=disaster_risk, news_count=news_count)
     if result is None or result[0] is None:
         print(f"  [RE-PREDICT] Failed for {ticker_symbol}")
         return False
@@ -321,12 +329,8 @@ def repredict_ticker(ticker_symbol, new_sentiment=None, new_disaster_risk=None, 
     historical_df, forecast_with_bands, raw_ensemble = result
     historical_data = historical_df.to_dict('records')
     
-    sentiment = new_sentiment if new_sentiment is not None else 0.0
-    disaster_risk = new_disaster_risk if new_disaster_risk is not None else 0.0
-    summary = new_summary if new_summary is not None else "Re-predicted by News Sentinel."
-    
     # Apply adjustments
-    adjusted = apply_sentiment_adjustment(raw_ensemble, sentiment, disaster_risk)
+    adjusted = apply_sentiment_adjustment(raw_ensemble, sentiment, disaster_risk, news_count)
     
     for i, pred in enumerate(forecast_with_bands):
         pred["PredictedClose"] = round(float(adjusted["median"][i]), 2)

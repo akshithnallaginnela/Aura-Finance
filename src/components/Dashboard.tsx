@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { 
   AreaChart, 
@@ -20,8 +20,11 @@ import {
   Brain,
   BarChart3,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Wallet
 } from 'lucide-react';
+
+type TimeRange = '1W' | '1M' | '3M' | '6M' | '1Y' | 'Max';
 
 export const Dashboard: React.FC = () => {
   const { 
@@ -34,10 +37,15 @@ export const Dashboard: React.FC = () => {
     lastUpdated,
     fetchStockData, 
     isLoadingData, 
-    errorData 
+    errorData,
+    watchlist,
+    marketIndex,
+    portfolioValue,
   } = useFinance();
 
   const [searchInput, setSearchInput] = useState('');
+  const [timeRange, setTimeRange] = useState<TimeRange>('Max');
+  const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,14 +55,67 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleTickerClick = (ticker: string) => {
+    fetchStockData(`${ticker}.NS`);
+  };
+
+  // ─── Flash animation reset ──────────────────────────────────────────
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    watchlist.forEach(item => {
+      const el = tickerRefs.current.get(item.ticker);
+      if (el && item.flashClass) {
+        // Remove class first to restart animation
+        el.classList.remove('price-up', 'price-down');
+        // Force reflow
+        void el.offsetWidth;
+        el.classList.add(item.flashClass);
+        const timer = setTimeout(() => {
+          el.classList.remove('price-up', 'price-down');
+        }, 800);
+        timers.push(timer);
+      }
+    });
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [watchlist]);
+
+  // ─── Filter historical data by time range ───────────────────────────
+  const filterByTimeRange = (data: any[]) => {
+    if (timeRange === 'Max' || !data.length) return data;
+    const now = new Date();
+    const cutoffs: Record<TimeRange, number> = {
+      '1W': 7,
+      '1M': 30,
+      '3M': 90,
+      '6M': 180,
+      '1Y': 365,
+      'Max': 99999,
+    };
+    const days = cutoffs[timeRange];
+    const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    return data.filter(d => {
+      const date = new Date(d.Date || d.date);
+      return date >= cutoff;
+    });
+  };
+
   // Combine historical and forecast for the chart
-  const combinedData = [...(stockData || [])].map(d => ({
+  const allHistorical = [...(stockData || [])].map(d => ({
     ...d,
     Date: new Date(d.Date).toLocaleDateString(),
     type: 'historical'
   }));
 
-  if (stockForecast && stockForecast.length > 0) {
+  const filteredHistorical = filterByTimeRange(stockData || []).map(d => ({
+    ...d,
+    Date: new Date(d.Date).toLocaleDateString(),
+    type: 'historical'
+  }));
+
+  const combinedData = [...filteredHistorical];
+
+  // Only show forecast on longer time ranges
+  if (stockForecast && stockForecast.length > 0 && (timeRange === '6M' || timeRange === '1Y' || timeRange === 'Max')) {
     const lastHist = combinedData[combinedData.length - 1];
     if (lastHist) {
       combinedData.push({
@@ -121,6 +182,27 @@ export const Dashboard: React.FC = () => {
     return null;
   };
 
+  const MarketTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-card)',
+          padding: '10px 14px',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-lg)',
+        }}>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: '4px' }}>{data.date}</p>
+          <p style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+            ₹{data.value?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   // Sentiment helpers
   const getSentimentLabel = (score: number | null) => {
     if (score === null || score === undefined) return 'Neutral';
@@ -144,6 +226,13 @@ export const Dashboard: React.FC = () => {
     if (score < 0) return 'var(--accent-danger-light)';
     return 'var(--bg-panel)';
   };
+
+  const timeRanges: TimeRange[] = ['1W', '1M', '3M', '6M', '1Y', 'Max'];
+
+  const marketLatest = marketIndex.length > 0 ? marketIndex[marketIndex.length - 1].value : 0;
+  const marketPrev = marketIndex.length > 1 ? marketIndex[marketIndex.length - 2].value : 0;
+  const marketChange = marketLatest - marketPrev;
+  const marketChangePct = marketPrev > 0 ? (marketChange / marketPrev) * 100 : 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -185,11 +274,11 @@ export const Dashboard: React.FC = () => {
       <section className="kpi-grid">
         <div className="glass-panel kpi-card">
           <div className="kpi-icon-wrapper" style={{ background: 'var(--accent-primary-light)' }}>
-            <Activity size={22} color="var(--accent-primary)" />
+            <Wallet size={22} color="var(--accent-primary)" />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">Active Ticker</span>
-            <span className="kpi-value">{activeTicker}</span>
+            <span className="kpi-label">Portfolio Value</span>
+            <span className="kpi-value">₹{portfolioValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
           </div>
         </div>
 
@@ -198,7 +287,7 @@ export const Dashboard: React.FC = () => {
             {isPositive ? <TrendingUp size={22} color="var(--accent-success)" /> : <TrendingDown size={22} color="var(--accent-danger)" />}
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">Current Price</span>
+            <span className="kpi-label">Current Price ({activeTicker})</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
               <span className="kpi-value">{formatPrice(currentPrice)}</span>
               <span style={{ 
@@ -249,6 +338,249 @@ export const Dashboard: React.FC = () => {
         </div>
       </section>
 
+      {/* ═══════════ TICKER STRIP ═══════════ */}
+      <section className="ticker-strip">
+        {watchlist.map((item) => (
+          <div
+            key={item.ticker}
+            ref={el => { if (el) tickerRefs.current.set(item.ticker, el); }}
+            className={`glass-panel ticker-card ${activeTicker.replace('.NS', '') === item.ticker ? 'active-ticker' : ''}`}
+            onClick={() => handleTickerClick(item.ticker)}
+          >
+            <div className="ticker-avatar" style={{ background: item.color }}>
+              {item.ticker[0]}
+            </div>
+            <div className="ticker-info">
+              <span className="ticker-name">{item.ticker}</span>
+              <span className="ticker-exchange">{item.exchange}</span>
+              <div className="ticker-price-row">
+                <span className="ticker-price">
+                  ₹{item.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                </span>
+                <span 
+                  className="ticker-change-badge"
+                  style={{ 
+                    color: item.changePct >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)',
+                    background: item.changePct >= 0 ? 'var(--accent-success-light)' : 'var(--accent-danger-light)'
+                  }}
+                >
+                  {item.changePct >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                  {Math.abs(item.changePct).toFixed(2)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* ═══════════ DUAL CHART GRID ═══════════ */}
+      <section className="dashboard-grid">
+        
+        {/* LEFT — Portfolio Holdings & Forecast */}
+        <div className="glass-panel chart-panel">
+          <div className="chart-panel-header">
+            <div>
+              <h3 className="chart-panel-title">Portfolio Holdings & Forecast</h3>
+              <p className="chart-panel-subtitle">
+                {activeTicker} — Ensemble AI prediction with 90% confidence band
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="chart-legend">
+                <div className="chart-legend-item">
+                  <div className="chart-legend-line" style={{ background: '#0d9488' }} />
+                  <span>Historical</span>
+                </div>
+                <div className="chart-legend-item">
+                  <div className="chart-legend-line" style={{ background: '#6366f1' }} />
+                  <span>Forecast</span>
+                </div>
+                <div className="chart-legend-item">
+                  <div className="chart-legend-band" style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)' }} />
+                  <span>Confidence</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="time-range-tabs">
+            {timeRanges.map(range => (
+              <button 
+                key={range}
+                className={`time-range-tab ${timeRange === range ? 'active' : ''}`}
+                onClick={() => setTimeRange(range)}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+          
+          {isLoadingData ? (
+            <div style={{ height: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  width: 40, height: 40, borderRadius: 'var(--radius-full)',
+                  border: '3px solid var(--border-card)', borderTopColor: 'var(--accent-primary)',
+                  animation: 'spin 0.8s linear infinite', margin: '0 auto 12px'
+                }} />
+                <p>Fetching market data & training model...</p>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </div>
+            </div>
+          ) : (
+            <div style={{ height: '340px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={combinedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
+                      <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis 
+                    dataKey="Date" 
+                    stroke="#94a3b8" 
+                    fontSize={11} 
+                    tickMargin={10}
+                    minTickGap={50}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    fontSize={11} 
+                    tickFormatter={fmt => currentPrice > 500 ? `₹${fmt}` : `$${fmt}`}
+                    domain={['auto', 'auto']}
+                    width={65}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="Close" 
+                    stroke="#0d9488" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorClose)" 
+                    connectNulls
+                    isAnimationActive
+                    animationDuration={800}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="UpperBand" 
+                    stroke="none"
+                    fillOpacity={0} 
+                    fill="transparent" 
+                    connectNulls
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="LowerBand" 
+                    stroke="none"
+                    fillOpacity={0.12} 
+                    fill="#6366f1" 
+                    connectNulls
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="PredictedClose" 
+                    stroke="#6366f1" 
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                    fillOpacity={1} 
+                    fill="url(#colorPred)" 
+                    connectNulls
+                    isAnimationActive
+                    animationDuration={800}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT — Market Overview */}
+        <div className="glass-panel chart-panel">
+          <div className="chart-panel-header">
+            <div>
+              <h3 className="chart-panel-title">Market Overview</h3>
+              <p className="chart-panel-subtitle">Nifty 50 Index — 90 Day View</p>
+            </div>
+            <div className="live-indicator">
+              <span className="live-dot" />
+              Live
+            </div>
+          </div>
+
+          {/* Market summary */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+              ₹{marketLatest.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+            </span>
+            <span style={{ 
+              fontSize: '0.82rem', fontWeight: 600,
+              color: marketChange >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)',
+              display: 'inline-flex', alignItems: 'center', gap: '3px',
+              padding: '3px 8px', borderRadius: 'var(--radius-full)',
+              background: marketChange >= 0 ? 'var(--accent-success-light)' : 'var(--accent-danger-light)'
+            }}>
+              {marketChange >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+              {Math.abs(marketChangePct).toFixed(2)}%
+            </span>
+          </div>
+
+          <div style={{ height: '260px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={marketIndex} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorMarket" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.12}/>
+                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#94a3b8" 
+                  fontSize={10} 
+                  tickMargin={8}
+                  minTickGap={40}
+                  axisLine={{ stroke: '#e2e8f0' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  stroke="#94a3b8" 
+                  fontSize={10}
+                  tickFormatter={v => `${(v/1000).toFixed(1)}k`}
+                  domain={['dataMin - 200', 'dataMax + 200']}
+                  width={50}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<MarketTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#0d9488" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorMarket)"
+                  isAnimationActive
+                  animationDuration={600}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
+
       {/* Fundamental Analysis */}
       {!isLoadingData && fundamentalSummary && (
         <section className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -264,7 +596,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>Fundamental Analysis</h3>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Proprietary News Intelligence Engine</span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>FinBERT + News Intelligence Engine</span>
               </div>
             </div>
             {lastUpdated && (
@@ -330,116 +662,6 @@ export const Dashboard: React.FC = () => {
           </div>
         </section>
       )}
-
-      {/* Chart Section */}
-      <section className="glass-panel" style={{ padding: '28px', flex: 1, minHeight: '420px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Price History & Ensemble AI Prediction</h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>Last 2 years + 6-month Ensemble forecast (5 models: Chronos + Transformer + XGBoost + LightGBM + LSTM) with 90% confidence band</span>
-          </div>
-            <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: 12, height: 3, borderRadius: 2, background: '#0d9488' }} />
-              <span style={{ color: 'var(--text-dim)' }}>Historical</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: 12, height: 3, borderRadius: 2, background: '#6366f1' }} />
-              <span style={{ color: 'var(--text-dim)' }}>Forecast (Median)</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: 12, height: 8, borderRadius: 2, background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)' }} />
-              <span style={{ color: 'var(--text-dim)' }}>90% Confidence Band</span>
-            </div>
-          </div>
-        </div>
-        
-        {isLoadingData ? (
-          <div style={{ height: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: 40, height: 40, borderRadius: 'var(--radius-full)',
-                border: '3px solid var(--border-card)', borderTopColor: 'var(--accent-primary)',
-                animation: 'spin 0.8s linear infinite', margin: '0 auto 12px'
-              }} />
-              <p>Fetching market data & training model...</p>
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            </div>
-          </div>
-        ) : (
-          <div style={{ height: '320px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={combinedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis 
-                  dataKey="Date" 
-                  stroke="#94a3b8" 
-                  fontSize={12} 
-                  tickMargin={10}
-                  minTickGap={40}
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  stroke="#94a3b8" 
-                  fontSize={12} 
-                  tickFormatter={fmt => currentPrice > 500 ? `₹${fmt}` : `$${fmt}`}
-                  domain={['auto', 'auto']}
-                  width={70}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="Close" 
-                  stroke="#0d9488" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorClose)" 
-                  connectNulls
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="UpperBand" 
-                  stroke="none"
-                  fillOpacity={0} 
-                  fill="transparent" 
-                  connectNulls
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="LowerBand" 
-                  stroke="none"
-                  fillOpacity={0.12} 
-                  fill="#6366f1" 
-                  connectNulls
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="PredictedClose" 
-                  stroke="#6366f1" 
-                  strokeWidth={2}
-                  strokeDasharray="6 4"
-                  fillOpacity={1} 
-                  fill="url(#colorPred)" 
-                  connectNulls
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </section>
     </div>
   );
 };

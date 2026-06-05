@@ -30,22 +30,25 @@ def on_demand_analysis(ticker):
     """
     Fallback: If a stock isn't in the database, run a quick technical analysis
     on-the-fly and store it so future requests are instant.
+    Fundamentals run first so sentiment can be injected as ML features.
     """
     from pipeline import fetch_and_train, analyze_fundamentals
     
     print(f"[On-Demand] Running real-time analysis for {ticker}...")
     
-    historical_df, forecast = fetch_and_train(ticker)
+    # Run fundamentals FIRST to get sentiment for ML features
+    sentiment, summary, disaster_risk, news_count = analyze_fundamentals(ticker)
+    
+    historical_df, forecast, _raw = fetch_and_train(ticker, sentiment_score=sentiment,
+                                                      disaster_risk=disaster_risk,
+                                                      news_count=news_count)
     if historical_df is None:
         return None
     
     historical_data = historical_df.to_dict('records')
     
-    # Run Gemini for on-demand as well
-    sentiment, summary = analyze_fundamentals(ticker)
-    
     # Save to database for future instant access
-    upsert_analysis(ticker, historical_data, forecast, sentiment, summary)
+    upsert_analysis(ticker, historical_data, forecast, sentiment, summary, disaster_risk)
     
     return get_analysis(ticker)
 
