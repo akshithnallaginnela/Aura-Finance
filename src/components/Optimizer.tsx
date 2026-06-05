@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
-import { PieChart as PieChartIcon, Settings, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { PieChart as PieChartIcon, Settings, AlertCircle } from 'lucide-react';
 
 interface Allocation {
   ticker: string;
@@ -160,12 +160,12 @@ export const Optimizer: React.FC = () => {
                       dataKey="weight"
                       nameKey="ticker"
                     >
-                      {result.allocations.map((entry, index) => (
+                      {result.allocations.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.5)" strokeWidth={2} />
                       ))}
                     </Pie>
                     <RechartsTooltip 
-                      formatter={(value: number) => [`${value}%`, 'Allocation']}
+                      formatter={(value: any) => [`${value}%`, 'Allocation']}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
                     />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
