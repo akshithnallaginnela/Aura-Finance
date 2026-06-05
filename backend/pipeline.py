@@ -103,10 +103,10 @@ def add_technical_indicators(df):
 
 PREDICTION_LENGTH = 130  # ~6 months of trading days
 
-def fetch_and_train(ticker_symbol):
+def fetch_and_train(ticker_symbol, sentiment_score=0.0, disaster_risk=0.0, news_count=0):
     """
-    Fetches 2Y historical data, runs the 3-model ensemble, 
-    and returns long-term forecast with confidence bands.
+    Fetches 2Y historical data, runs the 5-model ensemble with news sentiment
+    injected as features, and returns long-term forecast with confidence bands.
     """
     ticker = yf.Ticker(ticker_symbol)
     df = ticker.history(period="2y")
@@ -122,9 +122,12 @@ def fetch_and_train(ticker_symbol):
     
     df = add_technical_indicators(df)
     
-    # Run ensemble prediction
-    print(f"  Running Ensemble Prediction ({PREDICTION_LENGTH} days)...")
-    result = ensemble_predict(chronos, df, prediction_length=PREDICTION_LENGTH)
+    # Run ensemble prediction with news features
+    print(f"  Running Ensemble Prediction ({PREDICTION_LENGTH} days, sentiment={sentiment_score:.2f})...")
+    result = ensemble_predict(chronos, df, prediction_length=PREDICTION_LENGTH,
+                              sentiment_score=sentiment_score,
+                              disaster_risk=disaster_risk,
+                              news_count=news_count)
     
     # Build forecast list with confidence bands
     predictions = []
@@ -151,13 +154,13 @@ def analyze_fundamentals(ticker_symbol):
     """
     Fetches recent news, uses FinBERT for sentiment, detects disaster keywords,
     and uses Gemini for a summary.
-    Returns: (sentiment_score, summary, disaster_risk)
+    Returns: (sentiment_score, summary, disaster_risk, news_count)
     """
     ticker = yf.Ticker(ticker_symbol)
     news = ticker.news
     
     if not news:
-        return 0.0, "No recent news found for fundamental analysis.", 0.0
+        return 0.0, "No recent news found for fundamental analysis.", 0.0, 0
         
     headlines = []
     for item in news[:10]:
@@ -169,7 +172,7 @@ def analyze_fundamentals(ticker_symbol):
             headlines.append(f"{title} (Source: {publisher})")
             
     if not headlines:
-        return 0.0, "No parseable news headlines were found for this asset today.", 0.0
+        return 0.0, "No parseable news headlines were found for this asset today.", 0.0, 0
     
     # FinBERT sentiment scoring
     finbert_score = 0.0
@@ -224,11 +227,37 @@ def analyze_fundamentals(ticker_symbol):
             response = model.generate_content(prompt)
             raw_text = response.text.replace('```json', '').replace('```', '').strip()
             
-            try:
-                result = json.loads(raw_text)
-                return float(result.get("sentiment_score", finbert_score)), str(result.get("summary", "Analysis completed.")), disaster_risk
-            except json.JSONDecodeError:
-                return finbert_score, raw_text.replace('{', '').replace('}', '').strip(), disaster_risk
+    api_keys = [k.strip() for k in api_keys_str.split(',') if k.strip()]
+    import random
+    api_key = random.choice(api_keys)
+        
+    import google.generativeai as genai
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        current_price = historical[-1]['Close'] if historical else 'Unknown'
+        future_price = forecast[-1]['PredictedClose'] if forecast else 'Unknown'
+        
+        system_context = f"""
+You are Aura, an elite quantitative financial analyst AI.
+The user is asking about the stock ticker: {ticker}.
+Current Price: {current_price}
+Our internal Ensemble AI model (Chronos Foundation Model + XGBoost + LSTM Neural Network) predicts the price will be {future_price} in approximately 6 months.
+
+Analyze this data and answer the user's prompt. Keep it professional, concise, and focused on market dynamics.
+User Prompt: {prompt}
+"""
+        
+        response = model.generate_content(system_context)
+        return jsonify({
+            "response": response.text
+        })
+    except Exception as e:
+        print(f"Gemini API Error: {e}")
+        return jsonify({
+            "response": f"Sorry, I encountered an error communicating with the AI model: {str(e)}"
+        }), 500
                 
         except Exception as e:
             if "429" in str(e) or "Quota exceeded" in str(e):
