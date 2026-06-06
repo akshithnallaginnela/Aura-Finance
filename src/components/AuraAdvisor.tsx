@@ -33,17 +33,17 @@ const parseMarkdown = (text: string) => {
           <div key={`table_${keyCounter++}`} style={{ overflowX: 'auto', margin: '14px 0' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-card)', background: 'var(--bg-panel)' }}>
+                <tr style={{ borderBottom: '2px solid var(--line)', background: 'var(--bg2)' }}>
                   {tableRows[0].map((cell, idx) => (
-                    <th key={`th_${idx}`} style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'left', color: 'var(--text-main)' }}>{formatBoldText(cell)}</th>
+                    <th key={`th_${idx}`} style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'left', color: 'var(--tx)' }}>{formatBoldText(cell)}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {tableRows.slice(1).map((row, rowIdx) => (
-                  <tr key={`tr_${rowIdx}`} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <tr key={`tr_${rowIdx}`} style={{ borderBottom: '1px solid var(--line)' }}>
                     {row.map((cell, cellIdx) => (
-                      <td key={`td_${cellIdx}`} style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{formatBoldText(cell)}</td>
+                      <td key={`td_${cellIdx}`} style={{ padding: '8px 12px', color: 'var(--tx2)' }}>{formatBoldText(cell)}</td>
                     ))}
                   </tr>
                 ))}
@@ -59,17 +59,17 @@ const parseMarkdown = (text: string) => {
     if (line === '') continue;
 
     if (line.startsWith('### ')) {
-      elements.push(<h4 key={`h4_${keyCounter++}`} style={{ fontSize: '1rem', fontWeight: 700, margin: '14px 0 6px', color: 'var(--text-main)' }}>{formatBoldText(line.substring(4))}</h4>);
+      elements.push(<h4 key={`h4_${keyCounter++}`} style={{ fontSize: '1rem', fontWeight: 700, margin: '14px 0 6px', color: 'var(--tx)' }}>{formatBoldText(line.substring(4))}</h4>);
     } else if (line.startsWith('## ')) {
-      elements.push(<h3 key={`h3_${keyCounter++}`} style={{ fontSize: '1.1rem', fontWeight: 800, margin: '18px 0 8px', color: 'var(--text-main)' }}>{formatBoldText(line.substring(3))}</h3>);
+      elements.push(<h3 key={`h3_${keyCounter++}`} style={{ fontSize: '1.1rem', fontWeight: 800, margin: '18px 0 8px', color: 'var(--tx)' }}>{formatBoldText(line.substring(3))}</h3>);
     } else if (line.startsWith('* ') || line.startsWith('- ')) {
       elements.push(
         <ul key={`ul_${keyCounter++}`} style={{ paddingLeft: '20px', margin: '4px 0' }}>
-          <li style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{formatBoldText(line.substring(2))}</li>
+          <li style={{ fontSize: '0.88rem', color: 'var(--tx2)', lineHeight: 1.6 }}>{formatBoldText(line.substring(2))}</li>
         </ul>
       );
     } else {
-      elements.push(<p key={`p_${keyCounter++}`} style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.7, margin: '6px 0' }}>{formatBoldText(line)}</p>);
+      elements.push(<p key={`p_${keyCounter++}`} style={{ fontSize: '0.88rem', color: 'var(--tx2)', lineHeight: 1.7, margin: '6px 0' }}>{formatBoldText(line)}</p>);
     }
   }
 
@@ -104,7 +104,7 @@ const parseMarkdown = (text: string) => {
 const formatBoldText = (text: string) => {
   const parts = text.split(/\*\*([^*]+)\*\*/g);
   return parts.map((part, idx) => {
-    return idx % 2 === 1 ? <strong key={idx} style={{ color: 'var(--text-main)', fontWeight: 700 }}>{part}</strong> : part;
+    return idx % 2 === 1 ? <strong key={idx} style={{ color: 'var(--tx)', fontWeight: 700 }}>{part}</strong> : part;
   });
 };
 
@@ -135,35 +135,36 @@ export const AuraAdvisor: React.FC = () => {
   };
 
   return (
-    <div className="glass-panel" style={{ 
+    <div className="panel" style={{ 
       display: 'flex', flexDirection: 'column', 
-      height: 'calc(100vh - 180px)', padding: '24px',
+      height: 'calc(100vh - 120px)', padding: '24px', margin: '20px',
       overflow: 'hidden'
     }}>
       
       {/* Header */}
       <div style={{ 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        borderBottom: '1px solid var(--border-subtle)', paddingBottom: '16px', marginBottom: '20px'
+        borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '20px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ 
             width: 40, height: 40, borderRadius: 'var(--radius-md)',
-            background: 'var(--accent-primary-light)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center' 
+            background: 'var(--amber-bg)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid var(--amber)'
           }}>
-            <Sparkles size={20} color="var(--accent-primary)" />
+            <Sparkles size={20} color="var(--amber)" />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>Aura Strategist</h3>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Advanced financial analysis</span>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--tx)' }}>Aura Strategist</h3>
+            <span style={{ fontSize: '0.78rem', color: 'var(--tx3)' }}>Advanced financial analysis</span>
           </div>
         </div>
 
         <button 
           onClick={clearChat}
-          className="glass-btn-text"
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--accent-danger)' }}
+          className="seg-btn"
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--red)' }}
         >
           <Trash2 size={14} /> Clear Chat
         </button>
@@ -177,9 +178,9 @@ export const AuraAdvisor: React.FC = () => {
         {chatHistory.length === 0 && (
           <div style={{ 
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: '12px', color: 'var(--text-dim)', textAlign: 'center'
+            flexDirection: 'column', gap: '12px', color: 'var(--tx3)', textAlign: 'center'
           }}>
-            <Sparkles size={32} color="var(--accent-primary)" style={{ opacity: 0.4 }} />
+            <Sparkles size={32} color="var(--amber)" style={{ opacity: 0.4 }} />
             <p style={{ fontSize: '0.95rem' }}>Ask Aura anything about the markets.</p>
             <p style={{ fontSize: '0.82rem' }}>Use the quick prompts below or type your own question.</p>
           </div>
@@ -193,20 +194,20 @@ export const AuraAdvisor: React.FC = () => {
                 {/* Avatar */}
                 <div style={{ 
                   width: 34, height: 34, borderRadius: 'var(--radius-full)', flexShrink: 0,
-                  background: isUser ? 'var(--bg-panel)' : 'var(--accent-primary-light)',
-                  border: `1px solid ${isUser ? 'var(--border-card)' : 'transparent'}`,
+                  background: isUser ? 'var(--bg2)' : 'var(--amber-bg)',
+                  border: `1px solid ${isUser ? 'var(--line)' : 'var(--amber)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                  {isUser ? <User size={15} color="var(--text-muted)" /> : <Sparkles size={15} color="var(--accent-primary)" />}
+                  {isUser ? <User size={15} color="var(--tx3)" /> : <Sparkles size={15} color="var(--amber)" />}
                 </div>
 
                 {/* Bubble */}
                 <div style={{ 
                   padding: '14px 18px', 
                   borderRadius: isUser ? 'var(--radius-lg) var(--radius-sm) var(--radius-lg) var(--radius-lg)' : 'var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg)',
-                  background: isUser ? 'var(--accent-primary)' : 'var(--bg-panel)',
-                  color: isUser ? 'var(--text-on-primary)' : 'var(--text-main)',
-                  border: isUser ? 'none' : '1px solid var(--border-subtle)',
+                  background: isUser ? 'var(--amber)' : 'var(--bg2)',
+                  color: isUser ? 'var(--bg1)' : 'var(--tx)',
+                  border: isUser ? 'none' : '1px solid var(--line)',
                 }}>
                   {isUser ? (
                     <p style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{msg.content}</p>
@@ -226,16 +227,16 @@ export const AuraAdvisor: React.FC = () => {
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ 
               width: 34, height: 34, borderRadius: 'var(--radius-full)',
-              background: 'var(--accent-primary-light)', 
+              background: 'var(--amber-bg)', border: '1px solid var(--amber)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Sparkles size={15} color="var(--accent-primary)" />
+              <Sparkles size={15} color="var(--amber)" />
             </div>
-            <div style={{ padding: '14px 18px', borderRadius: 'var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg)', background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ padding: '14px 18px', borderRadius: 'var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg)', background: 'var(--bg2)', border: '1px solid var(--line)' }}>
               <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse 1s infinite alternate' }} />
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse 1s infinite alternate 0.2s' }} />
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent-primary)', animation: 'pulse 1s infinite alternate 0.4s' }} />
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber)', animation: 'pulse 1s infinite alternate' }} />
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber)', animation: 'pulse 1s infinite alternate 0.2s' }} />
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber)', animation: 'pulse 1s infinite alternate 0.4s' }} />
               </div>
             </div>
           </div>
@@ -247,25 +248,25 @@ export const AuraAdvisor: React.FC = () => {
       {!isChatLoading && (
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', flexWrap: 'wrap' }}>
           <button 
-            className="glass-btn glass-btn-secondary" 
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px' }}
+            className="seg-btn" 
+            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px', display: 'flex', alignItems: 'center' }}
             onClick={() => handleChipClick('Analyze the current forecast for this stock.')}
           >
-            <TrendingUp size={14} color="var(--accent-primary)" /> Analyze Forecast
+            <TrendingUp size={14} color="var(--amber)" /> Analyze Forecast
           </button>
           <button 
-            className="glass-btn glass-btn-secondary" 
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px' }}
+            className="seg-btn" 
+            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px', display: 'flex', alignItems: 'center' }}
             onClick={() => handleChipClick('What are the key technical risks for this asset right now?')}
           >
-            <Scale size={14} color="var(--accent-secondary)" /> Assess Risks
+            <Scale size={14} color="var(--red)" /> Assess Risks
           </button>
           <button 
-            className="glass-btn glass-btn-secondary" 
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px' }}
+            className="seg-btn" 
+            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px', display: 'flex', alignItems: 'center' }}
             onClick={() => handleChipClick('Summarize the recent price volatility and momentum.')}
           >
-            <Activity size={14} color="var(--accent-success)" /> Check Momentum
+            <Activity size={14} color="var(--green)" /> Check Momentum
           </button>
         </div>
       )}
@@ -274,7 +275,7 @@ export const AuraAdvisor: React.FC = () => {
       <form onSubmit={handleSend} style={{ display: 'flex', gap: '10px' }}>
         <input 
           type="text" 
-          className="glass-input" 
+          className="search-input" 
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Ask Aura anything about the markets..."
@@ -282,9 +283,9 @@ export const AuraAdvisor: React.FC = () => {
         />
         <button 
           type="submit" 
-          className="glass-btn" 
+          className="seg-btn" 
           disabled={isChatLoading || !inputText.trim()}
-          style={{ width: '48px', height: '46px', padding: 0 }}
+          style={{ width: '48px', height: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--amber)', color: 'var(--bg1)' }}
         >
           <Send size={16} />
         </button>

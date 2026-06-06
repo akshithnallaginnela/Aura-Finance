@@ -65,8 +65,8 @@ interface FinanceContextType {
   isAuthenticated: boolean;
   setIsAuthenticated: (auth: boolean) => void;
   
-  activeView: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings';
-  setActiveView: (view: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings') => void;
+  activeView: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener';
+  setActiveView: (view: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener') => void;
 
   watchlist: WatchlistItem[];
   marketIndex: MarketDataPoint[];
@@ -93,7 +93,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings'>('login');
+  const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener'>('login');
 
   // ─── Watchlist (simulated live prices) ────────────────────────────────────
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([

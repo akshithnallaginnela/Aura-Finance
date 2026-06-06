@@ -54,7 +54,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
           <div className="nav-section-label">Markets</div>
           <div className={`nav-item ${activeView === 'watchlist' ? 'active' : ''}`} onClick={() => setActiveView('watchlist')}><span className="nav-dot"></span>Watchlist</div>
-          <div className="nav-item"><span className="nav-dot"></span>Screener</div>
+          <div className={`nav-item ${activeView === 'screener' ? 'active' : ''}`} onClick={() => setActiveView('screener')}><span className="nav-dot"></span>Screener</div>
 
           <div className="nav-section-label">System</div>
           <div className={`nav-item ${activeView === 'settings' ? 'active' : ''}`} onClick={() => setActiveView('settings')}><span className="nav-dot"></span>Settings</div>
