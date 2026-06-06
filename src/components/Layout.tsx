@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   PieChart, 
   MessageSquare, 
-  Sparkles, 
   Coins,
   ArrowUpRight,
   ArrowDownRight,

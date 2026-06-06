@@ -30,7 +30,6 @@ export const Dashboard: React.FC = () => {
     activeTicker, 
     stockData, 
     stockForecast, 
-    sentimentScore,
     fundamentalSummary,
     disasterRiskScore,
     lastUpdated,
@@ -197,29 +196,7 @@ export const Dashboard: React.FC = () => {
     return null;
   };
 
-  // Sentiment helpers
-  const getSentimentLabel = (score: number | null) => {
-    if (score === null || score === undefined) return 'Neutral';
-    if (score >= 0.5) return 'Very Bullish';
-    if (score >= 0.2) return 'Bullish';
-    if (score > -0.2) return 'Neutral';
-    if (score > -0.5) return 'Bearish';
-    return 'Very Bearish';
-  };
-
-  const getSentimentColor = (score: number | null) => {
-    if (score === null || score === undefined) return 'var(--text-muted)';
-    if (score > 0) return 'var(--accent-success)';
-    if (score < 0) return 'var(--accent-danger)';
-    return 'var(--text-muted)';
-  };
-
-  const getSentimentBg = (score: number | null) => {
-    if (score === null || score === undefined) return 'var(--bg-panel)';
-    if (score > 0) return 'var(--accent-success-light)';
-    if (score < 0) return 'var(--accent-danger-light)';
-    return 'var(--bg-panel)';
-  };
+  // Sentiment helpers removed
 
   const timeRanges: TimeRange[] = ['1W', '1M', '3M', '6M', '1Y', 'Max'];
 
