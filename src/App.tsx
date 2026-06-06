@@ -34,9 +34,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <FinanceProvider>
-      <AppContent />
-    </FinanceProvider>
-  );
+  return <AppContent />;
 }

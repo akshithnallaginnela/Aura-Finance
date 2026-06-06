@@ -9,19 +9,6 @@ import {
   ResponsiveContainer,
   CartesianGrid
 } from 'recharts';
-import { 
-  TrendingUp,
-  TrendingDown,
-  Search,
-  AlertCircle,
-  Newspaper,
-  Clock,
-  Brain,
-  BarChart3,
-  ArrowUpRight,
-  ArrowDownRight,
-  Wallet
-} from 'lucide-react';
 
 type TimeRange = '1W' | '1M' | '3M' | '6M' | '1Y' | 'Max';
 
@@ -43,41 +30,11 @@ export const Dashboard: React.FC = () => {
     portfolioValue,
   } = useFinance();
 
-  const [searchInput, setSearchInput] = useState('');
   const [timeRange, setTimeRange] = useState<TimeRange>('Max');
-  const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchInput.trim()) {
-      fetchStockData(searchInput.trim());
-      setSearchInput('');
-    }
-  };
 
   const handleTickerClick = (ticker: string) => {
     fetchStockData(`${ticker}.NS`);
   };
-
-  // ─── Flash animation reset ──────────────────────────────────────────
-  useEffect(() => {
-    const timers: any[] = [];
-    watchlist.forEach(item => {
-      const el = tickerRefs.current.get(item.ticker);
-      if (el && item.flashClass) {
-        // Remove class first to restart animation
-        el.classList.remove('price-up', 'price-down');
-        // Force reflow
-        void el.offsetWidth;
-        el.classList.add(item.flashClass);
-        const timer = setTimeout(() => {
-          el.classList.remove('price-up', 'price-down');
-        }, 800);
-        timers.push(timer);
-      }
-    });
-    return () => timers.forEach(t => clearTimeout(t));
-  }, [watchlist]);
 
   // ─── Filter historical data by time range ───────────────────────────
   const filterByTimeRange = (data: any[]) => {
@@ -107,7 +64,6 @@ export const Dashboard: React.FC = () => {
 
   const combinedData = [...filteredHistorical];
 
-  // Only show forecast on longer time ranges
   if (stockForecast && stockForecast.length > 0 && (timeRange === '6M' || timeRange === '1Y' || timeRange === 'Max')) {
     const lastHist = combinedData[combinedData.length - 1];
     if (lastHist) {
@@ -147,26 +103,22 @@ export const Dashboard: React.FC = () => {
       const data = payload[0].payload;
       return (
         <div style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-card)',
-          padding: '12px 16px',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
+          background: 'var(--bg1)',
+          border: '1px solid var(--line)',
+          padding: '8px 12px',
+          color: 'var(--tx)',
+          fontFamily: 'var(--mono)',
+          fontSize: '11px'
         }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '6px' }}>{data.Date}</p>
+          <p style={{ color: 'var(--tx3)', marginBottom: '4px' }}>{data.Date}</p>
           {data.Close && (
-            <p style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+            <p style={{ color: 'var(--green)', fontWeight: 600 }}>
               Actual: {formatPrice(data.Close)}
             </p>
           )}
           {data.PredictedClose && (
-            <p style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
-              Forecast (Median): {formatPrice(data.PredictedClose)}
-            </p>
-          )}
-          {data.UpperBand && data.LowerBand && (
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-              Band: {formatPrice(data.LowerBand)} — {formatPrice(data.UpperBand)}
+            <p style={{ color: 'var(--amber)', fontWeight: 600 }}>
+              Forecast: {formatPrice(data.PredictedClose)}
             </p>
           )}
         </div>
@@ -174,295 +126,139 @@ export const Dashboard: React.FC = () => {
     }
     return null;
   };
-
-  const MarketTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-card)',
-          padding: '10px 14px',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
-        }}>
-          <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: '4px' }}>{data.date}</p>
-          <p style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
-            ₹{data.value?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Sentiment helpers removed
-
-  const timeRanges: TimeRange[] = ['1W', '1M', '3M', '6M', '1Y', 'Max'];
-
-  const marketLatest = marketIndex.length > 0 ? marketIndex[marketIndex.length - 1].value : 0;
-  const marketPrev = marketIndex.length > 1 ? marketIndex[marketIndex.length - 2].value : 0;
-  const marketChange = marketLatest - marketPrev;
-  const marketChangePct = marketPrev > 0 ? (marketChange / marketPrev) * 100 : 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      
-      {/* Search Bar */}
-      <div className="glass-panel" style={{ padding: '20px 24px' }}>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1, maxWidth: '460px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-            <input 
-              type="text" 
-              className="glass-input" 
-              placeholder="Search ticker (e.g. RELIANCE.NS, TCS.NS, AAPL)..." 
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
-              style={{ paddingLeft: '42px' }}
-            />
-          </div>
-          <button type="submit" className="glass-btn" disabled={isLoadingData}>
-            {isLoadingData ? 'Analyzing...' : 'Analyze Asset'}
-          </button>
-        </form>
-      </div>
-
-      {/* Error Banner */}
+    <>
+      {/* ERROR BANNER */}
       {errorData && (
-        <div className="glass-panel" style={{ 
-          padding: '14px 20px', 
-          borderLeft: '4px solid var(--accent-danger)', 
-          display: 'flex', alignItems: 'center', gap: '12px',
-          background: 'var(--accent-danger-light)'
-        }}>
-          <AlertCircle size={18} color="var(--accent-danger)" />
-          <span style={{ color: 'var(--accent-danger)', fontSize: '0.9rem', fontWeight: 500 }}>{errorData}</span>
+        <div style={{ padding: '12px 18px', background: 'var(--red-bg)', color: 'var(--red)', fontFamily: 'var(--mono)', fontSize: '11px', border: '1px solid var(--red)', marginBottom: '12px' }}>
+          {errorData}
         </div>
       )}
 
-      {/* KPI Cards */}
-      <section className="kpi-grid">
-        <div className="glass-panel kpi-card">
-          <div className="kpi-icon-wrapper" style={{ background: 'var(--accent-primary-light)' }}>
-            <Wallet size={22} color="var(--accent-primary)" />
-          </div>
-          <div className="kpi-content">
-            <span className="kpi-label">Portfolio Value</span>
-            <span className="kpi-value">₹{portfolioValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+      {/* STAT STRIP */}
+      <div className="stat-strip">
+        <div className="stat-cell">
+          <div className="stat-cell-label">Portfolio Value</div>
+          <div className="stat-cell-val">₹{portfolioValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+          <div className="stat-cell-chg up"><span>▲</span> 0.00%</div>
+        </div>
+        <div className="stat-cell">
+          <div className="stat-cell-label">{activeTicker} Price</div>
+          <div className="stat-cell-val">{formatPrice(currentPrice)}</div>
+          <div className={`stat-cell-chg ${isPositive ? 'up' : 'dn'}`}>
+            <span>{isPositive ? '▲' : '▼'}</span> {Math.abs(priceChangePct).toFixed(2)}%
           </div>
         </div>
-
-        <div className="glass-panel kpi-card">
-          <div className="kpi-icon-wrapper" style={{ background: isPositive ? 'var(--accent-success-light)' : 'var(--accent-danger-light)' }}>
-            {isPositive ? <TrendingUp size={22} color="var(--accent-success)" /> : <TrendingDown size={22} color="var(--accent-danger)" />}
+        <div className="stat-cell">
+          <div className="stat-cell-label">6M Forecast</div>
+          <div className="stat-cell-val">
+            {stockForecast && stockForecast.length > 0 
+              ? formatPrice(stockForecast[stockForecast.length - 1].PredictedClose)
+              : 'N/A'}
           </div>
-          <div className="kpi-content">
-            <span className="kpi-label">Current Price ({activeTicker})</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-              <span className="kpi-value">{formatPrice(currentPrice)}</span>
-              <span style={{ 
-                fontSize: '0.82rem', fontWeight: 600,
-                color: isPositive ? 'var(--accent-success)' : 'var(--accent-danger)',
-                display: 'inline-flex', alignItems: 'center', gap: '3px',
-                padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                background: isPositive ? 'var(--accent-success-light)' : 'var(--accent-danger-light)'
-              }}>
-                {isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                {Math.abs(priceChangePct).toFixed(2)}%
-              </span>
-            </div>
+          <div className="stat-cell-chg amber"><span>AI Target</span></div>
+        </div>
+        <div className="stat-cell">
+          <div className="stat-cell-label">Model Accuracy</div>
+          <div className="stat-cell-val">{backtestAccuracy ? `${backtestAccuracy.toFixed(1)}%` : 'N/A'}</div>
+          <div className="stat-cell-chg up"><span>Trained on Historicals</span></div>
+        </div>
+        <div className="stat-cell highlight">
+          <div className="stat-cell-label">Disaster Risk</div>
+          <div className={`stat-cell-val ${disasterRiskScore > 0.3 ? 'dn' : 'up'}`}>
+            {disasterRiskScore > 0.5 ? 'HIGH' : disasterRiskScore > 0.15 ? 'MODERATE' : 'LOW'}
+          </div>
+          <div className={`stat-cell-chg ${disasterRiskScore > 0.3 ? 'dn' : 'up'}`}>
+            <span>Risk Score:</span> {(disasterRiskScore * 100).toFixed(0)}%
           </div>
         </div>
-
-        <div className="glass-panel kpi-card">
-          <div className="kpi-icon-wrapper" style={{ background: 'var(--accent-primary-light)' }}>
-            <BarChart3 size={22} color="var(--accent-primary)" />
-          </div>
-          <div className="kpi-content">
-            <span className="kpi-label">6-Month Smart Forecast</span>
-            <span className="kpi-value">
-              {stockForecast && stockForecast.length > 0 
-                ? formatPrice(stockForecast[stockForecast.length - 1].PredictedClose)
-                : 'N/A'}
-            </span>
-          </div>
+        <div className="stat-cell">
+          <div className="stat-cell-label">Market Status</div>
+          <div className="stat-cell-val up">OPEN</div>
+          <div className="stat-cell-chg up"><span>Live updating</span></div>
         </div>
+      </div>
 
-        <div className="glass-panel kpi-card">
-          <div className="kpi-icon-wrapper" style={{ background: 'var(--accent-primary-light)' }}>
-            <Brain size={22} color="var(--accent-primary)" />
-          </div>
-          <div className="kpi-content">
-            <span className="kpi-label">Model Accuracy</span>
-            <span className="kpi-value">{backtestAccuracy ? `${backtestAccuracy.toFixed(1)}%` : 'N/A'}</span>
-          </div>
-        </div>
-
-        <div className="glass-panel kpi-card">
-          <div className="kpi-icon-wrapper" style={{ 
-            background: disasterRiskScore > 0.3 ? 'var(--accent-danger-light)' : 'var(--accent-success-light)' 
-          }}>
-            <AlertCircle size={22} color={disasterRiskScore > 0.3 ? 'var(--accent-danger)' : 'var(--accent-success)'} />
-          </div>
-          <div className="kpi-content">
-            <span className="kpi-label">Disaster Risk</span>
-            <span className="kpi-value" style={{ 
-              color: disasterRiskScore > 0.3 ? 'var(--accent-danger)' : 'var(--accent-success)' 
-            }}>
-              {disasterRiskScore > 0.5 ? 'HIGH' : disasterRiskScore > 0.15 ? 'MODERATE' : 'LOW'}
-              <span style={{ fontSize: '0.75rem', marginLeft: '6px', opacity: 0.7 }}>
-                ({(disasterRiskScore * 100).toFixed(0)}%)
-              </span>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════ TICKER STRIP ═══════════ */}
-      <section className="ticker-strip">
-        {watchlist.map((item) => (
-          <div
-            key={item.ticker}
-            ref={el => { if (el) tickerRefs.current.set(item.ticker, el); }}
-            className={`glass-panel ticker-card ${activeTicker.replace('.NS', '') === item.ticker ? 'active-ticker' : ''}`}
-            onClick={() => handleTickerClick(item.ticker)}
-          >
-            <div className="ticker-avatar" style={{ background: item.color }}>
-              <img 
-                src={`https://www.google.com/s2/favicons?domain=${item.domain}&sz=128`} 
-                alt="" 
-                style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: 'white', borderRadius: 'inherit', padding: '2px' }} 
-                onError={(e) => { 
-                  e.currentTarget.style.display = 'none'; 
-                  if (e.currentTarget.nextElementSibling) {
-                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
-                  }
-                }} 
-              />
-              <span style={{ display: 'none' }}>{item.ticker[0]}</span>
+      {/* GRID ROW 1: Chart & Watchlist */}
+      <div className="row row-3-1">
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title"><span className="panel-title-dot"></span>{activeTicker} PRICE & FORECAST</div>
+            <div className="panel-controls">
+              <button className={`seg-btn ${timeRange === '1M' ? 'active' : ''}`} onClick={() => setTimeRange('1M')}>1M</button>
+              <button className={`seg-btn ${timeRange === '6M' ? 'active' : ''}`} onClick={() => setTimeRange('6M')}>6M</button>
+              <button className={`seg-btn ${timeRange === '1Y' ? 'active' : ''}`} onClick={() => setTimeRange('1Y')}>1Y</button>
+              <button className={`seg-btn ${timeRange === 'Max' ? 'active' : ''}`} onClick={() => setTimeRange('Max')}>MAX</button>
             </div>
-            <div className="ticker-info">
-              <span className="ticker-name">{item.ticker}</span>
-              <span className="ticker-exchange">{item.exchange}</span>
-              <div className="ticker-price-row">
-                <span className="ticker-price">
-                  ₹{item.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                </span>
-                <span 
-                  className="ticker-change-badge"
-                  style={{ 
-                    color: item.changePct >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)',
-                    background: item.changePct >= 0 ? 'var(--accent-success-light)' : 'var(--accent-danger-light)'
-                  }}
-                >
-                  {item.changePct >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                  {Math.abs(item.changePct).toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* ═══════════ DUAL CHART GRID ═══════════ */}
-      <section className="dashboard-grid">
-        
-        {/* LEFT — Portfolio Holdings & Forecast */}
-        <div className="glass-panel chart-panel">
-          <div className="chart-panel-header">
-            <div>
-              <h3 className="chart-panel-title">Portfolio Holdings & Forecast</h3>
-              <p className="chart-panel-subtitle">
-                {activeTicker} — Aura Smart prediction with Market Volatility Band
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="chart-legend">
-                <div className="chart-legend-item">
-                  <div className="chart-legend-line" style={{ background: '#0d9488' }} />
-                  <span>Historical</span>
-                </div>
-                <div className="chart-legend-item">
-                  <div className="chart-legend-line" style={{ background: '#6366f1' }} />
-                  <span>Forecast</span>
-                </div>
-                <div className="chart-legend-item">
-                  <div className="chart-legend-band" style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)' }} />
-                  <span>Confidence</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="time-range-tabs">
-            {timeRanges.map(range => (
-              <button 
-                key={range}
-                className={`time-range-tab ${timeRange === range ? 'active' : ''}`}
-                onClick={() => setTimeRange(range)}
-              >
-                {range}
-              </button>
-            ))}
           </div>
           
-          {isLoadingData ? (
-            <div style={{ height: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ 
-                  width: 40, height: 40, borderRadius: 'var(--radius-full)',
-                  border: '3px solid var(--border-card)', borderTopColor: 'var(--accent-primary)',
-                  animation: 'spin 0.8s linear infinite', margin: '0 auto 12px'
-                }} />
-                <p>Fetching market data & training model...</p>
-                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-              </div>
+          <div className="chart-stats">
+            <div className="cs-item" style={{ marginTop: '10px' }}>
+              <div className="cs-label">LAST CLOSE</div>
+              <div className="cs-val">{formatPrice(currentPrice)}</div>
             </div>
-          ) : (
-            <div style={{ height: '340px', width: '100%' }}>
+            <div className="cs-item" style={{ marginTop: '10px' }}>
+              <div className="cs-label">24H CHANGE</div>
+              <div className={`cs-val ${isPositive ? 'up' : 'dn'}`}>{isPositive ? '+' : ''}{priceChange.toFixed(2)}</div>
+            </div>
+            {fundamentals && fundamentals.fifty_two_week_high !== 'N/A' && (
+              <div className="cs-item" style={{ marginTop: '10px' }}>
+                <div className="cs-label">52W HIGH</div>
+                <div className="cs-val">₹{fundamentals.fifty_two_week_high}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="chart-area" style={{ height: '350px' }}>
+            {isLoadingData ? (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontSize: '11px' }}>
+                FETCHING DATA & TRAINING MODEL...
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={combinedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart data={combinedData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
-                      <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--green)" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="var(--green)" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--amber)" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="var(--amber)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
                   <XAxis 
                     dataKey="Date" 
-                    stroke="#94a3b8" 
-                    fontSize={11} 
+                    stroke="var(--tx3)" 
+                    fontSize={9} 
+                    fontFamily="var(--mono)"
                     tickMargin={10}
                     minTickGap={50}
-                    axisLine={{ stroke: '#e2e8f0' }}
+                    axisLine={{ stroke: 'var(--line)' }}
                     tickLine={false}
                   />
                   <YAxis 
-                    stroke="#94a3b8" 
-                    fontSize={11} 
+                    stroke="var(--tx3)" 
+                    fontSize={9} 
+                    fontFamily="var(--mono)"
                     tickFormatter={fmt => currentPrice > 500 ? `₹${fmt}` : `$${fmt}`}
                     domain={['auto', 'auto']}
-                    width={65}
+                    width={50}
                     axisLine={false}
                     tickLine={false}
+                    orientation="right"
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Area 
                     type="monotone" 
                     dataKey="Close" 
-                    stroke="#0d9488" 
-                    strokeWidth={2}
+                    stroke="var(--green)" 
+                    strokeWidth={1.5}
                     fillOpacity={1} 
                     fill="url(#colorClose)" 
                     connectNulls
-                    isAnimationActive
-                    animationDuration={800}
                   />
                   <Area 
                     type="monotone" 
@@ -476,172 +272,98 @@ export const Dashboard: React.FC = () => {
                     type="monotone" 
                     dataKey="LowerBand" 
                     stroke="none"
-                    fillOpacity={0.12} 
-                    fill="#6366f1" 
+                    fillOpacity={0.1} 
+                    fill="var(--amber)" 
                     connectNulls
                   />
                   <Area 
                     type="monotone" 
                     dataKey="PredictedClose" 
-                    stroke="#6366f1" 
-                    strokeWidth={2}
-                    strokeDasharray="6 4"
+                    stroke="var(--amber)" 
+                    strokeWidth={1.5}
+                    strokeDasharray="4 4"
                     fillOpacity={1} 
                     fill="url(#colorPred)" 
                     connectNulls
-                    isAnimationActive
-                    animationDuration={800}
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT — Market Overview */}
-        <div className="glass-panel chart-panel">
-          <div className="chart-panel-header">
-            <div>
-              <h3 className="chart-panel-title">Market Overview</h3>
-              <p className="chart-panel-subtitle">Nifty 50 Index — 90 Day View</p>
-            </div>
-            <div className="live-indicator">
-              <span className="live-dot" />
-              Live
-            </div>
-          </div>
-
-          {/* Market summary */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-            <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-              ₹{marketLatest.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-            </span>
-            <span style={{ 
-              fontSize: '0.82rem', fontWeight: 600,
-              color: marketChange >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)',
-              display: 'inline-flex', alignItems: 'center', gap: '3px',
-              padding: '3px 8px', borderRadius: 'var(--radius-full)',
-              background: marketChange >= 0 ? 'var(--accent-success-light)' : 'var(--accent-danger-light)'
-            }}>
-              {marketChange >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-              {Math.abs(marketChangePct).toFixed(2)}%
-            </span>
-          </div>
-
-          <div style={{ height: '260px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={marketIndex} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorMarket" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.12}/>
-                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#94a3b8" 
-                  fontSize={10} 
-                  tickMargin={8}
-                  minTickGap={40}
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  stroke="#94a3b8" 
-                  fontSize={10}
-                  tickFormatter={v => `${(v/1000).toFixed(1)}k`}
-                  domain={['dataMin - 200', 'dataMax + 200']}
-                  width={50}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<MarketTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#0d9488" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorMarket)"
-                  isAnimationActive
-                  animationDuration={600}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </section>
-
-      {/* Fundamental Analysis */}
-      {!isLoadingData && fundamentalSummary && (
-        <section className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Section Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                background: 'var(--accent-primary-light)', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center' 
-              }}>
-                <Brain size={18} color="var(--accent-primary)" />
-              </div>
-              <div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>Fundamental Analysis</h3>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Aura News Intelligence</span>
-              </div>
-            </div>
-            {lastUpdated && (
-              <div style={{ 
-                display: 'flex', alignItems: 'center', gap: '6px', 
-                fontSize: '0.78rem', color: 'var(--text-dim)',
-                padding: '6px 12px', borderRadius: 'var(--radius-full)',
-                background: 'var(--bg-panel)'
-              }}>
-                <Clock size={12} />
-                <span>Updated {typeof lastUpdated === 'string' && lastUpdated.includes('Z') ? new Date(lastUpdated).toLocaleString() : String(lastUpdated).replace('Z', '')}</span>
-              </div>
             )}
           </div>
-          
-          {/* Sentiment + Summary Row */}
-          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <div className="chart-legend">
+            <div className="leg"><div className="leg-sq" style={{ background: 'var(--green)' }}></div> HISTORICAL</div>
+            <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber)' }}></div> FORECAST MEDIAN</div>
+            <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)' }}></div> CONFIDENCE BAND</div>
+          </div>
+        </div>
 
-
-            {/* Summary */}
-            <div style={{ 
-              flex: 1, minWidth: '300px', padding: '20px', borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-panel)', border: '1px solid var(--border-subtle)',
-              display: 'flex', alignItems: 'center'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <Newspaper size={16} color="var(--text-dim)" />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    News Intelligence Summary
-                  </span>
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title"><span className="panel-title-dot"></span>WATCHLIST</div>
+            <div className="panel-badge badge-blue">EDIT</div>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {watchlist.map(item => (
+              <div className="wl-item" key={item.ticker} onClick={() => handleTickerClick(item.ticker)}>
+                <div className="wl-sym">{item.ticker.replace('.NS','')}</div>
+                <div className="wl-name">{item.exchange || 'NSE'}</div>
+                <div className="wl-price">₹{item.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                <div className={`wl-chg ${item.changePct >= 0 ? 'up' : 'dn'}`}>
+                  {item.changePct >= 0 ? '+' : ''}{item.changePct.toFixed(2)}%
                 </div>
-                <p style={{ fontSize: '0.92rem', lineHeight: 1.7, color: 'var(--text-secondary)' }}>
-                  {fundamentalSummary}
-                </p>
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* GRID ROW 2: Fundamentals & Copilot */}
+      <div className="row row-2">
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title"><span className="panel-title-dot"></span>FUNDAMENTALS & SENTIMENT</div>
+            <div className="panel-badge badge-green">LIVE</div>
+          </div>
+          <div className="forecast-meta">
+            <div className="fm-cell">
+              <div className="fm-label">P/E Ratio</div>
+              <div className="fm-val">{fundamentals?.pe_ratio || '-'}</div>
+            </div>
+            <div className="fm-cell">
+              <div className="fm-label">EPS</div>
+              <div className="fm-val">{fundamentals?.eps ? `₹${fundamentals.eps}` : '-'}</div>
+            </div>
+            <div className="fm-cell">
+              <div className="fm-label">Market Cap</div>
+              <div className="fm-val">{fundamentals?.market_cap ? `₹${(fundamentals.market_cap / 10000000000).toFixed(2)}T` : '-'}</div>
             </div>
           </div>
-          
-          {/* Fundamentals Stats */}
-          {fundamentals && Object.keys(fundamentals).length > 0 && (
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '4px' }}>
-              <div className="glass-panel" style={{ flex: 1, padding: '16px 20px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', border: '1px solid var(--border-subtle)' }}>
-                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>P/E Ratio</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.pe_ratio !== 'N/A' ? fundamentals.pe_ratio : '-'}</strong></div>
-                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>EPS</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.eps !== 'N/A' ? `₹${fundamentals.eps}` : '-'}</strong></div>
-                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Market Cap</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.market_cap !== 'N/A' ? `₹${(fundamentals.market_cap / 10000000000).toFixed(2)}T` : '-'}</strong></div>
-                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Div Yield</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.dividend_yield !== 'N/A' ? `${(fundamentals.dividend_yield * 100).toFixed(2)}%` : '-'}</strong></div>
-                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>52W High</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.fifty_two_week_high !== 'N/A' ? `₹${fundamentals.fifty_two_week_high}` : '-'}</strong></div>
-              </div>
+          <div style={{ padding: '14px', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--tx2)', lineHeight: 1.6 }}>
+            {fundamentalSummary || 'Select a ticker and run analysis to view the fundamental summary.'}
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="panel-head">
+            <div className="panel-title"><span className="panel-title-dot"></span>AURA COPILOT</div>
+            <div className="panel-badge badge-amber">AI</div>
+          </div>
+          <div className="copilot-msgs">
+            <div className="msg">
+              <div className="msg-tag ai">SYS</div>
+              <div className="msg-body">Hello. I am Aura. How can I assist you with your portfolio today?</div>
             </div>
-          )}
-        </section>
-      )}
-    </div>
+          </div>
+          <div className="copilot-chips">
+            <div className="chip">Explain {activeTicker} forecast</div>
+            <div className="chip">Show me market trends</div>
+          </div>
+          <div className="copilot-input-row">
+            <input type="text" placeholder="Type a message..." />
+            <button className="copilot-send">SEND</button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
