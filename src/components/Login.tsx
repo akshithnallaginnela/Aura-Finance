@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Sparkles, ArrowRight, Github, Mail } from 'lucide-react';
+import { Sparkles, ArrowRight, Globe, Mail } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { setActiveView, setIsAuthenticated } = useFinance();
@@ -107,7 +107,7 @@ export const Login: React.FC = () => {
             color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', transition: 'background 0.2s'
           }}>
-            <Github size={20} />
+            <Globe size={20} />
           </button>
           <button type="button" onClick={handleLogin} style={{
             flex: 1, padding: '12px', background: 'var(--bg-base)',
