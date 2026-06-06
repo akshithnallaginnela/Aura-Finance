@@ -1,43 +1,64 @@
-name: Deploy Aura Finance
+name: Deploy Full Stack (Free Architecture)
 
 on:
   push:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
-  build-and-deploy:
+  deploy-frontend:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-        
-    - name: Install backend dependencies
-      run: |
-        cd backend
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        
-    - name: Build frontend
-      run: |
-        npm ci || npm install
-        npm run build
-        
-    - name: Build and Test Docker Compose
-      run: |
-        docker-compose build
-        # Add automated integration tests here later
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-    # Deployment step would go here depending on the cloud provider
-    # e.g., deploy to AWS ECS, Heroku, or push image to Docker Hub
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Frontend
+        run: npm run build
+        env:
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }} # E.g. https://yourusername-aurafinance.hf.space
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Push to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
+        run: |
+          # The Hugging Face Space expects the Dockerfile at the root.
+          # We copy the backend folder contents to a temporary directory and push that as the root.
+          mkdir -p /tmp/hf-space
+          cp -r backend/* /tmp/hf-space/
+          cd /tmp/hf-space
+          
+          git init
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "Automated deployment from GitHub Actions"
+          
+          # Force push to the Hugging Face Space main branch
+          git push -f https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main

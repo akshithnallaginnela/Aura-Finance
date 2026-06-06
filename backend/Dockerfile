@@ -7,5 +7,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Run via Waitress (production WSGI server)
-CMD ["waitress-serve", "--port=5000", "app:app"]
+# Run via Waitress (production WSGI server) on Hugging Face default port 7860
+CMD ["waitress-serve", "--port=7860", "app:app"]

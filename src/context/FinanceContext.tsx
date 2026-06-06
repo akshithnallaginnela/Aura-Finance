@@ -75,7 +75,7 @@ interface FinanceContextType {
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTicker, setActiveTicker] = useState('RELIANCE.NS');
@@ -150,7 +150,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Fetch real-time market index
     const fetchMarket = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/market_index');
+        const res = await fetch(`${BACKEND_URL}/api/market_index`);
         if (res.ok) {
           const data = await res.json();
           setMarketIndex(data);
@@ -164,7 +164,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Fetch real-time watchlist prices
     const fetchWatchlist = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/watchlist');
+        const res = await fetch(`${BACKEND_URL}/api/watchlist`);
         if (res.ok) {
           const liveData = await res.json();
           setWatchlist(prev => prev.map(item => {
