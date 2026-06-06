@@ -10,3 +10,6 @@ chronos-forecasting
 waitress
 xgboost
 lightgbm
+yfinance
+google-generativeai
+python-dotenv
