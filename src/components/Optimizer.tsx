@@ -58,14 +58,14 @@ export const Optimizer: React.FC = () => {
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '32px', minHeight: '600px' }}>
+    <div className="panel" style={{ padding: '24px', minHeight: '600px', margin: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ padding: '10px', background: 'var(--accent-primary-light)', borderRadius: '12px' }}>
-          <PieChartIcon size={24} color="var(--accent-primary)" />
+        <div style={{ padding: '10px', background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: '12px' }}>
+          <PieChartIcon size={24} color="var(--amber)" />
         </div>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Modern Portfolio Theory (MPT) Optimizer</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--tx)', margin: 0 }}>Modern Portfolio Theory (MPT) Optimizer</h2>
+          <p style={{ color: 'var(--tx3)', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
             Calculates the Efficient Frontier to find the optimal weighting for maximum Sharpe Ratio.
           </p>
         </div>
@@ -74,15 +74,15 @@ export const Optimizer: React.FC = () => {
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
         {/* Input Column */}
         <div style={{ flex: '1 1 350px' }}>
-          <form onSubmit={handleOptimize} className="glass-panel" style={{ padding: '24px', background: 'var(--bg-base)' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>Assets to Optimize</h3>
+          <form onSubmit={handleOptimize} className="panel" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--tx)' }}>Assets to Optimize</h3>
             
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--tx2)', marginBottom: '8px' }}>
                 ENTER TICKERS (COMMA SEPARATED)
               </label>
               <textarea 
-                className="glass-input"
+                className="search-input"
                 style={{ width: '100%', minHeight: '100px', resize: 'vertical' }}
                 value={tickersInput}
                 onChange={(e) => setTickersInput(e.target.value)}
@@ -93,13 +93,13 @@ export const Optimizer: React.FC = () => {
 
             <button 
               type="submit" 
-              className="glass-btn" 
-              style={{ width: '100%', justifyContent: 'center' }}
+              className="seg-btn" 
+              style={{ width: '100%', justifyContent: 'center', padding: '10px', display: 'flex', gap: '8px' }}
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'currentColor', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                   Running Monte Carlo Simulation...
                 </>
               ) : (
@@ -111,7 +111,7 @@ export const Optimizer: React.FC = () => {
             </button>
 
             {error && (
-              <div style={{ marginTop: '16px', padding: '12px', background: 'var(--accent-danger-light)', borderRadius: '8px', display: 'flex', gap: '8px', color: 'var(--accent-danger)', fontSize: '0.85rem' }}>
+              <div style={{ marginTop: '16px', padding: '12px', background: 'var(--red-bg)', borderRadius: '8px', display: 'flex', gap: '8px', color: 'var(--red)', fontSize: '0.85rem' }}>
                 <AlertCircle size={16} style={{ flexShrink: 0 }} />
                 <span>{error}</span>
               </div>
@@ -120,21 +120,21 @@ export const Optimizer: React.FC = () => {
 
           {/* Details Card */}
           {result && (
-            <div className="glass-panel" style={{ padding: '24px', background: 'var(--bg-base)', marginTop: '24px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>Risk & Return Profile</h3>
+            <div className="panel" style={{ padding: '24px', marginTop: '24px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--tx)' }}>Risk & Return Profile</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>EXPECTED ANNUAL RETURN</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-success)' }}>+{result.expected_annual_return}%</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--tx3)', fontWeight: 600 }}>EXPECTED ANNUAL RETURN</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--green)' }}>+{result.expected_annual_return}%</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>EXPECTED VOLATILITY (RISK)</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-danger)' }}>{result.expected_volatility}%</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--tx3)', fontWeight: 600 }}>EXPECTED VOLATILITY (RISK)</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--red)' }}>{result.expected_volatility}%</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>SHARPE RATIO</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-primary)' }}>{result.sharpe_ratio}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--tx3)', fontWeight: 600 }}>SHARPE RATIO</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--amber)' }}>{result.sharpe_ratio}</div>
                 </div>
               </div>
             </div>
@@ -144,8 +144,8 @@ export const Optimizer: React.FC = () => {
         {/* Chart Column */}
         <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column' }}>
           {result ? (
-            <div className="glass-panel" style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '24px', color: 'var(--text-main)', textAlign: 'center' }}>Optimal Allocation Weights</h3>
+            <div className="panel" style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '24px', color: 'var(--tx)', textAlign: 'center' }}>Optimal Allocation Weights</h3>
               
               <div style={{ flex: 1, minHeight: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -175,18 +175,18 @@ export const Optimizer: React.FC = () => {
 
               <div style={{ marginTop: '24px', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
                 {result.allocations.map((a, i) => (
-                  <div key={a.ticker} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg-panel)', borderRadius: '20px', border: '1px solid var(--border-subtle)', fontSize: '0.85rem' }}>
+                  <div key={a.ticker} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg2)', borderRadius: '20px', border: '1px solid var(--line)', fontSize: '0.85rem' }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i % COLORS.length] }} />
-                    <span style={{ fontWeight: 600 }}>{a.ticker}</span>
-                    <span style={{ color: 'var(--text-muted)' }}>{a.weight}%</span>
+                    <span style={{ fontWeight: 600, color: 'var(--tx)' }}>{a.ticker}</span>
+                    <span style={{ color: 'var(--tx3)' }}>{a.weight}%</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="glass-panel" style={{ flex: 1, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'var(--text-muted)', textAlign: 'center' }}>
+            <div className="panel" style={{ flex: 1, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'var(--tx3)', textAlign: 'center' }}>
               <PieChartIcon size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
-              <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)' }}>No Portfolio Computed</h3>
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--tx)' }}>No Portfolio Computed</h3>
               <p style={{ maxWidth: '300px', fontSize: '0.9rem' }}>Enter tickers and run the optimizer to see the ideal allocations for maximum return relative to risk.</p>
             </div>
           )}
