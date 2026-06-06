@@ -3,7 +3,7 @@ name: Deploy Full Stack (Free Architecture)
 on:
   push:
     branches:
-      - main
+      - master
 
 permissions:
   contents: write
