@@ -93,18 +93,12 @@ def get_watchlist():
 def get_stock(ticker):
     """
     Enterprise API Endpoint:
-    1. Check the cloud database for pre-computed data.
-    2. If not found, auto-append .NS and try again.
-    3. If still not found, run on-demand analysis as a fallback.
+    Always run on-demand analysis to guarantee 100% real-time fundamentals and news.
     """
     ticker = normalize_ticker(ticker)
     
-    # Try the database first (instant)
-    analysis = get_analysis(ticker)
-    
-    if not analysis:
-        # Fallback: run on-demand technical analysis
-        analysis = on_demand_analysis(ticker)
+    # Always run real-time analysis to fetch the latest news from the world
+    analysis = on_demand_analysis(ticker)
     
     if not analysis:
         return jsonify({
