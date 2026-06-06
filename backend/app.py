@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from database import get_analysis, upsert_analysis
+from monitoring import check_disaster_risk
 
 # Load the .env file from the root directory
 env_path = Path(__file__).parent.parent / '.env'
@@ -49,6 +50,9 @@ def on_demand_analysis(ticker):
     
     # Save to database for future instant access
     upsert_analysis(ticker, historical_data, forecast, sentiment, summary, disaster_risk, fundamentals=fundamentals, backtest_accuracy=backtest_acc)
+    
+    # Check for disaster risk alerts
+    check_disaster_risk(ticker, disaster_risk)
     
     return get_analysis(ticker)
 

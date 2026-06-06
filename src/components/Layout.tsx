@@ -3,7 +3,7 @@ import { useFinance } from '../context/FinanceContext';
 import { useTheme } from '../context/ThemeContext';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { activeView, setActiveView } = useFinance();
+  const { activeView, setActiveView, fetchStockData } = useFinance();
   const [time, setTime] = useState('--:--:-- EDT');
 
   useEffect(() => {
@@ -88,8 +88,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 if (e.key === 'Enter') {
                   const target = e.target as HTMLInputElement;
                   if (target.value.trim()) {
-                    // We will handle dynamic search here later
-                    console.log('Searching for:', target.value);
+                    let ticker = target.value.trim().toUpperCase();
+                    fetchStockData(ticker);
+                    setActiveView('dashboard');
+                    target.value = '';
                   }
                 }
               }}
