@@ -97,33 +97,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // ─── Watchlist (simulated live prices) ────────────────────────────────────
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([
-    { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2945.30, change: 0, changePct: 0, color: '#6366f1', flashClass: '', domain: 'ril.com' },
-    { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3782.15, change: 0, changePct: 0, color: '#0d9488', flashClass: '', domain: 'tcs.com' },
-    { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1564.80, change: 0, changePct: 0, color: '#f59e0b', flashClass: '', domain: 'infosys.com' },
-    { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1723.45, change: 0, changePct: 0, color: '#ef4444', flashClass: '', domain: 'hdfcbank.com' },
-    { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1285.60, change: 0, changePct: 0, color: '#8b5cf6', flashClass: '', domain: 'icicibank.com' },
-    { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 462.35, change: 0, changePct: 0, color: '#ec4899', flashClass: '', domain: 'wipro.com' },
+    { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2940.00, change: 5.30, changePct: 0.18, color: '#6366f1', flashClass: '', domain: 'ril.com' },
+    { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3770.00, change: 12.15, changePct: 0.32, color: '#0d9488', flashClass: '', domain: 'tcs.com' },
+    { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1560.00, change: 4.80, changePct: 0.31, color: '#f59e0b', flashClass: '', domain: 'infosys.com' },
+    { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1720.00, change: 3.45, changePct: 0.20, color: '#ef4444', flashClass: '', domain: 'hdfcbank.com' },
+    { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1280.00, change: 5.60, changePct: 0.44, color: '#8b5cf6', flashClass: '', domain: 'icicibank.com' },
+    { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 460.00, change: 2.35, changePct: 0.51, color: '#ec4899', flashClass: '', domain: 'wipro.com' },
   ]);
 
-  // Generate synthetic market index data (Nifty-like)
-  const generateMarketIndex = (): MarketDataPoint[] => {
-    const data: MarketDataPoint[] = [];
-    let value = 24850;
-    const now = new Date();
-    for (let i = 90; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      value += (Math.random() - 0.48) * 120; // Slight upward bias
-      value = Math.max(value, 22000);
-      data.push({
-        date: date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-        value: Math.round(value * 100) / 100,
-      });
-    }
-    return data;
-  };
-
-  const [marketIndex] = useState<MarketDataPoint[]>(() => generateMarketIndex());
+  const [marketIndex, setMarketIndex] = useState<MarketDataPoint[]>([]);
 
 
 
@@ -164,6 +146,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Fetch initial data
   useEffect(() => {
     fetchStockData('RELIANCE.NS');
+
+    // Fetch real-time market index
+    const fetchMarket = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/market_index');
+        if (res.ok) {
+          const data = await res.json();
+          setMarketIndex(data);
+        }
+      } catch (err) {
+        console.error('Market index fetch error', err);
+      }
+    };
+    fetchMarket();
 
     // Fetch real-time watchlist prices
     const fetchWatchlist = async () => {

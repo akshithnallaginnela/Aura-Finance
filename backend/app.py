@@ -53,6 +53,24 @@ def on_demand_analysis(ticker):
     return get_analysis(ticker)
 
 
+@app.route('/api/market_index', methods=['GET'])
+def get_market_index():
+    """Fetch actual Nifty 50 Index data for the market overview chart."""
+    import yfinance as yf
+    try:
+        t_obj = yf.Ticker('^NSEI')
+        hist = t_obj.history(period="3mo")
+        data = []
+        for date, row in hist.iterrows():
+            data.append({
+                "date": date.strftime('%b %d'),
+                "value": round(row['Close'], 2)
+            })
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/watchlist', methods=['GET'])
 def get_watchlist():
     """Fetch live data for the watchlist."""
@@ -63,7 +81,7 @@ def get_watchlist():
         for ticker in tickers:
             try:
                 t_obj = yf.Ticker(ticker)
-                hist = t_obj.history(period="2d")
+                hist = t_obj.history(period="5d")
                 if not hist.empty:
                     closes = hist['Close'].dropna().values
                     if len(closes) >= 2:
@@ -97,8 +115,11 @@ def get_stock(ticker):
     """
     ticker = normalize_ticker(ticker)
     
-    # Always run real-time analysis to fetch the latest news from the world
-    analysis = on_demand_analysis(ticker)
+    analysis = get_analysis(ticker)
+    
+    # Fallback to on-demand analysis if it's the first time and not in DB
+    if not analysis:
+        analysis = on_demand_analysis(ticker)
     
     if not analysis:
         return jsonify({

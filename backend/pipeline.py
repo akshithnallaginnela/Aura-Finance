@@ -234,8 +234,8 @@ def analyze_fundamentals(ticker_symbol):
     }}
     """
     
-    max_retries = 3
-    retry_delay = 15
+    max_retries = 1
+    retry_delay = 2
     
     for attempt in range(max_retries):
         try:

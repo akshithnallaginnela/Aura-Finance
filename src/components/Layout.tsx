@@ -36,11 +36,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <div style={{ 
-              width: 36, height: 36, borderRadius: 'var(--radius-md)',
-              background: 'var(--accent-primary-light)', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center' 
+              width: 40, height: 40, borderRadius: 'var(--radius-md)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' 
             }}>
-              <Sparkles size={20} color="var(--accent-primary)" />
+              <img src="/aura-logo.png" alt="Aura Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <span className="logo-text">Aura Finance</span>
           </div>

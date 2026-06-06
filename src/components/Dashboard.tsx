@@ -351,14 +351,19 @@ export const Dashboard: React.FC = () => {
             className={`glass-panel ticker-card ${activeTicker.replace('.NS', '') === item.ticker ? 'active-ticker' : ''}`}
             onClick={() => handleTickerClick(item.ticker)}
           >
-            <div className="ticker-avatar" style={{ background: item.color, position: 'relative', overflow: 'hidden' }}>
+            <div className="ticker-avatar" style={{ background: item.color }}>
               <img 
                 src={`https://www.google.com/s2/favicons?domain=${item.domain}&sz=128`} 
                 alt="" 
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', background: 'white' }} 
-                onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: 'white', borderRadius: 'inherit', padding: '2px' }} 
+                onError={(e) => { 
+                  e.currentTarget.style.display = 'none'; 
+                  if (e.currentTarget.nextElementSibling) {
+                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                  }
+                }} 
               />
-              <span style={{ position: 'relative', zIndex: 1 }}>{item.ticker[0]}</span>
+              <span style={{ display: 'none' }}>{item.ticker[0]}</span>
             </div>
             <div className="ticker-info">
               <span className="ticker-name">{item.ticker}</span>
