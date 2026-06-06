@@ -37,9 +37,9 @@ def on_demand_analysis(ticker):
     print(f"[On-Demand] Running real-time analysis for {ticker}...")
     
     # Run fundamentals FIRST to get sentiment for ML features
-    sentiment, summary, disaster_risk, news_count = analyze_fundamentals(ticker)
+    sentiment, summary, disaster_risk, news_count, fundamentals = analyze_fundamentals(ticker)
     
-    historical_df, forecast, _raw = fetch_and_train(ticker, sentiment_score=sentiment,
+    historical_df, forecast, _raw, backtest_acc = fetch_and_train(ticker, sentiment_score=sentiment,
                                                       disaster_risk=disaster_risk,
                                                       news_count=news_count)
     if historical_df is None:
@@ -48,7 +48,7 @@ def on_demand_analysis(ticker):
     historical_data = historical_df.to_dict('records')
     
     # Save to database for future instant access
-    upsert_analysis(ticker, historical_data, forecast, sentiment, summary, disaster_risk)
+    upsert_analysis(ticker, historical_data, forecast, sentiment, summary, disaster_risk, fundamentals=fundamentals, backtest_accuracy=backtest_acc)
     
     return get_analysis(ticker)
 
@@ -84,6 +84,8 @@ def get_stock(ticker):
         "disaster_risk_score": analysis.get("disaster_risk_score", 0.0),
         "confidence_upper": analysis.get("confidence_upper"),
         "confidence_lower": analysis.get("confidence_lower"),
+        "fundamentals": analysis.get("fundamentals", {}),
+        "backtest_accuracy": analysis.get("backtest_accuracy", 0.0),
         "last_updated": analysis["last_updated"]
     })
 
@@ -116,12 +118,15 @@ def advisor_strategy():
         future_price = forecast[-1]['PredictedClose'] if forecast else 'Unknown'
         
         system_context = f"""
-You are Aura, an elite quantitative financial analyst AI.
+You are Aura Intelligence, an elite and incredibly friendly quantitative financial analyst AI.
+Your tone is helpful, encouraging, and highly professional. You must act as a trusted advisor to the user.
 The user is asking about the stock ticker: {ticker}.
 Current Price: {current_price}
-Our internal Ensemble AI model (Chronos Foundation Model + XGBoost + LSTM Neural Network) predicts the price will be {future_price} in approximately 6 months.
+Our proprietary Aura Smart Forecast predicts the price will be {future_price} in approximately 6 months.
 
-Analyze this data and answer the user's prompt. Keep it professional, concise, and focused on market dynamics.
+IMPORTANT: You must always deeply consider the user's current holdings and portfolio if they mention them, advising on margins and the best possible investment returns. 
+You must explicitly anchor your advice in the CURRENT market situation, referencing real-world dynamics. 
+Analyze this data and answer the user's prompt gracefully.
 User Prompt: {prompt}
 """
         

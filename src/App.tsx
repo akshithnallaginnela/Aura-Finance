@@ -3,15 +3,22 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { AuraAdvisor } from './components/AuraAdvisor';
 import { Optimizer } from './components/Optimizer';
+import { Login } from './components/Login';
+import { Settings } from './components/Settings';
 
 function AppContent() {
   const { activeView } = useFinance();
+
+  if (activeView === 'login') {
+    return <Login />;
+  }
 
   return (
     <Layout>
       {activeView === 'dashboard' && <Dashboard />}
       {activeView === 'advisor' && <AuraAdvisor />}
       {activeView === 'optimizer' && <Optimizer />}
+      {activeView === 'settings' && <Settings />}
       {/* 
         Runway Predictor (forecaster) can remain under construction 
         or be mapped to something else later.

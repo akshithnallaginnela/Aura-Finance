@@ -32,10 +32,12 @@ def chronos_forecast(chronos_pipeline, closes, prediction_length=130):
     """
     if chronos_pipeline is None:
         last = float(closes[-1])
+        volatility = np.std(closes[-30:]) / np.mean(closes[-30:]) if len(closes) > 30 else 0.05
+        volatility = max(0.01, min(0.15, volatility))
         return {
             "median": np.array([last] * prediction_length),
-            "p10": np.array([last * 0.95] * prediction_length),
-            "p90": np.array([last * 1.05] * prediction_length),
+            "p10": np.array([last * (1.0 - volatility)] * prediction_length),
+            "p90": np.array([last * (1.0 + volatility)] * prediction_length),
         }
     
     context = torch.tensor(closes, dtype=torch.float32)
@@ -56,10 +58,12 @@ def chronos_forecast(chronos_pipeline, closes, prediction_length=130):
     except Exception as e:
         print(f"  [Chronos] Prediction failed: {e}")
         last = float(closes[-1])
+        volatility = np.std(closes[-30:]) / np.mean(closes[-30:]) if len(closes) > 30 else 0.05
+        volatility = max(0.01, min(0.15, volatility))
         return {
             "median": np.array([last] * prediction_length),
-            "p10": np.array([last * 0.95] * prediction_length),
-            "p90": np.array([last * 1.05] * prediction_length),
+            "p10": np.array([last * (1.0 - volatility)] * prediction_length),
+            "p90": np.array([last * (1.0 + volatility)] * prediction_length),
         }
 
 
@@ -529,8 +533,15 @@ def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130
     ])
     model_std = np.std(model_stack, axis=0)
     
-    upper_band = np.maximum(chronos_result["p90"], ensemble_median + 1.5 * model_std)
-    lower_band = np.minimum(chronos_result["p10"], ensemble_median - 1.5 * model_std)
+    # Calculate true historical volatility for the dynamic "perfect ratio"
+    hist_vol = np.std(closes[-30:]) / np.mean(closes[-30:]) if len(closes) > 30 else 0.02
+    hist_vol = max(0.01, min(0.15, hist_vol))
+    
+    # Dynamic multiplier: higher intrinsic volatility = wider bands
+    dynamic_multiplier = 1.0 + (hist_vol * 5.0)
+
+    upper_band = np.maximum(chronos_result["p90"], ensemble_median + (1.2 * model_std * dynamic_multiplier))
+    lower_band = np.minimum(chronos_result["p10"], ensemble_median - (1.2 * model_std * dynamic_multiplier))
     lower_band = np.maximum(lower_band, 0)
     
     print(f"  [Ensemble] Complete. 5 models combined (news features injected into XGB+LGBM).")

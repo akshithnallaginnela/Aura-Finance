@@ -40,6 +40,8 @@ def init_db():
             disaster_risk_score REAL DEFAULT 0.0,
             confidence_upper JSONB,
             confidence_lower JSONB,
+            fundamentals JSONB,
+            backtest_accuracy REAL DEFAULT 0.0,
             last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -49,6 +51,8 @@ def init_db():
         ("disaster_risk_score", "REAL", "0.0"),
         ("confidence_upper", "JSONB", "NULL"),
         ("confidence_lower", "JSONB", "NULL"),
+        ("fundamentals", "JSONB", "NULL"),
+        ("backtest_accuracy", "REAL", "0.0")
     ]:
         try:
             cursor.execute(f"""
@@ -76,7 +80,8 @@ def init_db():
 
 def upsert_analysis(ticker, historical_data, forecast_data, sentiment_score, 
                      fundamental_summary, disaster_risk_score=0.0,
-                     confidence_upper=None, confidence_lower=None):
+                     confidence_upper=None, confidence_lower=None,
+                     fundamentals=None, backtest_accuracy=0.0):
     """Inserts or updates the pre-computed analysis for a stock."""
     conn = get_connection()
     cursor = conn.cursor()
@@ -85,14 +90,15 @@ def upsert_analysis(ticker, historical_data, forecast_data, sentiment_score,
     forecast_json = json.dumps(forecast_data)
     upper_json = json.dumps(confidence_upper) if confidence_upper else None
     lower_json = json.dumps(confidence_lower) if confidence_lower else None
+    fundamentals_json = json.dumps(fundamentals) if fundamentals else None
     
     cursor.execute("""
         INSERT INTO stock_analysis (
             ticker, historical_data, forecast_data, sentiment_score, 
             fundamental_summary, disaster_risk_score, 
-            confidence_upper, confidence_lower, last_updated
+            confidence_upper, confidence_lower, fundamentals, backtest_accuracy, last_updated
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
         ON CONFLICT (ticker) DO UPDATE SET
             historical_data = EXCLUDED.historical_data,
             forecast_data = EXCLUDED.forecast_data,
@@ -101,9 +107,12 @@ def upsert_analysis(ticker, historical_data, forecast_data, sentiment_score,
             disaster_risk_score = EXCLUDED.disaster_risk_score,
             confidence_upper = EXCLUDED.confidence_upper,
             confidence_lower = EXCLUDED.confidence_lower,
+            fundamentals = EXCLUDED.fundamentals,
+            backtest_accuracy = EXCLUDED.backtest_accuracy,
             last_updated = CURRENT_TIMESTAMP
     """, (ticker, historical_json, forecast_json, sentiment_score, 
-          fundamental_summary, disaster_risk_score, upper_json, lower_json))
+          fundamental_summary, disaster_risk_score, upper_json, lower_json,
+          fundamentals_json, backtest_accuracy))
     
     conn.commit()
     cursor.close()
@@ -130,6 +139,8 @@ def get_analysis(ticker):
             "disaster_risk_score": row.get("disaster_risk_score", 0.0),
             "confidence_upper": row.get("confidence_upper"),
             "confidence_lower": row.get("confidence_lower"),
+            "fundamentals": row.get("fundamentals"),
+            "backtest_accuracy": row.get("backtest_accuracy", 0.0),
             "last_updated": row["last_updated"].isoformat() if row["last_updated"] else None
         }
     return None

@@ -53,13 +53,19 @@ interface FinanceContextType {
   errorData: string | null;
   fetchStockData: (ticker: string) => Promise<void>;
   
+  fundamentals: any;
+  backtestAccuracy: number;
+  
   chatHistory: ChatMessage[];
   isChatLoading: boolean;
   sendAdvisorMessage: (message: string) => Promise<void>;
   clearChat: () => void;
   
-  activeView: 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor';
-  setActiveView: (view: 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor') => void;
+  isAuthenticated: boolean;
+  setIsAuthenticated: (auth: boolean) => void;
+  
+  activeView: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings';
+  setActiveView: (view: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings') => void;
 
   watchlist: WatchlistItem[];
   marketIndex: MarketDataPoint[];
@@ -78,12 +84,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [fundamentalSummary, setFundamentalSummary] = useState<string | null>(null);
   const [disasterRiskScore, setDisasterRiskScore] = useState(0.0);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [fundamentals, setFundamentals] = useState<any>({});
+  const [backtestAccuracy, setBacktestAccuracy] = useState<number>(0.0);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [errorData, setErrorData] = useState<string | null>(null);
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const [activeView, setActiveView] = useState<'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor'>('dashboard');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings'>('login');
 
   // ─── Watchlist (simulated live prices) ────────────────────────────────────
   const DEFAULT_WATCHLIST: WatchlistItem[] = [
@@ -140,6 +149,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setStockForecast(data.forecast || []);
       setSentimentScore(data.sentiment_score ?? null);
       setFundamentalSummary(data.fundamental_summary || null);
+      setFundamentals(data.fundamentals || {});
+      setBacktestAccuracy(data.backtest_accuracy || 0.0);
       setDisasterRiskScore(data.disaster_risk_score ?? 0.0);
       setLastUpdated(data.last_updated || null);
       setActiveTicker(ticker.toUpperCase());
@@ -219,6 +230,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       fundamentalSummary,
       disasterRiskScore,
       lastUpdated,
+      fundamentals,
+      backtestAccuracy,
       isLoadingData,
       errorData,
       fetchStockData,
@@ -226,6 +239,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isChatLoading,
       sendAdvisorMessage,
       clearChat,
+      isAuthenticated,
+      setIsAuthenticated,
       activeView,
       setActiveView,
       watchlist,

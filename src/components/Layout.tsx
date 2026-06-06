@@ -7,12 +7,14 @@ import {
   Sparkles, 
   Coins,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Settings as SettingsIcon,
+  LogOut
 } from 'lucide-react';
 
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { activeView, setActiveView, activeTicker, stockData } = useFinance();
+  const { activeView, setActiveView, activeTicker, stockData, setIsAuthenticated } = useFinance();
   const currentPrice = stockData && stockData.length > 0 ? stockData[stockData.length - 1].Close : 0;
   const prevPrice = stockData && stockData.length > 1 ? stockData[stockData.length - 2].Close : 0;
   const change = currentPrice - prevPrice;
@@ -23,6 +25,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'optimizer' as const, label: 'MPT Optimizer', icon: PieChart },
     { id: 'advisor' as const, label: 'Aura Advisor', icon: MessageSquare },
+    { id: 'settings' as const, label: 'Settings', icon: SettingsIcon },
   ];
 
   return (
@@ -89,6 +92,31 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </span>
               </div>
             </div>
+            
+            {/* Logout Button */}
+            <div 
+              style={{ 
+                marginTop: '12px', padding: '12px', borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+                color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600,
+                transition: 'color 0.2s, background 0.2s'
+              }}
+              onClick={() => {
+                setIsAuthenticated(false);
+                setActiveView('login');
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-danger)';
+                e.currentTarget.style.background = 'var(--bg-elevated)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-muted)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <LogOut size={16} />
+              Sign Out
+            </div>
           </div>
         </div>
       </aside>
@@ -111,6 +139,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: '4px', color: 'var(--text-main)' }}>
               {activeView === 'dashboard' ? 'Market Overview' 
                 : activeView === 'optimizer' ? 'Portfolio Optimizer' 
+                : activeView === 'settings' ? 'System Preferences'
                 : 'Aura AI Copilot'}
             </h2>
           </div>

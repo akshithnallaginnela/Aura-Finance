@@ -62,8 +62,8 @@
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
+  --transition-fast: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ═══════════════════════════════════════════
@@ -202,11 +202,12 @@ a:hover { color: var(--accent-primary-hover); }
   border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-normal);
+  transition: all var(--transition-normal);
 }
 
 .glass-panel:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 

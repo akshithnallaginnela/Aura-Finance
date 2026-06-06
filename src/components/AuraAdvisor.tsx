@@ -156,7 +156,7 @@ export const AuraAdvisor: React.FC = () => {
           </div>
           <div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>Aura Strategist</h3>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>AI-powered financial analysis</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Advanced financial analysis</span>
           </div>
         </div>
 
@@ -249,7 +249,7 @@ export const AuraAdvisor: React.FC = () => {
           <button 
             className="glass-btn glass-btn-secondary" 
             style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px' }}
-            onClick={() => handleChipClick('Analyze the current Random Forest prediction for this stock.')}
+            onClick={() => handleChipClick('Analyze the current forecast for this stock.')}
           >
             <TrendingUp size={14} color="var(--accent-primary)" /> Analyze Forecast
           </button>

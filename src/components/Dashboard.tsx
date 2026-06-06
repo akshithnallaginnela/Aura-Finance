@@ -34,6 +34,8 @@ export const Dashboard: React.FC = () => {
     fundamentalSummary,
     disasterRiskScore,
     lastUpdated,
+    fundamentals,
+    backtestAccuracy,
     fetchStockData, 
     isLoadingData, 
     errorData,
@@ -301,12 +303,22 @@ export const Dashboard: React.FC = () => {
             <BarChart3 size={22} color="var(--accent-primary)" />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">6-Month Ensemble Forecast</span>
+            <span className="kpi-label">6-Month Smart Forecast</span>
             <span className="kpi-value">
               {stockForecast && stockForecast.length > 0 
                 ? formatPrice(stockForecast[stockForecast.length - 1].PredictedClose)
                 : 'N/A'}
             </span>
+          </div>
+        </div>
+
+        <div className="glass-panel kpi-card">
+          <div className="kpi-icon-wrapper" style={{ background: 'var(--accent-primary-light)' }}>
+            <Brain size={22} color="var(--accent-primary)" />
+          </div>
+          <div className="kpi-content">
+            <span className="kpi-label">Model Accuracy</span>
+            <span className="kpi-value">{backtestAccuracy ? `${backtestAccuracy.toFixed(1)}%` : 'N/A'}</span>
           </div>
         </div>
 
@@ -339,8 +351,14 @@ export const Dashboard: React.FC = () => {
             className={`glass-panel ticker-card ${activeTicker.replace('.NS', '') === item.ticker ? 'active-ticker' : ''}`}
             onClick={() => handleTickerClick(item.ticker)}
           >
-            <div className="ticker-avatar" style={{ background: item.color }}>
-              {item.ticker[0]}
+            <div className="ticker-avatar" style={{ background: item.color, position: 'relative', overflow: 'hidden' }}>
+              <img 
+                src={`https://logo.clearbit.com/${item.ticker.replace('.NS', '').toLowerCase()}.com`} 
+                alt="" 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+              />
+              <span style={{ position: 'relative', zIndex: 1 }}>{item.ticker[0]}</span>
             </div>
             <div className="ticker-info">
               <span className="ticker-name">{item.ticker}</span>
@@ -374,7 +392,7 @@ export const Dashboard: React.FC = () => {
             <div>
               <h3 className="chart-panel-title">Portfolio Holdings & Forecast</h3>
               <p className="chart-panel-subtitle">
-                {activeTicker} — Ensemble AI prediction with 90% confidence band
+                {activeTicker} — Aura Smart prediction with Market Volatility Band
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -588,7 +606,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>Fundamental Analysis</h3>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>FinBERT + News Intelligence Engine</span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Aura News Intelligence</span>
               </div>
             </div>
             {lastUpdated && (
@@ -652,6 +670,19 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
+          
+          {/* Fundamentals Stats */}
+          {fundamentals && Object.keys(fundamentals).length > 0 && (
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '4px' }}>
+              <div className="glass-panel" style={{ flex: 1, padding: '16px 20px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', border: '1px solid var(--border-subtle)' }}>
+                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>P/E Ratio</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.pe_ratio !== 'N/A' ? fundamentals.pe_ratio : '-'}</strong></div>
+                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>EPS</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.eps !== 'N/A' ? `₹${fundamentals.eps}` : '-'}</strong></div>
+                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Market Cap</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.market_cap !== 'N/A' ? `₹${(fundamentals.market_cap / 10000000000).toFixed(2)}T` : '-'}</strong></div>
+                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Div Yield</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.dividend_yield !== 'N/A' ? `${(fundamentals.dividend_yield * 100).toFixed(2)}%` : '-'}</strong></div>
+                <div><span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>52W High</span><br/><strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>{fundamentals.fifty_two_week_high !== 'N/A' ? `₹${fundamentals.fifty_two_week_high}` : '-'}</strong></div>
+              </div>
+            </div>
+          )}
         </section>
       )}
     </div>
