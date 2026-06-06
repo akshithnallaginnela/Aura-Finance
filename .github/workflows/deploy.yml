@@ -34,6 +34,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add .
           git commit -m "Automated deployment from GitHub Actions"
+          git branch -M main
           
           # Force push to the Hugging Face Space main branch
           git push -f https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main
