@@ -353,9 +353,9 @@ export const Dashboard: React.FC = () => {
           >
             <div className="ticker-avatar" style={{ background: item.color, position: 'relative', overflow: 'hidden' }}>
               <img 
-                src={`https://logo.clearbit.com/${item.domain}`} 
+                src={`https://www.google.com/s2/favicons?domain=${item.domain}&sz=128`} 
                 alt="" 
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', background: 'white' }} 
                 onError={(e) => { e.currentTarget.style.display = 'none'; }} 
               />
               <span style={{ position: 'relative', zIndex: 1 }}>{item.ticker[0]}</span>
