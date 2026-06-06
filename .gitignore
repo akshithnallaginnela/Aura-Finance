@@ -35,5 +35,6 @@ Hugging_face.md
 __pycache__/
 *.pyc
 
-
+aura-logo
 run.bat
+public/
