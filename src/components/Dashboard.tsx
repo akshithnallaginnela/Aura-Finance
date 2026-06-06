@@ -353,7 +353,7 @@ export const Dashboard: React.FC = () => {
           >
             <div className="ticker-avatar" style={{ background: item.color, position: 'relative', overflow: 'hidden' }}>
               <img 
-                src={`https://logo.clearbit.com/${item.ticker.replace('.NS', '').toLowerCase()}.com`} 
+                src={`https://logo.clearbit.com/${item.domain}`} 
                 alt="" 
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
                 onError={(e) => { e.currentTarget.style.display = 'none'; }} 
@@ -617,39 +617,14 @@ export const Dashboard: React.FC = () => {
                 background: 'var(--bg-panel)'
               }}>
                 <Clock size={12} />
-                <span>Updated {new Date(lastUpdated + 'Z').toLocaleString()}</span>
+                <span>Updated {typeof lastUpdated === 'string' && lastUpdated.includes('Z') ? new Date(lastUpdated).toLocaleString() : String(lastUpdated).replace('Z', '')}</span>
               </div>
             )}
           </div>
           
           {/* Sentiment + Summary Row */}
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-            {/* Sentiment Score Card */}
-            <div style={{ 
-              minWidth: '180px', padding: '24px', borderRadius: 'var(--radius-md)',
-              background: getSentimentBg(sentimentScore),
-              border: '1px solid var(--border-subtle)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              textAlign: 'center'
-            }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                AI Sentiment
-              </span>
-              <span style={{ 
-                fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.02em',
-                color: getSentimentColor(sentimentScore)
-              }}>
-                {sentimentScore?.toFixed(2) ?? '0.00'}
-              </span>
-              <span style={{ 
-                fontSize: '0.78rem', fontWeight: 600,
-                color: getSentimentColor(sentimentScore),
-                padding: '3px 10px', borderRadius: 'var(--radius-full)',
-                background: 'rgba(255,255,255,0.6)'
-              }}>
-                {getSentimentLabel(sentimentScore)}
-              </span>
-            </div>
+
 
             {/* Summary */}
             <div style={{ 
