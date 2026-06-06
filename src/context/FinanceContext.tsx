@@ -95,16 +95,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings'>('login');
 
   // ─── Watchlist (simulated live prices) ────────────────────────────────────
-  const DEFAULT_WATCHLIST: WatchlistItem[] = [
+  const [watchlist] = useState<WatchlistItem[]>([
     { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2945.30, change: 0, changePct: 0, color: '#6366f1', flashClass: '' },
     { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3782.15, change: 0, changePct: 0, color: '#0d9488', flashClass: '' },
     { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1564.80, change: 0, changePct: 0, color: '#f59e0b', flashClass: '' },
     { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1723.45, change: 0, changePct: 0, color: '#ef4444', flashClass: '' },
     { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1285.60, change: 0, changePct: 0, color: '#8b5cf6', flashClass: '' },
     { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 462.35, change: 0, changePct: 0, color: '#ec4899', flashClass: '' },
-  ];
-
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(DEFAULT_WATCHLIST);
+  ]);
 
   // Generate synthetic market index data (Nifty-like)
   const generateMarketIndex = (): MarketDataPoint[] => {
@@ -124,7 +122,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return data;
   };
 
-  const [marketIndex, setMarketIndex] = useState<MarketDataPoint[]>(() => generateMarketIndex());
+  const [marketIndex] = useState<MarketDataPoint[]>(() => generateMarketIndex());
 
 
 
