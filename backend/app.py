@@ -59,13 +59,13 @@ def get_watchlist():
     tickers = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "WIPRO.NS"]
     try:
         import yfinance as yf
-        data = yf.download(tickers, period="2d", group_by="ticker", threads=True, progress=False)
         results = []
         for ticker in tickers:
             try:
-                ticker_data = data[ticker] if len(tickers) > 1 else data
-                if not ticker_data.empty:
-                    closes = ticker_data['Close'].dropna().values
+                t_obj = yf.Ticker(ticker)
+                hist = t_obj.history(period="2d")
+                if not hist.empty:
+                    closes = hist['Close'].dropna().values
                     if len(closes) >= 2:
                         curr = float(closes[-1])
                         prev = float(closes[-2])
