@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Moon, Shield, Key, Sliders, Smartphone } from 'lucide-react';
+import { Bell, Shield, Sliders } from 'lucide-react';
 
 export const Settings: React.FC = () => {
   return (
