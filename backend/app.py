@@ -53,6 +53,42 @@ def on_demand_analysis(ticker):
     return get_analysis(ticker)
 
 
+@app.route('/api/watchlist', methods=['GET'])
+def get_watchlist():
+    """Fetch live data for the watchlist."""
+    tickers = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "WIPRO.NS"]
+    try:
+        import yfinance as yf
+        data = yf.download(tickers, period="2d", group_by="ticker", threads=True, progress=False)
+        results = []
+        for ticker in tickers:
+            try:
+                ticker_data = data[ticker] if len(tickers) > 1 else data
+                if not ticker_data.empty:
+                    closes = ticker_data['Close'].dropna().values
+                    if len(closes) >= 2:
+                        curr = float(closes[-1])
+                        prev = float(closes[-2])
+                        change = curr - prev
+                        pct = (change / prev) * 100
+                    elif len(closes) == 1:
+                        curr = float(closes[0])
+                        prev = curr
+                        change = 0
+                        pct = 0
+                    results.append({
+                        "ticker": ticker,
+                        "price": round(curr, 2),
+                        "change": round(change, 2),
+                        "changePct": round(pct, 2)
+                    })
+            except Exception as e:
+                print(f"Watchlist error for {ticker}: {e}")
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/stock/<ticker>', methods=['GET'])
 def get_stock(ticker):
     """

@@ -32,7 +32,8 @@ export interface WatchlistItem {
   change: number;
   changePct: number;
   color: string;
-  flashClass: string;
+  flashClass: 'price-up' | 'price-down' | '';
+  domain: string;
 }
 
 export interface MarketDataPoint {
@@ -95,13 +96,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings'>('login');
 
   // ─── Watchlist (simulated live prices) ────────────────────────────────────
-  const [watchlist] = useState<WatchlistItem[]>([
-    { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2945.30, change: 0, changePct: 0, color: '#6366f1', flashClass: '' },
-    { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3782.15, change: 0, changePct: 0, color: '#0d9488', flashClass: '' },
-    { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1564.80, change: 0, changePct: 0, color: '#f59e0b', flashClass: '' },
-    { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1723.45, change: 0, changePct: 0, color: '#ef4444', flashClass: '' },
-    { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1285.60, change: 0, changePct: 0, color: '#8b5cf6', flashClass: '' },
-    { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 462.35, change: 0, changePct: 0, color: '#ec4899', flashClass: '' },
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([
+    { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2945.30, change: 0, changePct: 0, color: '#6366f1', flashClass: '', domain: 'ril.com' },
+    { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3782.15, change: 0, changePct: 0, color: '#0d9488', flashClass: '', domain: 'tcs.com' },
+    { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1564.80, change: 0, changePct: 0, color: '#f59e0b', flashClass: '', domain: 'infosys.com' },
+    { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1723.45, change: 0, changePct: 0, color: '#ef4444', flashClass: '', domain: 'hdfcbank.com' },
+    { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1285.60, change: 0, changePct: 0, color: '#8b5cf6', flashClass: '', domain: 'icicibank.com' },
+    { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 462.35, change: 0, changePct: 0, color: '#ec4899', flashClass: '', domain: 'wipro.com' },
   ]);
 
   // Generate synthetic market index data (Nifty-like)
@@ -163,6 +164,44 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Fetch initial data
   useEffect(() => {
     fetchStockData('RELIANCE.NS');
+
+    // Fetch real-time watchlist prices
+    const fetchWatchlist = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/watchlist');
+        if (res.ok) {
+          const liveData = await res.json();
+          setWatchlist(prev => prev.map(item => {
+            const update = liveData.find((d: any) => d.ticker === item.ticker + '.NS');
+            if (update) {
+              const newPrice = update.price;
+              const newChange = update.change;
+              const newChangePct = update.changePct;
+              let fClass: '' | 'price-up' | 'price-down' = '';
+              if (newPrice > item.price) fClass = 'price-up';
+              if (newPrice < item.price) fClass = 'price-down';
+              
+              return {
+                ...item,
+                prevPrice: item.price,
+                price: newPrice,
+                change: newChange,
+                changePct: newChangePct,
+                flashClass: fClass
+              };
+            }
+            return item;
+          }));
+          // clear flash class after animation
+          setTimeout(() => {
+            setWatchlist(prev => prev.map(item => ({ ...item, flashClass: '' })));
+          }, 800);
+        }
+      } catch (err) {
+        console.error('Watchlist fetch error', err);
+      }
+    };
+    fetchWatchlist();
   }, [fetchStockData]);
 
   const sendAdvisorMessage = async (message: string) => {
