@@ -221,6 +221,46 @@ def get_stock(ticker):
     })
 
 
+@app.route('/api/news/<ticker>', methods=['GET'])
+def get_news(ticker):
+    """Fetch processed headlines and sentiment from the News Sentinel database."""
+    ticker = normalize_ticker(ticker)
+    from database import get_connection
+    try:
+        conn = get_connection()
+        from psycopg2.extras import RealDictCursor
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT headline, sentiment_score, created_at 
+            FROM seen_headlines 
+            WHERE ticker = %s 
+            ORDER BY created_at DESC 
+            LIMIT 6
+        """, (ticker,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        # Fallback: query yfinance news directly if no sentinel database logs exist yet
+        if not rows:
+            import yfinance as yf
+            t = yf.Ticker(ticker)
+            y_news = t.news or []
+            rows = []
+            for n in y_news[:6]:
+                # Parse provider time
+                pub_time = n.get("providerPublishTime", int(time.time()))
+                time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(pub_time))
+                rows.append({
+                    "headline": n.get("title", ""),
+                    "sentiment_score": 0.0,
+                    "created_at": time_str
+                })
+        return jsonify(rows)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/advisor/strategy', methods=['POST'])
 def advisor_strategy():
     """Generates an AI strategy using Gemini based on real stock data and ML predictions."""
