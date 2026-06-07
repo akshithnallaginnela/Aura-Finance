@@ -180,7 +180,27 @@ def get_stock(ticker):
     # Fallback to on-demand analysis if it's the first time and not in DB
     if not analysis:
         analysis = on_demand_analysis(ticker)
-    
+    elif not analysis.get("fundamentals") or analysis.get("fundamentals") == {}:
+        from pipeline import analyze_fundamentals
+        try:
+            sentiment, summary, disaster_risk, news_count, fundamentals = analyze_fundamentals(ticker)
+            analysis["fundamentals"] = fundamentals
+            from database import upsert_analysis
+            upsert_analysis(
+                ticker=analysis["ticker"],
+                historical_data=analysis["historical"],
+                forecast_data=analysis["forecast"],
+                sentiment_score=analysis["sentiment_score"],
+                fundamental_summary=analysis["fundamental_summary"],
+                disaster_risk_score=analysis.get("disaster_risk_score", 0.0),
+                confidence_upper=analysis.get("confidence_upper"),
+                confidence_lower=analysis.get("confidence_lower"),
+                fundamentals=fundamentals,
+                backtest_accuracy=analysis.get("backtest_accuracy", 0.0)
+            )
+        except Exception as e:
+            print(f"Error fetching fundamentals on-the-fly for {ticker}: {e}", flush=True)
+            
     if not analysis:
         return jsonify({
             "error": f"Could not find or fetch data for '{ticker}'. Please check the ticker symbol is valid (e.g. RELIANCE.NS, TCS.NS, HDFCBANK.NS)."

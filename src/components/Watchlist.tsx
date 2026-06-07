@@ -214,136 +214,143 @@ export const Watchlist: React.FC = () => {
           </div>
         ) : (
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--tx)', fontSize: '12.5px' }}>
-              <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--br)', color: 'var(--tx3)' }}>
-                  <th style={{ padding: '10px', fontFamily: 'var(--mono)', fontWeight: 600 }}>TICKER</th>
-                  <th style={{ padding: '10px', fontFamily: 'var(--mono)', fontWeight: 600, textAlign: 'right' }}>LIVE PRICE</th>
-                  <th style={{ padding: '10px', fontFamily: 'var(--mono)', fontWeight: 600, textAlign: 'right' }}>HOLDINGS</th>
-                  <th style={{ padding: '10px', fontFamily: 'var(--mono)', fontWeight: 600, textAlign: 'right' }}>TOTAL VALUE</th>
-                  <th style={{ padding: '10px', fontFamily: 'var(--mono)', fontWeight: 600, textAlign: 'right' }}>NET P&L</th>
-                  <th style={{ padding: '10px', fontFamily: 'var(--mono)', fontWeight: 600, textAlign: 'center' }}>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {watchlist.map(item => {
-                  const isSelected = selectedTicker === item.ticker;
-                  const isEditing = editingItem === item.ticker;
-                  const itemValue = (item.shares || 0) * item.price;
-                  const itemCost = (item.shares || 0) * (item.avgBuyPrice || 0);
-                  const itemPnl = itemValue - itemCost;
-                  const itemPnlPct = itemCost > 0 ? (itemPnl / itemCost) * 100 : 0.0;
-                  const isPnlUp = itemPnl >= 0;
+            {/* Table Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.3fr 1.3fr 1.3fr 1.3fr 90px', borderBottom: '1px solid var(--br)', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontWeight: 600, fontSize: '11px', paddingBottom: '10px', textTransform: 'uppercase', marginBottom: '8px' }}>
+              <div>Ticker</div>
+              <div style={{ textAlign: 'right' }}>Live Price</div>
+              <div style={{ textAlign: 'right' }}>Holdings</div>
+              <div style={{ textAlign: 'right' }}>Total Value</div>
+              <div style={{ textAlign: 'right' }}>Net P&L</div>
+              <div style={{ textAlign: 'center' }}>Actions</div>
+            </div>
 
-                  return (
-                    <tr 
-                      key={item.ticker}
-                      onClick={() => handleTickerClick(item.ticker)}
-                      style={{ 
-                        borderBottom: '1px solid var(--br2)', 
-                        cursor: 'pointer',
-                        background: isSelected ? 'var(--bg2)' : 'transparent',
-                        transition: 'background 0.15s'
-                      }}
-                      className={`wl-item ${item.flashClass}`}
-                    >
-                      <td style={{ padding: '12px 10px' }}>
-                        <div style={{ fontWeight: 'bold', color: 'var(--tx)' }}>{item.ticker}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--tx3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{item.name}</div>
-                      </td>
-                      
-                      <td style={{ padding: '12px 10px', textAlign: 'right' }}>
-                        <div style={{ fontWeight: 600 }}>₹{item.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
-                        <div style={{ fontSize: '0.75rem', color: item.changePct >= 0 ? 'var(--emerald)' : 'var(--rose)', fontWeight: 'bold' }}>
-                          {item.changePct >= 0 ? '▲ +' : '▼ '}{item.changePct.toFixed(2)}%
+            {/* Table Body */}
+            <div>
+              {watchlist.map(item => {
+                const isSelected = selectedTicker === item.ticker;
+                const isEditing = editingItem === item.ticker;
+                const itemValue = (item.shares || 0) * item.price;
+                const itemCost = (item.shares || 0) * (item.avgBuyPrice || 0);
+                const itemPnl = itemValue - itemCost;
+                const itemPnlPct = itemCost > 0 ? (itemPnl / itemCost) * 100 : 0.0;
+                const isPnlUp = itemPnl >= 0;
+
+                return (
+                  <div 
+                    key={item.ticker}
+                    onClick={() => handleTickerClick(item.ticker)}
+                    style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '1.8fr 1.3fr 1.3fr 1.3fr 1.3fr 90px', 
+                      alignItems: 'center',
+                      borderBottom: '1px solid var(--br2)', 
+                      cursor: 'pointer',
+                      background: isSelected ? 'var(--bg2)' : 'transparent',
+                      transition: 'background 0.15s',
+                      padding: '12px 0'
+                    }}
+                    className={`wl-item ${item.flashClass}`}
+                  >
+                    {/* Ticker Symbol & Name */}
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: 'var(--tx)', fontSize: '13px' }}>{item.ticker}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--tx3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{item.name}</div>
+                    </div>
+                    
+                    {/* Live Price & Day Change */}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 600, fontSize: '13px' }}>₹{item.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                      <div style={{ fontSize: '0.75rem', color: item.changePct >= 0 ? 'var(--emerald)' : 'var(--rose)', fontWeight: 'bold' }}>
+                        {item.changePct >= 0 ? '▲ +' : '▼ '}{item.changePct.toFixed(2)}%
+                      </div>
+                    </div>
+
+                    {/* Holdings Qty & Avg Buy Price */}
+                    <div style={{ textAlign: 'right' }}>
+                      {isEditing ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '80px', marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
+                          <input 
+                            type="number"
+                            placeholder="Qty"
+                            value={sharesInput}
+                            onChange={e => setSharesInput(Number(e.target.value))}
+                            style={{ padding: '4px', background: 'var(--bg1)', color: 'var(--tx)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '11px', width: '100%' }}
+                          />
+                          <input 
+                            type="number"
+                            placeholder="Cost"
+                            value={avgPriceInput}
+                            onChange={e => setAvgPriceInput(Number(e.target.value))}
+                            style={{ padding: '4px', background: 'var(--bg1)', color: 'var(--tx)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '11px', width: '100%' }}
+                          />
                         </div>
-                      </td>
-
-                      <td style={{ padding: '12px 10px', textAlign: 'right' }}>
-                        {isEditing ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '80px', marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
-                            <input 
-                              type="number"
-                              placeholder="Qty"
-                              value={sharesInput}
-                              onChange={e => setSharesInput(Number(e.target.value))}
-                              style={{ padding: '4px', background: 'var(--bg1)', color: 'var(--tx)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '11px', width: '100%' }}
-                            />
-                            <input 
-                              type="number"
-                              placeholder="Cost"
-                              value={avgPriceInput}
-                              onChange={e => setAvgPriceInput(Number(e.target.value))}
-                              style={{ padding: '4px', background: 'var(--bg1)', color: 'var(--tx)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '11px', width: '100%' }}
-                            />
-                          </div>
-                        ) : (
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{item.shares || 0} units</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--tx3)' }}>Avg: ₹{item.avgBuyPrice?.toFixed(2) || '0.00'}</div>
-                          </div>
-                        )}
-                      </td>
-
-                      <td style={{ padding: '12px 10px', textAlign: 'right', fontWeight: 600 }}>
-                        ₹{itemValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                      </td>
-
-                      <td style={{ padding: '12px 10px', textAlign: 'right', fontWeight: 600, color: (item.shares || 0) > 0 ? (isPnlUp ? 'var(--emerald)' : 'var(--rose)') : 'var(--tx3)' }}>
-                        {(item.shares || 0) > 0 ? (
-                          <>
-                            <div>{isPnlUp ? '+' : ''}₹{itemPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-                            <div style={{ fontSize: '0.75rem' }}>{isPnlUp ? '+' : ''}{itemPnlPct.toFixed(2)}%</div>
-                          </>
-                        ) : (
-                          '--'
-                        )}
-                      </td>
-
-                      <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                          {isEditing ? (
-                            <>
-                              <button 
-                                onClick={e => handleSaveHoldings(item.ticker, e)} 
-                                style={{ border: 'none', background: 'var(--green-bg)', color: 'var(--green)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
-                              >
-                                <Check size={14} />
-                              </button>
-                              <button 
-                                onClick={handleCancelHoldings} 
-                                style={{ border: 'none', background: 'var(--red-bg)', color: 'var(--red)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
-                              >
-                                <X size={14} />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button 
-                                onClick={e => handleEditHoldingsClick(item, e)} 
-                                title="Edit holdings" 
-                                style={{ border: '1px solid var(--line)', background: 'var(--bg2)', color: 'var(--tx2)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
-                                className="seg-btn"
-                              >
-                                <Edit3 size={14} />
-                              </button>
-                              <button 
-                                onClick={e => handleDropFromWatchlist(item.ticker, e)} 
-                                title="Drop stock" 
-                                style={{ border: '1px solid var(--line)', background: 'var(--bg2)', color: 'var(--red)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
-                                className="seg-btn"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </>
-                          )}
+                      ) : (
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{item.shares || 0} units</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--tx3)' }}>Avg: ₹{item.avgBuyPrice?.toFixed(2) || '0.00'}</div>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      )}
+                    </div>
+
+                    {/* Total Holding Value */}
+                    <div style={{ textAlign: 'right', fontWeight: 600, fontSize: '13px' }}>
+                      ₹{itemValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </div>
+
+                    {/* Net P&L metrics */}
+                    <div style={{ textAlign: 'right', fontWeight: 600, fontSize: '13px', color: (item.shares || 0) > 0 ? (isPnlUp ? 'var(--emerald)' : 'var(--rose)') : 'var(--tx3)' }}>
+                      {(item.shares || 0) > 0 ? (
+                        <>
+                          <div>{isPnlUp ? '+' : ''}₹{itemPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                          <div style={{ fontSize: '0.75rem' }}>{isPnlUp ? '+' : ''}{itemPnlPct.toFixed(2)}%</div>
+                        </>
+                      ) : (
+                        '--'
+                      )}
+                    </div>
+
+                    {/* Actions container */}
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }} onClick={e => e.stopPropagation()}>
+                      {isEditing ? (
+                        <>
+                          <button 
+                            onClick={e => handleSaveHoldings(item.ticker, e)} 
+                            style={{ border: 'none', background: 'var(--green-bg)', color: 'var(--green)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            <Check size={14} />
+                          </button>
+                          <button 
+                            onClick={handleCancelHoldings} 
+                            style={{ border: 'none', background: 'var(--red-bg)', color: 'var(--red)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            <X size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={e => handleEditHoldingsClick(item, e)} 
+                            title="Edit holdings" 
+                            style={{ border: '1px solid var(--line)', background: 'var(--bg2)', color: 'var(--tx2)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
+                            className="seg-btn"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button 
+                            onClick={e => handleDropFromWatchlist(item.ticker, e)} 
+                            title="Drop stock" 
+                            style={{ border: '1px solid var(--line)', background: 'var(--bg2)', color: 'var(--red)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
+                            className="seg-btn"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
