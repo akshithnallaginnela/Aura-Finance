@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer,
-  CartesianGrid
-} from 'recharts';
+import { createChart, AreaSeries, LineSeries } from '@pipsend/charts';
+import { useTheme } from '../context/ThemeContext';
 import { getIndianMarketStatus } from '../utils/marketStatus';
 
 type TimeRange = '1W' | '1M' | '3M' | '6M' | '1Y' | 'Max';
@@ -35,10 +28,149 @@ export const Dashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('Max');
   const [copilotInput, setCopilotInput] = useState('');
   const copilotEndRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+
+  const formatDateForChart = (dateVal: any) => {
+    if (!dateVal) return '';
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return '';
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    } catch {
+      return '';
+    }
+  };
 
   useEffect(() => {
     copilotEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isChatLoading]);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+    
+    chartContainerRef.current.innerHTML = '';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { color: 'transparent' },
+        textColor: isDark ? '#7a8fa6' : '#64748b',
+      },
+      grid: {
+        vertLines: { color: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' },
+        horzLines: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+      },
+      crosshair: {
+        mode: 1,
+      },
+      timeScale: {
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+      },
+      rightPriceScale: {
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+      },
+    });
+
+    const historicalSeries = chart.addSeries(AreaSeries, {
+      lineColor: isDark ? '#00c076' : '#059669',
+      topColor: isDark ? 'rgba(0, 192, 118, 0.2)' : 'rgba(5, 150, 105, 0.2)',
+      bottomColor: 'rgba(0, 0, 0, 0)',
+      lineWidth: 2,
+      priceLineVisible: false,
+    });
+
+    const histData = filterByTimeRange(stockData || [])
+      .map(d => ({
+        time: formatDateForChart(d.Date || d.date),
+        value: Number(d.Close || d.close || 0),
+      }))
+      .filter(item => item.time !== '');
+
+    if (histData.length > 0) {
+      historicalSeries.setData(histData);
+    }
+
+    if (stockForecast && stockForecast.length > 0 && (timeRange === '6M' || timeRange === '1Y' || timeRange === 'Max')) {
+      const forecastSeries = chart.addSeries(LineSeries, {
+        color: '#e8a800',
+        lineWidth: 2,
+        lineStyle: 1, // LineStyle.Dashed
+        priceLineVisible: false,
+      });
+
+      const foreData = [];
+      const lastHist = histData[histData.length - 1];
+      if (lastHist) {
+        foreData.push({
+          time: lastHist.time,
+          value: lastHist.value,
+        });
+      }
+
+      stockForecast.forEach(f => {
+        const timeStr = formatDateForChart(f.Date);
+        if (timeStr) {
+          foreData.push({
+            time: timeStr,
+            value: Number(f.PredictedClose || 0),
+          });
+        }
+      });
+
+      if (foreData.length > 0) {
+        forecastSeries.setData(foreData);
+      }
+
+      const upperSeries = chart.addSeries(LineSeries, {
+        color: 'rgba(232, 168, 0, 0.35)',
+        lineWidth: 1,
+        lineStyle: 2, // LineStyle.Dotted
+        priceLineVisible: false,
+      });
+      const lowerSeries = chart.addSeries(LineSeries, {
+        color: 'rgba(232, 168, 0, 0.35)',
+        lineWidth: 1,
+        lineStyle: 2, // LineStyle.Dotted
+        priceLineVisible: false,
+      });
+
+      const upperData = [];
+      const lowerData = [];
+      if (lastHist) {
+        upperData.push({ time: lastHist.time, value: lastHist.value });
+        lowerData.push({ time: lastHist.time, value: lastHist.value });
+      }
+
+      stockForecast.forEach(f => {
+        const timeStr = formatDateForChart(f.Date);
+        if (timeStr) {
+          upperData.push({ time: timeStr, value: Number(f.UpperBand || 0) });
+          lowerData.push({ time: timeStr, value: Number(f.LowerBand || 0) });
+        }
+      });
+
+      if (upperData.length > 0) upperSeries.setData(upperData);
+      if (lowerData.length > 0) lowerSeries.setData(lowerData);
+    }
+
+    chart.timeScale().fitContent();
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.resize(chartContainerRef.current.clientWidth, chartContainerRef.current.clientHeight);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, [stockData, stockForecast, timeRange, theme]);
 
   const handleTickerClick = (ticker: string) => {
     fetchStockData(`${ticker}.NS`);
@@ -106,34 +238,7 @@ export const Dashboard: React.FC = () => {
     return `$${val.toFixed(2)}`;
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div style={{
-          background: 'var(--bg1)',
-          border: '1px solid var(--line)',
-          padding: '8px 12px',
-          color: 'var(--tx)',
-          fontFamily: 'var(--mono)',
-          fontSize: '11px'
-        }}>
-          <p style={{ color: 'var(--tx3)', marginBottom: '4px' }}>{data.Date}</p>
-          {data.Close && (
-            <p style={{ color: 'var(--green)', fontWeight: 600 }}>
-              Actual: {formatPrice(data.Close)}
-            </p>
-          )}
-          {data.PredictedClose && (
-            <p style={{ color: 'var(--amber)', fontWeight: 600 }}>
-              Forecast: {formatPrice(data.PredictedClose)}
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
+
 
   return (
     <>
@@ -220,78 +325,10 @@ export const Dashboard: React.FC = () => {
                 FETCHING DATA & TRAINING MODEL...
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={combinedData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--green)" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="var(--green)" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorPred" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--amber)" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="var(--amber)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-                  <XAxis 
-                    dataKey="Date" 
-                    stroke="var(--tx3)" 
-                    fontSize={9} 
-                    fontFamily="var(--mono)"
-                    tickMargin={10}
-                    minTickGap={50}
-                    axisLine={{ stroke: 'var(--line)' }}
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    stroke="var(--tx3)" 
-                    fontSize={9} 
-                    fontFamily="var(--mono)"
-                    tickFormatter={fmt => currentPrice > 500 ? `₹${fmt}` : `$${fmt}`}
-                    domain={['auto', 'auto']}
-                    width={50}
-                    axisLine={false}
-                    tickLine={false}
-                    orientation="right"
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area 
-                    type="monotone" 
-                    dataKey="Close" 
-                    stroke="var(--green)" 
-                    strokeWidth={1.5}
-                    fillOpacity={1} 
-                    fill="url(#colorClose)" 
-                    connectNulls
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="UpperBand" 
-                    stroke="none"
-                    fillOpacity={0} 
-                    fill="transparent" 
-                    connectNulls
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="LowerBand" 
-                    stroke="none"
-                    fillOpacity={0.1} 
-                    fill="var(--amber)" 
-                    connectNulls
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="PredictedClose" 
-                    stroke="var(--amber)" 
-                    strokeWidth={1.5}
-                    strokeDasharray="4 4"
-                    fillOpacity={1} 
-                    fill="url(#colorPred)" 
-                    connectNulls
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div 
+                ref={chartContainerRef} 
+                style={{ width: '100%', height: '320px' }} 
+              />
             )}
           </div>
           <div className="chart-legend">
@@ -342,7 +379,7 @@ export const Dashboard: React.FC = () => {
               <div className="fm-val">{fundamentals?.market_cap ? `₹${(fundamentals.market_cap / 10000000000).toFixed(2)}T` : '-'}</div>
             </div>
           </div>
-          <div style={{ padding: '14px', fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--tx2)', lineHeight: 1.6 }}>
+          <div style={{ padding: '16px', fontFamily: 'var(--sans)', fontSize: '13.5px', color: 'var(--tx2)', lineHeight: 1.6 }}>
             {fundamentalSummary || 'Select a ticker and run analysis to view the fundamental summary.'}
           </div>
         </div>

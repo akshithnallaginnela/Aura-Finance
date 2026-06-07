@@ -375,19 +375,19 @@ body {
 .stat-cell:hover { background: var(--bg2); }
 .stat-cell.highlight { background: var(--amber-bg); }
 .stat-cell-label {
-  font-family: var(--mono); font-size: 9.5px; font-weight: 500;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
   color: var(--tx3); text-transform: uppercase; letter-spacing: 0.08em;
   margin-bottom: 5px;
 }
 .stat-cell-val {
-  font-family: var(--mono); font-size: 15px; font-weight: 600;
+  font-family: var(--mono); font-size: 17px; font-weight: 600;
   color: var(--tx); line-height: 1;
   margin-bottom: 4px;
 }
 .stat-cell-val.green { color: var(--green); }
 .stat-cell-val.amber { color: var(--amber); }
 .stat-cell-chg {
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size: 11px;
   display: flex; align-items: center; gap: 4px;
 }
 .up { color: var(--green); }
@@ -416,7 +416,7 @@ body {
   min-height: 34px;
 }
 .panel-title {
-  font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
   color: var(--tx2); text-transform: uppercase; letter-spacing: 0.08em;
   display: flex; align-items: center; gap: 7px;
 }
@@ -426,7 +426,7 @@ body {
 }
 .panel-controls { display: flex; align-items: center; gap: 4px; }
 .seg-btn {
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size: 11px;
   padding: 3px 8px;
   background: transparent;
   border: 1px solid var(--line);
@@ -438,7 +438,7 @@ body {
 .seg-btn.active { background: var(--amber); border-color: var(--amber); color: #000; font-weight: 600; }
 :root[data-theme="light"] .seg-btn.active { color: #fff; }
 .panel-badge {
-  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
   padding: 2px 6px;
   text-transform: uppercase; letter-spacing: 0.06em;
 }
@@ -459,8 +459,8 @@ body {
   flex-wrap: wrap;
 }
 .cs-item { display: flex; flex-direction: column; gap: 2px; }
-.cs-label { font-family: var(--mono); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.06em; }
-.cs-val   { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--tx); }
+.cs-label { font-family: var(--mono); font-size: 10.5px; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.06em; }
+.cs-val   { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--tx); }
 .cs-val.up   { color: var(--green); }
 .cs-val.dn   { color: var(--red); }
 .cs-val.amber { color: var(--amber); }
@@ -468,7 +468,7 @@ body {
 /* ─── CANDLESTICK LEGEND ─── */
 .chart-legend {
   display: flex; gap: 14px; padding: 8px 14px;
-  font-family: var(--mono); font-size: 10px; color: var(--tx3);
+  font-family: var(--mono); font-size: 11px; color: var(--tx3);
 }
 .leg { display: flex; align-items: center; gap: 5px; }
 .leg-sq { width: 8px; height: 8px; flex-shrink: 0; }
@@ -484,23 +484,23 @@ body {
 .wl-sym {
   width: 62px;
   padding: 8px 14px;
-  font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
   color: var(--tx);
   border-right: 1px solid var(--line);
 }
 .wl-name {
   flex: 1; padding: 8px 12px;
-  font-size: 11px; color: var(--tx3);
+  font-size: 12px; color: var(--tx3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .wl-price {
   padding: 8px 10px;
-  font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
   color: var(--tx); text-align: right; min-width: 70px;
 }
 .wl-chg {
   padding: 8px 14px 8px 4px;
-  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
   text-align: right; min-width: 60px;
 }
 .wl-sparkline { padding: 0 10px; }
@@ -515,8 +515,8 @@ body {
   border-right: 1px solid var(--line);
 }
 .fm-cell:last-child { border-right: none; }
-.fm-label { font-family: var(--mono); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
-.fm-val   { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--tx); }
+.fm-label { font-family: var(--mono); font-size: 11px; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+.fm-val   { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--tx); }
 .fm-val.green { color: var(--green); }
 .fm-val.red { color: var(--red); }
 
@@ -533,7 +533,7 @@ body {
   display: flex; gap: 8px; align-items: flex-start;
 }
 .msg-tag {
-  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 600;
   padding: 2px 5px;
   flex-shrink: 0; margin-top: 1px;
   text-transform: uppercase;
@@ -541,7 +541,7 @@ body {
 .msg-tag.ai  { background: var(--amber-bg); color: var(--amber); }
 .msg-tag.usr { background: var(--bg3); color: var(--tx3); }
 .msg-body {
-  font-size: 11.5px; color: var(--tx2); line-height: 1.55;
+  font-size: 13.5px; color: var(--tx2); line-height: 1.55;
 }
 .msg-body strong { color: var(--tx); font-weight: 500; }
 .copilot-chips {
@@ -550,7 +550,7 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .chip {
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size: 11px;
   padding: 3px 9px;
   background: var(--bg2);
   border: 1px solid var(--line);
