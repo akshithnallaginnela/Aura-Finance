@@ -371,14 +371,15 @@ export const Watchlist: React.FC = () => {
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '4px', 
-                    padding: '4px 8px', 
-                    background: 'var(--amber-bg)', 
-                    color: 'var(--amber)', 
+                    padding: '6px 12px', 
+                    background: 'var(--amber)', 
+                    color: '#000000', 
                     fontSize: '0.75rem', 
-                    fontWeight: 600, 
+                    fontWeight: 700, 
                     borderRadius: '4px',
                     border: 'none',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
                   }}
                   className="seg-btn"
                 >
