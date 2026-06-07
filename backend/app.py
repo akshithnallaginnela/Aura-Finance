@@ -351,6 +351,48 @@ def advisor_strategy():
             if f:
                 fundamentals_txt = f"\n- P/E Ratio: {f.get('pe_ratio', 'N/A')}\n- EPS: {f.get('eps', 'N/A')}\n- Market Cap: {f.get('market_cap', 'N/A')}\n- 52-Week High: {f.get('fifty_two_week_high', 'N/A')}"
 
+        # Fetch all available stock analyses from the database
+        all_stocks_summary = ""
+        try:
+            from database import get_connection
+            from psycopg2.extras import RealDictCursor
+            conn = get_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute("""
+                SELECT ticker, historical_data, forecast_data, sentiment_score, disaster_risk_score, fundamentals, backtest_accuracy
+                FROM stock_analysis
+            """)
+            all_records = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            
+            if all_records:
+                all_stocks_summary = "\nAll Available Stocks in Database:\n"
+                for r in all_records:
+                    t = r['ticker']
+                    sentiment = r['sentiment_score']
+                    risk = r['disaster_risk_score']
+                    accuracy = r['backtest_accuracy']
+                    
+                    price = "Unknown"
+                    db_hist = r.get('historical_data') or []
+                    if db_hist:
+                        price = db_hist[-1].get('Close') or db_hist[-1].get('close') or "Unknown"
+                    
+                    target = "Unknown"
+                    db_fore = r.get('forecast_data') or []
+                    if db_fore:
+                        target = db_fore[-1].get('PredictedClose') or db_fore[-1].get('predicted_close') or "Unknown"
+                        
+                    f = r.get('fundamentals') or {}
+                    pe = f.get('pe_ratio', 'N/A')
+                    eps = f.get('eps', 'N/A')
+                    cap = f.get('market_cap', 'N/A')
+                    
+                    all_stocks_summary += f"- **{t}**: Current Price: ₹{price}, 6-Month Target: ₹{target}, Sentiment: {sentiment:.2f}, Disaster Risk: {risk*100:.0f}%, Accuracy: {accuracy:.1f}%, P/E Ratio: {pe}, EPS: {eps}, Market Cap: {cap}\n"
+        except Exception as db_err:
+            print(f"Error building database context for advisor: {db_err}", flush=True)
+
         history_context = ""
         if history:
             history_context = "\nConversation history so far:\n"
@@ -376,6 +418,7 @@ Current Context Information (only use when relevant to the user's question or wh
 - Disaster Risk: {disaster_risk} (range 0 to 1)
 - Fundamental Summary: {fundamental_summary}
 {fundamentals_txt}
+{all_stocks_summary}
 
 {history_context}
 User Prompt: {prompt}
