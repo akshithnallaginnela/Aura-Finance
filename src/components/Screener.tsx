@@ -193,7 +193,7 @@ export const Screener: React.FC = () => {
   );
 
   return (
-    <div style={{ display: 'flex', gap: '20px', margin: '10px 0', width: '100%', alignItems: 'stretch' }}>
+    <div style={{ display: 'flex', gap: '20px', margin: '20px', width: 'calc(100% - 40px)', alignItems: 'stretch', height: 'calc(100vh - 130px)' }}>
       {/* LEFT COLUMN: Table List */}
       <div className="panel" style={{ flex: '3 1 60%', padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -405,10 +405,11 @@ export const Screener: React.FC = () => {
                   padding: '10px',
                   background: 'var(--amber)',
                   color: 'black',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   border: 'none',
                   borderRadius: '6px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
                 }}
                 className="seg-btn"
               >
@@ -425,23 +426,24 @@ export const Screener: React.FC = () => {
                   justifyContent: 'center', 
                   gap: '6px',
                   padding: '10px',
-                  background: 'var(--bg2)',
-                  color: 'var(--tx)',
-                  fontWeight: 600,
-                  border: '1px solid var(--line)',
+                  background: isSelectedInWatchlist ? 'var(--red)' : 'var(--green)',
+                  color: 'white',
+                  fontWeight: 700,
+                  border: 'none',
                   borderRadius: '6px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
                 }}
                 className="seg-btn"
               >
                 {isSelectedInWatchlist ? (
                   <>
-                    <Trash2 size={16} color="var(--red)" />
+                    <Trash2 size={16} color="white" />
                     Drop Watchlist
                   </>
                 ) : (
                   <>
-                    <Plus size={16} color="var(--green)" />
+                    <Plus size={16} color="white" />
                     Watch Stock
                   </>
                 )}
