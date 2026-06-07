@@ -117,6 +117,22 @@ def get_market_index():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/macro/chart/<ticker>', methods=['GET'])
+def get_macro_chart(ticker):
+    """Fetch history for a global macro asset (e.g. BTC-USD, ^GSPC)."""
+    try:
+        hist = get_cached_market_data(ticker, period="3mo")
+        data = []
+        for date, row in hist.iterrows():
+            data.append({
+                "date": date.strftime('%Y-%m-%d'),
+                "value": round(row['Close'], 2)
+            })
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/watchlist', methods=['GET'])
 def get_watchlist():
     """Fetch live data for the watchlist."""

@@ -7,6 +7,7 @@ import { Login } from './components/Login';
 import { Settings } from './components/Settings';
 import { Screener } from './components/Screener';
 import { MacroView } from './components/MacroView';
+import { Watchlist } from './components/Watchlist';
 
 function AppContent() {
   const { activeView, setActiveView } = useFinance();
@@ -32,13 +33,7 @@ function AppContent() {
           <p>We are migrating this tool to use real financial data and machine learning.</p>
         </div>
       )}
-      {activeView === 'watchlist' && (
-        <div className="panel" style={{ margin: '20px', padding: '40px', textAlign: 'center', color: 'var(--tx3)' }}>
-          <h2 style={{ color: 'var(--tx)' }}>Standalone Watchlist</h2>
-          <p>This view will provide an expanded, full-screen grid of your watched assets.</p>
-          <p>For now, you can view your real-time watchlist in the <strong style={{ color: 'var(--amber)', cursor: 'pointer' }} onClick={() => setActiveView('dashboard')}>Dashboard</strong>.</p>
-        </div>
-      )}
+      {activeView === 'watchlist' && <Watchlist />}
       {activeView === 'screener' && <Screener />}
     </Layout>
   );
