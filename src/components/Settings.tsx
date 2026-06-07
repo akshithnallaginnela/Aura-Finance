@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useFinance } from '../context/FinanceContext';
 
 export const Settings: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const { user, logoutAction } = useFinance();
   const [isSmartAlerts, setIsSmartAlerts] = useState(true);
+
+  const handleSignOut = async () => {
+    try {
+      await logoutAction();
+    } catch (err) {
+      console.error("Failed to sign out:", err);
+    }
+  };
 
   return (
     <div className="settings-panel">
@@ -52,10 +62,27 @@ export const Settings: React.FC = () => {
         </div>
         
         <div className="settings-group">
-          <div style={{ fontSize: '11px', color: 'var(--tx2)', marginBottom: '10px' }}>
-            To manage your password, sessions, and two-factor authentication, please use the Supabase Dashboard or wait for the full Auth implementation.
+          {user && (
+            <div style={{ fontSize: '12.5px', color: 'var(--tx)', marginBottom: '8px', fontWeight: 600 }}>
+              Logged in as: <span style={{ color: 'var(--amber)' }}>{user.email}</span>
+            </div>
+          )}
+          <div style={{ fontSize: '11px', color: 'var(--tx2)', marginBottom: '16px' }}>
+            Your authentication session is managed securely via Supabase Auth. Click the button below to sign out of your current session.
           </div>
-          <button className="seg-btn" style={{ padding: '6px 12px' }}>Manage Account</button>
+          <button 
+            className="seg-btn" 
+            onClick={handleSignOut}
+            style={{ 
+              padding: '6px 12px', 
+              color: 'var(--red)', 
+              borderColor: 'rgba(239, 68, 68, 0.3)', 
+              background: 'rgba(239, 68, 68, 0.05)',
+              cursor: 'pointer' 
+            }}
+          >
+            Sign Out of Account
+          </button>
         </div>
       </div>
     </div>
