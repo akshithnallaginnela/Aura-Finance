@@ -105,7 +105,7 @@ def on_demand_analysis(ticker):
 def get_market_index():
     """Fetch actual Nifty 50 Index data for the market overview chart."""
     try:
-        hist = get_cached_market_data('^NSEI', period="3mo")
+        hist = get_cached_market_data('^NSEI', period="2y")
         data = []
         for date, row in hist.iterrows():
             data.append({

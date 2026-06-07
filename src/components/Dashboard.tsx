@@ -208,7 +208,7 @@ export const Dashboard: React.FC = () => {
       priceLineVisible: false,
     });
 
-    const indexData = (marketIndex || [])
+    const indexData = filterByTimeRange(marketIndex || [])
       .map(d => ({
         time: formatDateForChart(d.date),
         value: Number(d.value || 0),
@@ -232,7 +232,7 @@ export const Dashboard: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [marketIndex, theme]);
+  }, [marketIndex, theme, timeRange]);
 
   const handleTickerClick = (ticker: string) => {
     fetchStockData(`${ticker}.NS`);
