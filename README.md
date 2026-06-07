@@ -26,19 +26,23 @@ Experience Aura Finance live: **[aura-finance-five.vercel.app](https://aura-fina
 
 ## 📷 Screenshots
 
-Here is a visual walkthrough of the Aura Finance terminal:
+Here is a visual walkthrough of the Aura Finance setup and dashboard:
 
-| **Landing & Authentication** | **Market Screener** |
-| :---: | :---: |
-| ![Aura Landing Page](public/screenshots/landing.png) | ![Multi-Factor Market Screener](public/screenshots/screener.png) |
+### 🔐 Authentication & Onboarding Flow
 
-| **Ensemble ML Forecasting** | **MPT Portfolio Optimizer** |
+| **1. Sign In** | **2. Welcome Guide** |
 | :---: | :---: |
-| ![ML Forecast Charts](public/screenshots/forecaster.png) | ![Sharpe Ratio Optimizer](public/screenshots/optimizer.png) |
+| ![Sign In Screen](public/screenshots/signin.png) | ![Onboarding Welcome Guide](public/screenshots/onboarding_welcome.png) |
 
-| **Global Macro Tracker** | **Aura AI Broker Chat** |
+| **3. Configure Watchlist** | **4. Workspace Ready** |
 | :---: | :---: |
-| ![Global Macro Insights](public/screenshots/macro.png) | ![Aura AI Copilot](public/screenshots/advisor.png) |
+| ![Watchlist Config](public/screenshots/onboarding_select.png) | ![Workspace Setup Complete](public/screenshots/onboarding_complete.png) |
+
+### 📊 Intelligence Workspace
+
+| **5. Interactive Dashboard & Forecasting Terminal** |
+| :---: |
+| ![Overview Dashboard](public/screenshots/dashboard.png) |
 
 ## 📖 Table of Contents
 * [🚀 Key Enterprise Modules](#-key-enterprise-modules)
