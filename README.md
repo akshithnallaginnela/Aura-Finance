@@ -30,27 +30,35 @@ Here is a visual walkthrough of the Aura Finance setup and dashboard:
 
 ### 🔐 Authentication & Onboarding Flow
 
-| **1. Sign In** | **2. Welcome Guide** |
+| **1. Landing Page** | **2. Sign In** |
 | :---: | :---: |
-| ![Sign In Screen](public/screenshots/signin.png) | ![Onboarding Welcome Guide](public/screenshots/onboarding_welcome.png) |
+| ![Aura Landing Page](public/screenshots/landing.png) | ![Sign In Screen](public/screenshots/signin.png) |
 
-| **3. Configure Watchlist** | **4. Workspace Ready** |
+| **3. Welcome Guide** | **4. Configure Watchlist** |
 | :---: | :---: |
-| ![Watchlist Config](public/screenshots/onboarding_select.png) | ![Workspace Setup Complete](public/screenshots/onboarding_complete.png) |
+| ![Onboarding Welcome Guide](public/screenshots/onboarding_welcome.png) | ![Watchlist Config](public/screenshots/onboarding_select.png) |
+
+| **5. Workspace Ready** | |
+| :---: | :---: |
+| ![Workspace Setup Complete](public/screenshots/onboarding_complete.png) | |
 
 ### 📊 Analytics & Market Overview
 
-| **5. Predictive Stock Chart** | **6. NIFTY 50 Index Overview** |
+| **6. Predictive Stock Chart** | **7. NIFTY 50 Index Overview** |
 | :---: | :---: |
 | ![Overview Dashboard](public/screenshots/dashboard.png) | ![NIFTY 50 Index Chart](public/screenshots/dashboard_index.png) |
 
+| **8. Global Macro Tracker** | |
+| :---: | :---: |
+| ![Global Macro View](public/screenshots/macro.png) | |
+
 ### 🛠 Portfolio Optimization & AI Strategy
 
-| **7. MPT Portfolio Optimizer** | **8. Holdings & Watchlist** |
+| **9. MPT Portfolio Optimizer** | **10. Holdings & Watchlist** |
 | :---: | :---: |
 | ![MPT Optimizer](public/screenshots/optimizer.png) | ![My Holdings](public/screenshots/watchlist_holdings.png) |
 
-| **9. Aura AI Strategist Chat** | **10. Multi-Factor Screener** |
+| **11. Aura AI Strategist Chat** | **12. Multi-Factor Screener** |
 | :---: | :---: |
 | ![AI Strategy Chat](public/screenshots/advisor.png) | ![Market Screener](public/screenshots/screener.png) |
 
