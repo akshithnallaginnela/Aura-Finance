@@ -1,7 +1,9 @@
 {
   "name": "aura-finance",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.4.0",
+  "description": "Enterprise-grade AI Wealth Copilot with 5-model Ensemble ML forecasting, FinBERT sentiment analysis, and Real-time News Sentinel.",
+  "homepage": "https://aura-finance-five.vercel.app",
   "type": "module",
   "scripts": {
     "dev": "vite",
