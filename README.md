@@ -216,16 +216,16 @@ python app.py
 #### 2. Frontend Development Server
 Configure your local environment variables in a `.env` file in the root directory:
 ```env
-# ─── API & CO-PILOT CONFIGURATION ─────────────────────────────────────────────
+# API & Gemini Co-Pilot
 VITE_BACKEND_URL="http://localhost:5000"
 VITE_GEMINI_API_KEYS="your_key_1,your_key_2"
 
-# ─── SUPABASE AUTH CONFIGURATION ──────────────────────────────────────────────
-VITE_SUPABASE_URL="https://your-project.supabase.co"
-VITE_SUPABASE_ANON_KEY="your-anon-key-here"
+# Supabase Authentication
+VITE_SUPABASE_URL="https://project.supabase.co"
+VITE_SUPABASE_ANON_KEY="anon-key-here"
 
-# ─── DATABASE CONFIGURATION (POSTGRES CONNECT) ────────────────────────────────
-DATABASE_URL="postgresql://postgres.your-project:password@aws-pooler.supabase.com:6543/postgres"
+# Supabase PostgreSQL Database Connection
+DATABASE_URL="postgresql://postgres.project:password@pooler.supabase.com:6543/postgres"
 ```
 Instantly compile and start:
 ```bash
