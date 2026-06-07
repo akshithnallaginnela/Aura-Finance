@@ -1,58 +1,135 @@
 # 🌌 Aura Finance — Enterprise AI Wealth Copilot
 
-[![Vite](https://img.shields.io/badge/Vite-8.0-06b6d4?style=for-the-badge&logo=vite&logoColor=fff)](https://vite.dev/)
-[![React](https://img.shields.io/badge/React-19.0-10b981?style=for-the-badge&logo=react&logoColor=fff)](https://react.dev/)
-[![Python](https://img.shields.io/badge/Python-3.11-3776ab?style=for-the-badge&logo=python&logoColor=fff)](https://www.python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=fff)](https://www.postgresql.org/)
-[![Gemini](https://img.shields.io/badge/Gemini--AI-1.5--Flash-f43f5e?style=for-the-badge&logo=google-gemini&logoColor=fff)](https://deepmind.google/technologies/gemini/)
+<p align="center">
+  <img src="public/logo.png" alt="Aura Logo" width="120"/>
+</p>
 
-Aura Finance is an enterprise-grade quantitative financial intelligence platform. It combines a **5-model Ensemble ML Pipeline**, **FinBERT Sentiment Analysis**, and **Real-time News Sentinel** to provide professional-grade market forecasts and portfolio optimization.
+<h3 align="center">Aura Finance</h3>
+<p align="center"><strong>Next-Generation Hybrid Quantitative Forecaster & Portfolio Optimizer</strong></p>
 
----
-
-## 🚀 Key Enterprise Features
-
-### 🧠 Hybrid Ensemble ML Engine
-Our proprietary prediction engine combines five distinct architectures for robust forecasting:
-- **Amazon Chronos-T5 (35%)**: Zero-shot foundation model for time-series.
-- **PyTorch Transformer (20%)**: Captures long-range market dependencies.
-- **XGBoost (20%)**: Gradient boosted trees for technical indicator analysis.
-- **LightGBM (15%)**: Leaf-wise boosting for fine-grained price movement.
-- **LSTM RNN (10%)**: Recurrent neural network for sequential memory.
-
-### 📰 24/7 News Sentinel Agent
-- **FinBERT Sentiment**: Analyzes real-time news headlines using ProsusAI's FinBERT.
-- **Disaster Risk Detection**: Scans for 23 categories of market-shaking events (wars, crashes, scams).
-- **Auto-Reprediction**: Detects *any* new headline and immediately triggers a full ensemble re-forecast.
-
-### 📊 Modern Portfolio Theory (MPT)
-- **Monte Carlo Optimizer**: Simulates 5,000+ portfolios to find the **Maximum Sharpe Ratio**.
-- **Live Rebalancing**: Real-time weight adjustment suggestions based on historical covariance and risk-free rates.
-
-### 🌐 Market Intelligence Modules
-- **Enterprise Screener**: Multi-factor filtering (AI Sentiment, Risk Score, P/E Ratio, Market Cap).
-- **Global Macro View**: Real-time tracking of S&P 500, Nasdaq, Nikkei, USD/INR, and Bitcoin.
-- **Aura AI Advisor**: Hyper-contextual strategy guidance powered by Gemini 1.5 Flash.
+<p align="center">
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-8.0-06b6d4?style=for-the-badge&logo=vite&logoColor=fff" alt="Vite"/></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.0-10b981?style=for-the-badge&logo=react&logoColor=fff" alt="React"/></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11-3776ab?style=for-the-badge&logo=python&logoColor=fff" alt="Python"/></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=fff" alt="PostgreSQL"/></a>
+  <a href="https://deepmind.google/technologies/gemini/"><img src="https://img.shields.io/badge/Gemini--AI-2.5--Flash-f43f5e?style=for-the-badge&logo=google-gemini&logoColor=fff" alt="Gemini"/></a>
+</p>
 
 ---
 
-## 🛠 Tech Stack
+Aura Finance is an enterprise-grade quantitative wealth management platform. It integrates a **5-model Machine Learning Ensemble**, **FinBERT Natural Language Processing**, and a **Real-Time News Sentinel** to deliver high-fidelity market forecasts, live sentiment scores, and portfolio optimization matching Modern Portfolio Theory (MPT).
+
+---
+
+## 📖 Table of Contents
+* [🚀 Key Enterprise Modules](#-key-enterprise-modules)
+* [📁 Project Directory Structure](#-project-directory-structure)
+* [🧠 Hybrid Ensemble ML Engine](#-hybrid-ensemble-ml-engine)
+* [📰 24/7 News Sentinel Agent](#-247-news-sentinel-agent)
+* [🛠 Tech Stack & Libraries](#-tech-stack--libraries)
+* [🏗 System Architecture Diagram](#-system-architecture-diagram)
+* [💻 Getting Started](#-getting-started)
+* [🛡 Security, Latency, & Reliability](#-security-latency--reliability)
+
+---
+
+## 🚀 Key Enterprise Modules
+
+### 📈 Real-Time Indian Equities Scroller
+* Features the **Top 10 Indian Equities by Market Cap** (Reliance, TCS, HDFC Bank, Bharti Airtel, ICICI Bank, Infosys, SBI, LIC, ITC, Hindustan Unilever) in an infinite marquee tape.
+* Clicking any stock immediately loads its predictive chart and key valuation statistics in the main workspace.
+
+### 📊 Modern Portfolio Theory (MPT) Optimizer
+* **Monte Carlo Optimizer**: Simulates over 5,000 randomized portfolios to determine the **Maximum Sharpe Ratio** capital weightings.
+* **Cash Allocation Simulator**: Slide a range slider from ₹10,000 to ₹10,00,000 to instantly view recommended rupee allocations across optimized blue-chip assets.
+* **Quick Presets**: Jump directly into standard configurations like "Blue Chip Giants", "IT Leaders", or "Banking Heavyweights".
+
+### 🔎 Multi-Factor Market Screener
+* Interactive split-pane dashboard showcasing a table of Nifty 50 stocks with model metrics (Model Accuracy, Sentiment Score, Disaster Risk Rating, P/E Ratio, Market Cap).
+* Select any item to render a 3-month performance trend, detailed gauges, and watchlist management.
+
+### 🌐 Global Macro Tracker
+* Real-time monitoring of key international benchmarks (S&P 500, Nasdaq, FTSE 100, Nikkei 225, USD/INR forex rate, and Bitcoin).
+* Renders historical indicators and provides a significance report analyzing foreign institutional flows (FII).
+
+### 💬 Consultative Aura AI Broker
+* A warm, professional personal stock broker chat agent.
+* Powered by Gemini 2.5 Flash, it engages in friendly greetings and conversation, only serving technical analysis tables and reports when requested.
+* Latency-optimized by omitting large price arrays from the client request; details are fetched directly from PostgreSQL.
+
+---
+
+## 📁 Project Directory Structure
+
+The project has been cleaned and organized to keep root files to an absolute minimum:
+
+```
+├── .github/                       # GitHub workflow, PR, and community health files
+│   ├── ISSUE_TEMPLATE/            # Bug reports, enhancement, and query forms (.yml)
+│   ├── DISCUSSION_TEMPLATE/       # Announcement and community idea files
+│   ├── PULL_REQUEST_TEMPLATE/     # Pull request template form (.md)
+│   └── workflows/                 # CI/CD deployment pipelines (HF space triggers)
+├── backend/                       # Python Flask backend
+│   ├── app.py                     # API routing & server entry point
+│   ├── database.py                # Supabase/PostgreSQL connection & caching tables
+│   ├── pipeline.py                # yfinance fetcher & Ensemble ML trainer
+│   └── monitoring.py              # Performance, disaster alert, and drift logging
+├── docker/                        # DevOps build packaging
+│   └── Dockerfile                 # Multistage production frontend container
+├── docs/                          # Architectural plans and mockup files
+│   ├── ENTERPRISE_ARCHITECTURE_PLAN.md
+│   ├── Hugging_face.md
+│   └── aurafinance-dashboard.html
+├── public/                        # Static UI assets (logo.png, favicon.png)
+├── scripts/                       # System automation utilities
+│   └── run.bat                    # One-click Windows local runner
+├── src/                           # React frontend source
+│   ├── components/                # Modular UI widgets (Watchlist, Screener, Optimizer, Advisor)
+│   ├── context/                   # Global state providers (Finance, Theme)
+│   └── utils/                     # Indian market hours clock & holiday check calendars
+```
+
+---
+
+## 🧠 Hybrid Ensemble ML Engine
+
+Our proprietary forecasting pipeline merges multiple statistical, neural, and tree-based architectures for maximum robustness:
+
+| Model | Weight | Type | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Amazon Chronos-T5-Small** | **35%** | Zero-Shot Time Series Transformer | Generalizes long-term cyclical patterns |
+| **PyTorch Transformer Encoder** | **20%** | Self-Attention Neural Network | Extracts key cross-attention dependencies |
+| **XGBoost Regressor** | **20%** | Gradient Boosted Trees | Evaluates technical indicators (RSI, MACD, EMA) |
+| **LightGBM** | **15%** | Leaf-wise Gradient Boosting | Computes non-linear local price splits |
+| **PyTorch LSTM** | **10%** | 2-Layer Recurrent RNN | Captures sequential momentum memory |
+
+---
+
+## 📰 24/7 News Sentinel Agent
+
+Aura Finance continuously monitors live financial channels to maintain up-to-the-minute valuation targets:
+1. **ProsusAI FinBERT Sentiment**: Parses recent headlines and scores them between `-1.0` (Highly Bearish) and `+1.0` (Highly Bullish).
+2. **Disaster Risk Scans**: Cross-checks headlines against 23 disruption categories (e.g. regulatory fines, geopolitical actions, default warnings).
+3. **Auto-Reprediction**: Whenever a new headline is indexed, the backend automatically triggers a pipeline refresh, updates PostgreSQL, and logs details in the dashboard sentinel feed.
+
+---
+
+## 🛠 Tech Stack & Libraries
 
 ### Frontend
-- **Framework**: React 19 with TypeScript
-- **State Management**: Context API
-- **Visuals**: Recharts (Financial Charts), Lucide (Icons)
-- **Styling**: Glassmorphic Vanilla CSS (Hardware Accelerated)
+* **Core**: React 19, TypeScript, Vite 8
+* **Charts**: `@pipsend/charts` (High-performance Canvas-based Area and Forecast charts), Recharts (Asset allocation pie charts)
+* **Icons**: `lucide-react`
+* **Theme**: CSS Variables (Dynamic Light/Dark modes)
 
 ### Backend
-- **Framework**: Flask (Python 3.11)
-- **Database**: PostgreSQL / Supabase with JSONB storage
-- **ML/DL**: PyTorch, XGBoost, LightGBM, Chronos, Transformers (HuggingFace)
-- **APM**: Custom Latency & Model Drift Monitoring
+* **Server**: Flask (Python 3.11) with CORS controls
+* **Database**: PostgreSQL (via Supabase) with real-time JSONB storage
+* **Data Sources**: `yfinance`, `newsapi`
 
 ---
 
-## 🏗 System Architecture
+## 🏗 System Architecture Diagram
 
 ```mermaid
 graph TD
@@ -70,46 +147,48 @@ graph TD
 
 ## 💻 Getting Started
 
-### Prerequisites
-- Python 3.11+
-- Node.js 20+
-- PostgreSQL (or Supabase URL)
-- Google Gemini API Key
+### Windows One-Click Start
+Double-click [scripts/run.bat](file:///c:/Users/Akshith/antigravity/Aura-Finance/scripts/run.bat) to launch the backend Flask server and the frontend Vite server in parallelcmd windows automatically.
 
-### Backend Setup
-1. `cd backend`
-2. `pip install -r requirements.txt`
-3. Create a `.env` in the root:
-   ```env
-   DATABASE_URL=your_postgres_url
-   VITE_GEMINI_API_KEY=your_gemini_key
-   ```
-4. `python app.py`
+### Manual Setup
 
-### Frontend Setup
-1. `npm install`
-2. `npm run dev`
+#### Prerequisites
+* Node.js v20+
+* Python v3.11+
+* Supabase/PostgreSQL database
+
+#### 1. Backend API Server
+```bash
+cd backend
+python -m venv .venv
+# On Windows
+.venv\Scripts\activate
+# On Linux/macOS
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python app.py
+```
+
+#### 2. Frontend Development Server
+Configure your local environment variables in `.env` in the root:
+```env
+VITE_BACKEND_URL=http://localhost:5000
+VITE_GEMINI_API_KEYS=your_api_key_1,your_api_key_2
+```
+Instantly compile and start:
+```bash
+npm install
+npm run dev
+```
+Open [http://localhost:5174/](http://localhost:5174/) in your browser.
 
 ---
 
-## 🗺 Project Roadmap
-- [ ] **Multi-Currency Support**: Expanding beyond Nifty 50 to global stock exchanges.
-- [ ] **Push Notifications**: Real-time browser/mobile alerts for high-risk disaster scores.
-- [ ] **Tax Harvesting Engine**: Automated suggestions for tax-efficient rebalancing.
-- [ ] **Advanced Backtesting Suite**: Visual historical performance analysis for all ensemble models.
-
----
-
-## 🛡 Security & Reliability
-- **CORS Protection**: Restricted origin access for enterprise deployment.
-- **Global Exception Handling**: Structured JSON error reporting.
-- **Automated Testing**: Integrated unit tests for API stability.
-- **Caching**: LRU-based performance layer for market data.
-
----
-
-## 📄 License
-Distributed under the MIT License. See `LICENSE` for more information.
+## 🛡 Security, Latency, & Reliability
+* **CORS Access Protection**: Whitelisted origin access rules prevent unauthorized cross-origin API executions.
+* **Low-Latency Architecture**: By caching price histories in Supabase and fetching them locally on the backend, the payload size for chatAdvisor queries is reduced by **99%**, lowering Gemini model prompt latency.
+* **Error Resilience**: A global Flask error handler intercepts exceptions, mapping HTTP codes to clean JSON objects to safeguard system stability.
 
 ---
 
