@@ -28,7 +28,14 @@ class AuraFinanceTestCase(unittest.TestCase):
         data = json.loads(response.data)
         self.assertIn('ensemble', data)
         self.assertIn('gemini', data)
-        self.assertEqual(data['gemini']['model_version'], 'gemini-1.5-flash')
+        self.assertEqual(data['gemini']['model_version'], 'gemini-2.5-flash')
+
+    def test_index_health_check(self):
+        response = self.app.get('/')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertEqual(data['status'], 'healthy')
+        self.assertEqual(data['service'], 'Aura Finance Backend API')
 
 if __name__ == '__main__':
     unittest.main()

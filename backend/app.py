@@ -23,15 +23,32 @@ allowed_origins = [
 ]
 CORS(app, origins=allowed_origins)
 
+from werkzeug.exceptions import HTTPException
+
 # --- Global Error Handler ---
 @app.errorhandler(Exception)
 def handle_exception(e):
     """Global error handler for all unhandled exceptions."""
-    print(f"Unhandled Exception: {e}")
+    print(f"Unhandled Exception: {e}", flush=True)
+    if isinstance(e, HTTPException):
+        return jsonify({
+            "error": e.name,
+            "details": e.description
+        }), e.code
     return jsonify({
         "error": "An internal server error occurred.",
         "details": str(e)
     }), 500
+
+@app.route('/', methods=['GET'])
+def index():
+    """Root health check endpoint."""
+    return jsonify({
+        "status": "healthy",
+        "service": "Aura Finance Backend API",
+        "version": "1.0.0"
+    })
+
 
 # --- Caching Layer for yfinance ---
 @lru_cache(maxsize=100)
@@ -190,7 +207,7 @@ def advisor_strategy():
     import google.generativeai as genai
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         current_price = historical[-1]['Close'] if historical else 'Unknown'
         future_price = forecast[-1]['PredictedClose'] if forecast else 'Unknown'
@@ -213,7 +230,7 @@ User Prompt: {prompt}
             "response": response.text
         })
     except Exception as e:
-        print(f"Gemini API Error: {e}")
+        print(f"Gemini API Error: {e}", flush=True)
         return jsonify({
             "response": f"Sorry, I encountered an error communicating with the AI model: {str(e)}"
         }), 500
@@ -444,7 +461,7 @@ def get_ml_metrics():
             "coverage": "Nifty 50 (50 stocks)"
         },
         "gemini": {
-            "model_version": "gemini-1.5-flash",
+            "model_version": "gemini-2.5-flash",
             "role": "Fundamental Analysis Summarizer",
             "rate_limit_status": "Healthy (Exponential Backoff Enabled)"
         }
