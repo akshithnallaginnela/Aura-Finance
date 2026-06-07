@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useFinance, WatchlistItem } from '../context/FinanceContext';
+import { useFinance, type WatchlistItem } from '../context/FinanceContext';
 import { createChart, AreaSeries } from '@pipsend/charts';
 import { useTheme } from '../context/ThemeContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { Briefcase, TrendingUp, Edit3, Trash2, ArrowUpRight, ArrowDownRight, Check, X, ShieldAlert } from 'lucide-react';
+import { Briefcase, Edit3, Trash2, ArrowUpRight, Check, X, ShieldAlert } from 'lucide-react';
 
 const COLORS = ['#6366f1', '#14b8a6', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
 
@@ -431,7 +431,7 @@ export const Watchlist: React.FC = () => {
                             );
                           })}
                         </Pie>
-                        <RechartsTooltip formatter={(val) => `₹${val.toLocaleString()}`} />
+                        <RechartsTooltip formatter={(val: any) => `₹${Number(val || 0).toLocaleString()}`} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>

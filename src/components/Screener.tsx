@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { createChart, AreaSeries } from '@pipsend/charts';
 import { useTheme } from '../context/ThemeContext';
-import { TrendingUp, AlertTriangle, ShieldCheck, Plus, Trash2, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, AlertTriangle, ShieldCheck, Plus, Trash2 } from 'lucide-react';
 
 interface ScreenerData {
   ticker: string;

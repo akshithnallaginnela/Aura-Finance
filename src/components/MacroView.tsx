@@ -116,7 +116,7 @@ export const MacroView: React.FC = () => {
       .filter((item: any) => item !== null && item.time !== '');
 
     if (formattedData.length > 0) {
-      areaSeries.setData(formattedData);
+      areaSeries.setData(formattedData as any[]);
     }
 
     chart.timeScale().fitContent();
@@ -245,7 +245,7 @@ export const MacroView: React.FC = () => {
 
             {/* CHART */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', fontFamily: 'var(--mono)', display: 'flex', justifyBetween: 'space-between' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', fontFamily: 'var(--mono)', display: 'flex', justifyContent: 'space-between' }}>
                 <span>Historical Chart (3 Months)</span>
                 {selectedItem.change >= 0 ? (
                   <span style={{ color: 'var(--emerald)' }}>▲ Market Positive</span>
