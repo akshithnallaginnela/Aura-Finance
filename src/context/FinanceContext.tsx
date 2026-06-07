@@ -72,9 +72,11 @@ interface FinanceContextType {
   registerAction: (email: string, password: string) => Promise<void>;
   logoutAction: () => Promise<void>;
   
-  activeView: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding';
-  setActiveView: (view: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding') => void;
+  activeView: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding' | 'landing';
+  setActiveView: (view: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding' | 'landing') => void;
   completeOnboarding: (selectedTickers: string[]) => Promise<void>;
+  authMode: 'login' | 'register';
+  setAuthMode: (mode: 'login' | 'register') => void;
 
   watchlist: WatchlistItem[];
   setWatchlist: React.Dispatch<React.SetStateAction<WatchlistItem[]>>;
@@ -103,7 +105,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any | null>(null);
-  const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding'>('login');
+  const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding' | 'landing'>('landing');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   // Supabase Auth session listeners
   useEffect(() => {
@@ -111,7 +114,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (session) {
         setIsAuthenticated(true);
         setUser(session.user);
-        if (activeView === 'login') {
+        if (activeView === 'login' || activeView === 'landing') {
           const onboardingCompleted = localStorage.getItem(`aura_onboarding_completed_${session.user.id}`);
           if (onboardingCompleted === 'true') {
             setActiveView('dashboard');
@@ -135,12 +138,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } else {
         setIsAuthenticated(false);
         setUser(null);
-        setActiveView('login');
+        setActiveView('landing');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [activeView]);
 
   const loginAction = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -367,6 +370,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       registerAction,
       logoutAction,
       completeOnboarding,
+      authMode,
+      setAuthMode,
       activeView,
       setActiveView,
       watchlist,

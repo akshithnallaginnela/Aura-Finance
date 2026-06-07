@@ -3,11 +3,15 @@ import { useFinance } from '../context/FinanceContext';
 import { ArrowRight, Mail, AlertCircle } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { loginAction, registerAction } = useFinance();
+  const { loginAction, registerAction, authMode } = useFinance();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
+  const [isRegister, setIsRegister] = useState(authMode === 'register');
+
+  React.useEffect(() => {
+    setIsRegister(authMode === 'register');
+  }, [authMode]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

@@ -9,9 +9,14 @@ import { Screener } from './components/Screener';
 import { MacroView } from './components/MacroView';
 import { Watchlist } from './components/Watchlist';
 import { Onboarding } from './components/Onboarding';
+import { LandingPage } from './components/LandingPage';
 
 function AppContent() {
   const { activeView } = useFinance();
+
+  if (activeView === 'landing') {
+    return <LandingPage />;
+  }
 
   if (activeView === 'login') {
     return <Login />;
