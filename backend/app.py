@@ -167,6 +167,45 @@ def get_watchlist():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/top_stocks', methods=['GET'])
+def get_top_stocks():
+    """Fetch live data for the top 10 Indian stocks by market cap."""
+    tickers = [
+        "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "ICICIBANK.NS",
+        "INFY.NS", "SBIN.NS", "LICI.NS", "ITC.NS", "HINDUNILVR.NS"
+    ]
+    try:
+        results = []
+        for ticker in tickers:
+            try:
+                hist = get_cached_market_data(ticker, period="5d")
+                if not hist.empty:
+                    closes = hist['Close'].dropna().values
+                    if len(closes) >= 2:
+                        curr = float(closes[-1])
+                        prev = float(closes[-2])
+                        change = curr - prev
+                        pct = (change / prev) * 100
+                    elif len(closes) == 1:
+                        curr = float(closes[0])
+                        prev = curr
+                        change = 0
+                        pct = 0
+                    else:
+                        continue
+                    results.append({
+                        "ticker": ticker.replace('.NS', ''),
+                        "price": round(curr, 2),
+                        "change": round(change, 2),
+                        "changePct": round(pct, 2)
+                    })
+            except Exception as e:
+                print(f"Top stocks error for {ticker}: {e}")
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/stock/<ticker>', methods=['GET'])
 def get_stock(ticker):
     """
@@ -269,6 +308,7 @@ def advisor_strategy():
     prompt = req.get('prompt', '')
     historical = req.get('historical', [])
     forecast = req.get('forecast', [])
+    history = req.get('history', [])
     
     api_keys_str = os.environ.get('VITE_GEMINI_API_KEYS') or os.environ.get('VITE_GEMINI_API_KEY')
     if not api_keys_str:
@@ -288,20 +328,51 @@ def advisor_strategy():
         current_price = historical[-1]['Close'] if historical else 'Unknown'
         future_price = forecast[-1]['PredictedClose'] if forecast else 'Unknown'
         
-        system_context = f"""
-You are Aura Intelligence, an elite and incredibly friendly quantitative financial analyst AI.
-Your tone is helpful, encouraging, and highly professional. You must act as a trusted advisor to the user.
-The user is asking about the stock ticker: {ticker}.
-Current Price: {current_price}
-Our proprietary Aura Smart Forecast predicts the price will be {future_price} in approximately 6 months.
+        normalized_sym = normalize_ticker(ticker)
+        analysis = get_analysis(normalized_sym)
+        fundamentals_txt = ""
+        sentiment_score = 0.0
+        disaster_risk = 0.0
+        fundamental_summary = ""
+        
+        if analysis:
+            sentiment_score = analysis.get("sentiment_score", 0.0)
+            disaster_risk = analysis.get("disaster_risk_score", 0.0)
+            fundamental_summary = analysis.get("fundamental_summary", "")
+            f = analysis.get("fundamentals", {})
+            if f:
+                fundamentals_txt = f"\n- P/E Ratio: {f.get('pe_ratio', 'N/A')}\n- EPS: {f.get('eps', 'N/A')}\n- Market Cap: {f.get('market_cap', 'N/A')}\n- 52-Week High: {f.get('fifty_two_week_high', 'N/A')}"
 
-IMPORTANT: You must always deeply consider the user's current holdings and portfolio if they mention them, advising on margins and the best possible investment returns. 
-You must explicitly anchor your advice in the CURRENT market situation, referencing real-world dynamics. 
-Analyze this data and answer the user's prompt gracefully.
+        history_context = ""
+        if history:
+            history_context = "\nConversation history so far:\n"
+            for h in history[-8:]:
+                role = "User" if h.get("sender") == "user" else "Aura Strategist"
+                history_context += f"{role}: {h.get('content')}\n"
+        
+        system_context = f"""
+You are Aura Intelligence, an elite and friendly quantitative financial analyst. 
+Respond concisely, with precise figures and structured data where appropriate (e.g. key performance indicators, risk items, and forecasts). 
+Always use standard Markdown formatting. For structured comparisons or tables, format them using clean Markdown tables, which the frontend will automatically parse and render beautifully.
+Ensure your response is directly relevant, helpful, and answers the user's specific prompt.
+
+Stock Analysis Details:
+- Ticker: {ticker}
+- Current Price: {current_price}
+- Aura 6-Month Smart Forecast Target: {future_price}
+- Sentiment Score: {sentiment_score} (range -1 to 1)
+- Disaster Risk: {disaster_risk} (range 0 to 1)
+- Fundamental Summary: {fundamental_summary}
+{fundamentals_txt}
+{history_context}
 User Prompt: {prompt}
 """
         
+        start_time = time.time()
         response = model.generate_content(system_context)
+        latency = time.time() - start_time
+        print(f"[Gemini API] Strategy query for {ticker} completed in {latency:.2f} seconds", flush=True)
+        
         return jsonify({
             "response": response.text
         })

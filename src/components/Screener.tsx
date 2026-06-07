@@ -245,7 +245,7 @@ export const Screener: React.FC = () => {
                       background: selectedTicker === d.ticker ? 'var(--bg2)' : 'transparent',
                       transition: 'background 0.15s'
                     }}
-                    className="wl-item"
+                    className="screener-row"
                   >
                     <td style={{ padding: '12px 10px', color: 'var(--amber)', fontWeight: 'bold' }}>
                       {d.ticker.replace('.NS', '')}
