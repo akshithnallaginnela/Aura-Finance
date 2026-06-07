@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { ArrowRight, Globe, Mail, AlertCircle } from 'lucide-react';
+import { ArrowRight, Mail, AlertCircle } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { loginAction, registerAction } = useFinance();
