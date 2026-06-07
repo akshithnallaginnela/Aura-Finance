@@ -163,9 +163,11 @@ Aura Finance continuously monitors live financial channels to maintain up-to-the
 * **Icons**: `lucide-react`
 * **Theme**: CSS Variables (Dynamic Light/Dark modes)
 
-### Backend
+### Backend & Database
 * **Server**: Flask (Python 3.11) with CORS controls
-* **Database**: PostgreSQL (via Supabase) with real-time JSONB storage
+* **Database & Auth (Supabase)**: 
+  * **PostgreSQL Database**: Real-time JSONB storage hosting pre-computed stock data, technical indicators, and ensemble predictions.
+  * **User Authentication**: Secure user session signup, sign-in, and persistence via Supabase Auth.
 * **Data Sources**: `yfinance`, `newsapi`
 
 ---
@@ -212,10 +214,23 @@ python app.py
 ```
 
 #### 2. Frontend Development Server
-Configure your local environment variables in `.env` in the root:
+Configure your local environment variables in a `.env` file in the root directory:
 ```env
+# Backend API Port/URL
 VITE_BACKEND_URL=http://localhost:5000
+
+# Gemini AI API Keys (Supports comma-separated keys for load balancing/rate limit rotation)
+
 VITE_GEMINI_API_KEYS=your_api_key_1,your_api_key_2
+
+# Supabase Configurations (Required for frontend Auth session management)
+
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anonymous-key
+
+# Backend Database URL (Required for Flask app to connect to PostgreSQL tables)
+
+DATABASE_URL=postgresql://postgres.your-project-id:your-password@aws-1-ap-south-1.pooler.supabase.com:6543/postgres
 ```
 Instantly compile and start:
 ```bash
