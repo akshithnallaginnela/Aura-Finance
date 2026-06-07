@@ -38,11 +38,21 @@ Here is a visual walkthrough of the Aura Finance setup and dashboard:
 | :---: | :---: |
 | ![Watchlist Config](public/screenshots/onboarding_select.png) | ![Workspace Setup Complete](public/screenshots/onboarding_complete.png) |
 
-### 📊 Intelligence Workspace
+### 📊 Analytics & Market Overview
 
-| **5. Interactive Dashboard & Forecasting Terminal** |
-| :---: |
-| ![Overview Dashboard](public/screenshots/dashboard.png) |
+| **5. Predictive Stock Chart** | **6. NIFTY 50 Index Overview** |
+| :---: | :---: |
+| ![Overview Dashboard](public/screenshots/dashboard.png) | ![NIFTY 50 Index Chart](public/screenshots/dashboard_index.png) |
+
+### 🛠 Portfolio Optimization & AI Strategy
+
+| **7. MPT Portfolio Optimizer** | **8. Holdings & Watchlist** |
+| :---: | :---: |
+| ![MPT Optimizer](public/screenshots/optimizer.png) | ![My Holdings](public/screenshots/watchlist_holdings.png) |
+
+| **9. Aura AI Strategist Chat** | **10. Multi-Factor Screener** |
+| :---: | :---: |
+| ![AI Strategy Chat](public/screenshots/advisor.png) | ![Market Screener](public/screenshots/screener.png) |
 
 ## 📖 Table of Contents
 * [🚀 Key Enterprise Modules](#-key-enterprise-modules)
