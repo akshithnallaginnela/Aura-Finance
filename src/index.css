@@ -681,4 +681,26 @@ body {
   transform: translateY(0);
 }
 
+/* ─── SCREENER ROW & SIDEBAR ICONS ─── */
+.screener-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.screener-row:hover {
+  background: var(--bg2);
+}
+
+.sidebar-icon {
+  color: var(--tx3);
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.nav-item.active .sidebar-icon {
+  color: var(--amber);
+}
+.nav-item:hover .sidebar-icon {
+  color: var(--tx2);
+}
+
+
 
