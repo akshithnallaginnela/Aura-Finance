@@ -20,18 +20,35 @@ export const Dashboard: React.FC = () => {
     errorData,
     watchlist,
     portfolioValue,
-    chatHistory,
-    isChatLoading,
-    sendAdvisorMessage,
     marketIndex,
   } = useFinance();
 
   const [timeRange, setTimeRange] = useState<TimeRange>('Max');
-  const [copilotInput, setCopilotInput] = useState('');
-  const copilotEndRef = useRef<HTMLDivElement>(null);
+  const [news, setNews] = useState<any[]>([]);
+  const [isNewsLoading, setIsNewsLoading] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const marketChartContainerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    if (!activeTicker) return;
+    const fetchNews = async () => {
+      setIsNewsLoading(true);
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const response = await fetch(`${backendUrl}/api/news/${activeTicker}`);
+        if (response.ok) {
+          const data = await response.json();
+          setNews(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch news', err);
+      } finally {
+        setIsNewsLoading(false);
+      }
+    };
+    fetchNews();
+  }, [activeTicker]);
 
   const formatDateForChart = (dateVal: any) => {
     if (!dateVal) return '';
@@ -47,9 +64,7 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    copilotEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, isChatLoading]);
+  // Removed unused copilot end ref scrolling effect
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -479,62 +494,48 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="panel">
+        <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <div className="panel-head">
-            <div className="panel-title"><span className="panel-title-dot"></span>AURA COPILOT</div>
-            <div className="panel-badge badge-amber">AI</div>
+            <div className="panel-title"><span className="panel-title-dot" style={{ background: 'var(--amber)' }}></span>LIVE NEWS SENTINEL</div>
+            <div className="panel-badge badge-amber">SENTINEL</div>
           </div>
-          <div className="copilot-msgs">
-            <div className="msg">
-              <div className="msg-tag ai">SYS</div>
-              <div className="msg-body">Hello. I am Aura. How can I assist you with your portfolio today?</div>
-            </div>
-            {chatHistory.map((msg) => (
-              <div className="msg" key={msg.id}>
-                <div className={`msg-tag ${msg.sender === 'user' ? 'usr' : 'ai'}`}>
-                  {msg.sender === 'user' ? 'YOU' : 'AI'}
-                </div>
-                <div className="msg-body">{msg.content}</div>
+          <div style={{ flex: 1, overflowY: 'auto', maxHeight: '320px' }}>
+            {isNewsLoading ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontSize: '11px' }}>
+                ANALYZING RECENT HEADLINES...
               </div>
-            ))}
-            {isChatLoading && (
-              <div className="msg">
-                <div className="msg-tag ai">AI</div>
-                <div className="msg-body" style={{ opacity: 0.5 }}>Thinking...</div>
+            ) : news.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontSize: '11px' }}>
+                NO HEADLINES IN SENTINEL FOR {activeTicker}
               </div>
+            ) : (
+              news.map((item, idx) => {
+                const score = item.sentiment_score || 0.0;
+                const isBullish = score > 0.15;
+                const isBearish = score < -0.15;
+                const badgeClass = isBullish ? 'badge-green' : isBearish ? 'badge-red' : 'badge-blue';
+                const label = isBullish ? 'BULLISH' : isBearish ? 'BEARISH' : 'NEUTRAL';
+                
+                return (
+                  <div key={idx} style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--tx)', lineHeight: 1.4 }}>
+                        {item.headline}
+                      </span>
+                      <span className={`panel-badge ${badgeClass}`} style={{ fontSize: '8px', padding: '1px 4px', borderRadius: '2px', flexShrink: 0 }}>
+                        {label}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--tx3)' }}>
+                      <span>SCORE: {score.toFixed(2)}</span>
+                      <span>
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'JUST NOW'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
             )}
-            <div ref={copilotEndRef} />
-          </div>
-          <div className="copilot-chips">
-            <div className="chip" onClick={() => sendAdvisorMessage(`Explain ${activeTicker} forecast`)}>Explain {activeTicker} forecast</div>
-            <div className="chip" onClick={() => sendAdvisorMessage('Show me market trends')}>Show me market trends</div>
-          </div>
-          <div className="copilot-input-row">
-            <input
-              type="text"
-              placeholder="Type a message..."
-              value={copilotInput}
-              onChange={(e) => setCopilotInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && copilotInput.trim() && !isChatLoading) {
-                  sendAdvisorMessage(copilotInput.trim());
-                  setCopilotInput('');
-                }
-              }}
-              disabled={isChatLoading}
-            />
-            <button
-              className="copilot-send"
-              disabled={isChatLoading || !copilotInput.trim()}
-              onClick={() => {
-                if (copilotInput.trim() && !isChatLoading) {
-                  sendAdvisorMessage(copilotInput.trim());
-                  setCopilotInput('');
-                }
-              }}
-            >
-              SEND
-            </button>
           </div>
         </div>
       </div>
