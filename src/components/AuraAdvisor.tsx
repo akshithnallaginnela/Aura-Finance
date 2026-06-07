@@ -256,21 +256,36 @@ export const AuraAdvisor: React.FC = () => {
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', flexWrap: 'wrap' }}>
           <button 
             className="seg-btn" 
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px', display: 'flex', alignItems: 'center' }}
+            style={{ 
+              padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', 
+              gap: '6px', display: 'flex', alignItems: 'center',
+              border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)',
+              cursor: 'pointer', transition: 'all 0.2s ease'
+            }}
             onClick={() => handleChipClick('Analyze the current forecast for this stock.')}
           >
             <TrendingUp size={14} color="var(--amber)" /> Analyze Forecast
           </button>
           <button 
             className="seg-btn" 
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px', display: 'flex', alignItems: 'center' }}
+            style={{ 
+              padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', 
+              gap: '6px', display: 'flex', alignItems: 'center',
+              border: '1px solid var(--red)', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--red)',
+              cursor: 'pointer', transition: 'all 0.2s ease'
+            }}
             onClick={() => handleChipClick('What are the key technical risks for this asset right now?')}
           >
             <Scale size={14} color="var(--red)" /> Assess Risks
           </button>
           <button 
             className="seg-btn" 
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', gap: '6px', display: 'flex', alignItems: 'center' }}
+            style={{ 
+              padding: '8px 14px', borderRadius: 'var(--radius-full)', fontSize: '0.82rem', 
+              gap: '6px', display: 'flex', alignItems: 'center',
+              border: '1px solid var(--green)', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--green)',
+              cursor: 'pointer', transition: 'all 0.2s ease'
+            }}
             onClick={() => handleChipClick('Summarize the recent price volatility and momentum.')}
           >
             <Activity size={14} color="var(--green)" /> Check Momentum
@@ -279,7 +294,7 @@ export const AuraAdvisor: React.FC = () => {
       )}
 
       {/* Input Form */}
-      <form onSubmit={handleSend} style={{ display: 'flex', gap: '10px' }}>
+      <form onSubmit={handleSend} style={{ display: 'flex', gap: '10px', width: '100%' }}>
         <input 
           type="text" 
           className="search-input" 
@@ -301,7 +316,12 @@ export const AuraAdvisor: React.FC = () => {
           type="submit" 
           className="seg-btn" 
           disabled={isChatLoading || !inputText.trim()}
-          style={{ width: '48px', height: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--amber)', color: 'var(--bg1)' }}
+          style={{ 
+            width: '48px', height: '46px', padding: 0, 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            background: 'var(--amber)', color: 'var(--bg1)', border: 'none',
+            borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'all 0.2s ease'
+          }}
         >
           <Send size={16} />
         </button>
