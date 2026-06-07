@@ -77,19 +77,34 @@ export const Settings: React.FC = () => {
           <div style={{ fontSize: '11px', color: 'var(--tx2)', marginBottom: '16px' }}>
             Your authentication session is managed securely via Supabase Auth. Click the button below to sign out of your current session.
           </div>
-          <button 
-            className="seg-btn" 
-            onClick={handleSignOut}
-            style={{ 
-              padding: '6px 12px', 
-              color: 'var(--red)', 
-              borderColor: 'rgba(239, 68, 68, 0.3)', 
-              background: 'rgba(239, 68, 68, 0.05)',
-              cursor: 'pointer' 
-            }}
-          >
-            Sign Out of Account
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button 
+              className="seg-btn" 
+              onClick={handleResetOnboarding}
+              style={{ 
+                padding: '6px 12px', 
+                color: 'var(--amber)', 
+                borderColor: 'rgba(245, 158, 11, 0.3)', 
+                background: 'rgba(245, 158, 11, 0.05)',
+                cursor: 'pointer' 
+              }}
+            >
+              Reset Onboarding Tutorial
+            </button>
+            <button 
+              className="seg-btn" 
+              onClick={handleSignOut}
+              style={{ 
+                padding: '6px 12px', 
+                color: 'var(--red)', 
+                borderColor: 'rgba(239, 68, 68, 0.3)', 
+                background: 'rgba(239, 68, 68, 0.05)',
+                cursor: 'pointer' 
+              }}
+            >
+              Sign Out of Account
+            </button>
+          </div>
         </div>
       </div>
     </div>
