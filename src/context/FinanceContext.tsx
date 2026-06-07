@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '../utils/supabaseClient';
 
 export interface StockDataPoint {
   Date: string;
@@ -66,6 +67,10 @@ interface FinanceContextType {
   
   isAuthenticated: boolean;
   setIsAuthenticated: (auth: boolean) => void;
+  user: any | null;
+  loginAction: (email: string, password: string) => Promise<void>;
+  registerAction: (email: string, password: string) => Promise<void>;
+  logoutAction: () => Promise<void>;
   
   activeView: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener';
   setActiveView: (view: 'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener') => void;
@@ -96,7 +101,50 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any | null>(null);
   const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener'>('login');
+
+  // Supabase Auth session listeners
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsAuthenticated(true);
+        setUser(session.user);
+        if (activeView === 'login') {
+          setActiveView('dashboard');
+        }
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setIsAuthenticated(true);
+        setUser(session.user);
+        setActiveView('dashboard');
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+        setActiveView('login');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loginAction = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  };
+
+  const registerAction = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+  };
+
+  const logoutAction = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  };
 
   // ─── Watchlist (simulated live prices) ────────────────────────────────────
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([
@@ -276,6 +324,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       clearChat,
       isAuthenticated,
       setIsAuthenticated,
+      user,
+      loginAction,
+      registerAction,
+      logoutAction,
       activeView,
       setActiveView,
       watchlist,
