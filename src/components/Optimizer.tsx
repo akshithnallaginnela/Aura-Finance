@@ -21,6 +21,7 @@ export const Optimizer: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<OptimizationResult | null>(null);
+  const [investmentCapital, setInvestmentCapital] = useState<number>(100000);
 
   const handleOptimize = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,12 +184,110 @@ export const Optimizer: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {/* TARGET CAPITAL ALLOCATION SIMULATOR */}
+              <div style={{ marginTop: '24px', borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Simulate Investment Capital</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--amber)' }}>₹{investmentCapital.toLocaleString('en-IN')}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="10000" 
+                  max="1000000" 
+                  step="10000" 
+                  value={investmentCapital} 
+                  onChange={(e) => setInvestmentCapital(Number(e.target.value))} 
+                  style={{ width: '100%', accentColor: 'var(--amber)', cursor: 'pointer', marginBottom: '20px' }}
+                />
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', color: 'var(--tx)' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--tx3)', textAlign: 'left' }}>
+                        <th style={{ padding: '6px 8px', fontFamily: 'var(--mono)' }}>ASSET</th>
+                        <th style={{ padding: '6px 8px', fontFamily: 'var(--mono)', textAlign: 'right' }}>WEIGHT</th>
+                        <th style={{ padding: '6px 8px', fontFamily: 'var(--mono)', textAlign: 'right' }}>ALLOCATION</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.allocations.map((a, i) => {
+                        const targetAmt = (a.weight / 100) * investmentCapital;
+                        return (
+                          <tr key={a.ticker} style={{ borderBottom: '1px solid var(--line)', height: '32px' }}>
+                            <td style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i % COLORS.length] }} />
+                              <span style={{ fontWeight: 600 }}>{a.ticker}</span>
+                            </td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--mono)' }}>{a.weight}%</td>
+                            <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--green)' }}>
+                              ₹{targetAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="panel" style={{ flex: 1, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'var(--tx3)', textAlign: 'center' }}>
-              <PieChartIcon size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
-              <h3 style={{ fontSize: '1.2rem', color: 'var(--tx)' }}>No Portfolio Computed</h3>
-              <p style={{ maxWidth: '300px', fontSize: '0.9rem' }}>Enter tickers and run the optimizer to see the ideal allocations for maximum return relative to risk.</p>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="panel" style={{ padding: '20px' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--tx)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <PieChartIcon size={18} color="var(--amber)" />
+                  Select a Quick Preset Portfolio
+                </h3>
+                <p style={{ color: 'var(--tx3)', fontSize: '0.82rem', marginBottom: '14px', lineHeight: 1.4 }}>
+                  Select one of our pre-configured asset strategies to quickly load their tickers:
+                </p>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button 
+                    type="button" 
+                    className="seg-btn" 
+                    onClick={() => setTickersInput('RELIANCE.NS, TCS.NS, HDFCBANK.NS, INFY.NS')}
+                    style={{ padding: '8px 12px', fontSize: '0.8rem', borderRadius: '4px' }}
+                  >
+                    🇮🇳 Blue Chip Giants
+                  </button>
+                  <button 
+                    type="button" 
+                    className="seg-btn" 
+                    onClick={() => setTickersInput('TCS.NS, INFY.NS, WIPRO.NS, HCLTECH.NS, TECHM.NS')}
+                    style={{ padding: '8px 12px', fontSize: '0.8rem', borderRadius: '4px' }}
+                  >
+                    💻 India IT Leaders
+                  </button>
+                  <button 
+                    type="button" 
+                    className="seg-btn" 
+                    onClick={() => setTickersInput('HDFCBANK.NS, ICICIBANK.NS, SBIN.NS, AXISBANK.NS, KOTAKBANK.NS')}
+                    style={{ padding: '8px 12px', fontSize: '0.8rem', borderRadius: '4px' }}
+                  >
+                    🏦 Banking Heavyweights
+                  </button>
+                </div>
+              </div>
+
+              <div className="panel" style={{ padding: '20px', flex: 1 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--tx)', marginBottom: '14px' }}>
+                  Core MPT Concepts
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ padding: '12px', border: '1px solid var(--line)', borderRadius: '6px', background: 'var(--bg2)' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: 'var(--amber)', fontWeight: 600, margin: '0 0 6px 0' }}>Efficient Frontier</h4>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--tx3)', margin: 0, lineHeight: 1.4 }}>
+                      The set of optimal portfolios that offer the highest expected return for a defined level of risk.
+                    </p>
+                  </div>
+                  <div style={{ padding: '12px', border: '1px solid var(--line)', borderRadius: '6px', background: 'var(--bg2)' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: 'var(--amber)', fontWeight: 600, margin: '0 0 6px 0' }}>Sharpe Ratio</h4>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--tx3)', margin: 0, lineHeight: 1.4 }}>
+                      Measures excess return per unit of volatility in an asset or strategy. Higher ratio indicates better risk-adjusted returns.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
