@@ -8,12 +8,17 @@ import { Settings } from './components/Settings';
 import { Screener } from './components/Screener';
 import { MacroView } from './components/MacroView';
 import { Watchlist } from './components/Watchlist';
+import { Onboarding } from './components/Onboarding';
 
 function AppContent() {
   const { activeView } = useFinance();
 
   if (activeView === 'login') {
     return <Login />;
+  }
+
+  if (activeView === 'onboarding') {
+    return <Onboarding />;
   }
 
   return (
