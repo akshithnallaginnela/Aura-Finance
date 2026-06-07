@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Sparkles, ArrowRight, Globe, Mail } from 'lucide-react';
+import { ArrowRight, Globe, Mail } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { setActiveView, setIsAuthenticated } = useFinance();
@@ -26,13 +26,11 @@ export const Login: React.FC = () => {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', justifyContent: 'center' }}>
-          <div style={{ 
-            width: 48, height: 48, borderRadius: 'var(--radius-md)',
-            background: 'var(--accent-primary-light)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center' 
-          }}>
-            <Sparkles size={28} color="var(--accent-primary)" />
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="Aura Logo" 
+            style={{ width: 44, height: 44, objectFit: 'contain' }} 
+          />
           <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
             Aura Finance
           </h1>
@@ -53,12 +51,7 @@ export const Login: React.FC = () => {
               placeholder="you@example.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              style={{
-                width: '100%', padding: '12px 16px',
-                background: 'var(--bg-base)', border: '1px solid var(--border-input)',
-                borderRadius: 'var(--radius-md)', color: 'var(--text-main)',
-                fontSize: '1rem', outline: 'none', transition: 'border-color 0.2s'
-              }}
+              className="login-input"
             />
           </div>
 
@@ -72,23 +65,11 @@ export const Login: React.FC = () => {
               placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              style={{
-                width: '100%', padding: '12px 16px',
-                background: 'var(--bg-base)', border: '1px solid var(--border-input)',
-                borderRadius: 'var(--radius-md)', color: 'var(--text-main)',
-                fontSize: '1rem', outline: 'none', transition: 'border-color 0.2s'
-              }}
+              className="login-input"
             />
           </div>
 
-          <button type="submit" style={{
-            width: '100%', padding: '14px',
-            background: 'var(--accent-primary)', color: 'white',
-            border: 'none', borderRadius: 'var(--radius-md)',
-            fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            transition: 'background 0.2s'
-          }}>
+          <button type="submit" className="login-btn-primary">
             Sign In to Aura
             <ArrowRight size={18} />
           </button>
@@ -101,20 +82,10 @@ export const Login: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '16px' }}>
-          <button type="button" onClick={handleLogin} style={{
-            flex: 1, padding: '12px', background: 'var(--bg-base)',
-            border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)',
-            color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'background 0.2s'
-          }}>
+          <button type="button" onClick={handleLogin} className="login-btn-secondary">
             <Globe size={20} />
           </button>
-          <button type="button" onClick={handleLogin} style={{
-            flex: 1, padding: '12px', background: 'var(--bg-base)',
-            border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)',
-            color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'background 0.2s'
-          }}>
+          <button type="button" onClick={handleLogin} className="login-btn-secondary">
             <Mail size={20} />
           </button>
         </div>
