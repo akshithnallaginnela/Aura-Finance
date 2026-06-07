@@ -23,12 +23,14 @@ export const Dashboard: React.FC = () => {
     chatHistory,
     isChatLoading,
     sendAdvisorMessage,
+    marketIndex,
   } = useFinance();
 
   const [timeRange, setTimeRange] = useState<TimeRange>('Max');
   const [copilotInput, setCopilotInput] = useState('');
   const copilotEndRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const marketChartContainerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
   const formatDateForChart = (dateVal: any) => {
@@ -172,6 +174,66 @@ export const Dashboard: React.FC = () => {
     };
   }, [stockData, stockForecast, timeRange, theme]);
 
+  useEffect(() => {
+    if (!marketChartContainerRef.current) return;
+    
+    marketChartContainerRef.current.innerHTML = '';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    
+    const chart = createChart(marketChartContainerRef.current, {
+      layout: {
+        background: { color: 'transparent' },
+        textColor: isDark ? '#7a8fa6' : '#64748b',
+      },
+      grid: {
+        vertLines: { color: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' },
+        horzLines: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+      },
+      crosshair: {
+        mode: 1,
+      },
+      timeScale: {
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+      },
+      rightPriceScale: {
+        borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+      },
+    });
+
+    const indexSeries = chart.addSeries(AreaSeries, {
+      lineColor: '#3b82f6',
+      topColor: 'rgba(59, 130, 246, 0.2)',
+      bottomColor: 'rgba(0, 0, 0, 0)',
+      lineWidth: 2,
+      priceLineVisible: false,
+    });
+
+    const indexData = (marketIndex || [])
+      .map(d => ({
+        time: formatDateForChart(d.date),
+        value: Number(d.value || 0),
+      }))
+      .filter(item => item.time !== '');
+
+    if (indexData.length > 0) {
+      indexSeries.setData(indexData);
+    }
+
+    chart.timeScale().fitContent();
+
+    const handleResize = () => {
+      if (marketChartContainerRef.current) {
+        chart.resize(marketChartContainerRef.current.clientWidth, marketChartContainerRef.current.clientHeight);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, [marketIndex, theme]);
+
   const handleTickerClick = (ticker: string) => {
     fetchStockData(`${ticker}.NS`);
   };
@@ -289,52 +351,85 @@ export const Dashboard: React.FC = () => {
         <MarketStatusCell />
       </div>
 
-      {/* GRID ROW 1: Chart & Watchlist */}
+      {/* GRID ROW 1: Charts & Watchlist */}
       <div className="row row-3-1">
-        <div className="panel">
-          <div className="panel-head">
-            <div className="panel-title"><span className="panel-title-dot"></span>{activeTicker} PRICE & FORECAST</div>
-            <div className="panel-controls">
-              <button className={`seg-btn ${timeRange === '1M' ? 'active' : ''}`} onClick={() => setTimeRange('1M')}>1M</button>
-              <button className={`seg-btn ${timeRange === '6M' ? 'active' : ''}`} onClick={() => setTimeRange('6M')}>6M</button>
-              <button className={`seg-btn ${timeRange === '1Y' ? 'active' : ''}`} onClick={() => setTimeRange('1Y')}>1Y</button>
-              <button className={`seg-btn ${timeRange === 'Max' ? 'active' : ''}`} onClick={() => setTimeRange('Max')}>MAX</button>
-            </div>
-          </div>
-          
-          <div className="chart-stats">
-            <div className="cs-item" style={{ marginTop: '10px' }}>
-              <div className="cs-label">LAST CLOSE</div>
-              <div className="cs-val">{formatPrice(currentPrice)}</div>
-            </div>
-            <div className="cs-item" style={{ marginTop: '10px' }}>
-              <div className="cs-label">24H CHANGE</div>
-              <div className={`cs-val ${isPositive ? 'up' : 'dn'}`}>{isPositive ? '+' : ''}{priceChange.toFixed(2)}</div>
-            </div>
-            {fundamentals && fundamentals.fifty_two_week_high !== 'N/A' && (
-              <div className="cs-item" style={{ marginTop: '10px' }}>
-                <div className="cs-label">52W HIGH</div>
-                <div className="cs-val">₹{fundamentals.fifty_two_week_high}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Main Ticker Chart */}
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title"><span className="panel-title-dot"></span>{activeTicker} PRICE & FORECAST</div>
+              <div className="panel-controls">
+                <button className={`seg-btn ${timeRange === '1M' ? 'active' : ''}`} onClick={() => setTimeRange('1M')}>1M</button>
+                <button className={`seg-btn ${timeRange === '6M' ? 'active' : ''}`} onClick={() => setTimeRange('6M')}>6M</button>
+                <button className={`seg-btn ${timeRange === '1Y' ? 'active' : ''}`} onClick={() => setTimeRange('1Y')}>1Y</button>
+                <button className={`seg-btn ${timeRange === 'Max' ? 'active' : ''}`} onClick={() => setTimeRange('Max')}>MAX</button>
               </div>
-            )}
+            </div>
+            
+            <div className="chart-stats">
+              <div className="cs-item" style={{ marginTop: '10px' }}>
+                <div className="cs-label">LAST CLOSE</div>
+                <div className="cs-val">{formatPrice(currentPrice)}</div>
+              </div>
+              <div className="cs-item" style={{ marginTop: '10px' }}>
+                <div className="cs-label">24H CHANGE</div>
+                <div className={`cs-val ${isPositive ? 'up' : 'dn'}`}>{isPositive ? '+' : ''}{priceChange.toFixed(2)}</div>
+              </div>
+              {fundamentals && fundamentals.fifty_two_week_high !== 'N/A' && (
+                <div className="cs-item" style={{ marginTop: '10px' }}>
+                  <div className="cs-label">52W HIGH</div>
+                  <div className="cs-val">₹{fundamentals.fifty_two_week_high}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="chart-area" style={{ height: '350px' }}>
+              {isLoadingData ? (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontSize: '11px' }}>
+                  FETCHING DATA & TRAINING MODEL...
+                </div>
+              ) : (
+                <div 
+                  ref={chartContainerRef} 
+                  style={{ width: '100%', height: '320px' }} 
+                />
+              )}
+            </div>
+            <div className="chart-legend">
+              <div className="leg"><div className="leg-sq" style={{ background: 'var(--green)' }}></div> HISTORICAL</div>
+              <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber)' }}></div> FORECAST MEDIAN</div>
+              <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)' }}></div> CONFIDENCE BAND</div>
+            </div>
           </div>
 
-          <div className="chart-area" style={{ height: '350px' }}>
-            {isLoadingData ? (
-              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontSize: '11px' }}>
-                FETCHING DATA & TRAINING MODEL...
+          {/* Market Index (Nifty 50) Chart */}
+          <div className="panel">
+            <div className="panel-head">
+              <div className="panel-title"><span className="panel-title-dot" style={{ background: 'var(--blue)' }}></span>TOTAL MARKET INDEX (NIFTY 50)</div>
+              <div className="panel-badge badge-blue">INDEX</div>
+            </div>
+            
+            <div className="chart-stats">
+              <div className="cs-item" style={{ marginTop: '10px' }}>
+                <div className="cs-label">INDEX SYMBOL</div>
+                <div className="cs-val">^NSEI</div>
               </div>
-            ) : (
+              <div className="cs-item" style={{ marginTop: '10px' }}>
+                <div className="cs-label">LATEST VALUE</div>
+                <div className="cs-val">
+                  {marketIndex && marketIndex.length > 0 
+                    ? `₹${marketIndex[marketIndex.length - 1].value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+                    : 'Loading...'}
+                </div>
+              </div>
+            </div>
+
+            <div className="chart-area" style={{ height: '320px' }}>
               <div 
-                ref={chartContainerRef} 
-                style={{ width: '100%', height: '320px' }} 
+                ref={marketChartContainerRef} 
+                style={{ width: '100%', height: '290px' }} 
               />
-            )}
-          </div>
-          <div className="chart-legend">
-            <div className="leg"><div className="leg-sq" style={{ background: 'var(--green)' }}></div> HISTORICAL</div>
-            <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber)' }}></div> FORECAST MEDIAN</div>
-            <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)' }}></div> CONFIDENCE BAND</div>
+            </div>
           </div>
         </div>
 

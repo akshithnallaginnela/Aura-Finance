@@ -109,7 +109,7 @@ def get_market_index():
         data = []
         for date, row in hist.iterrows():
             data.append({
-                "date": date.strftime('%b %d'),
+                "date": date.strftime('%Y-%m-%d'),
                 "value": round(row['Close'], 2)
             })
         return jsonify(data)

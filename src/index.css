@@ -482,8 +482,8 @@ body {
 .wl-item:hover { background: var(--bg2); }
 .wl-item:last-child { border-bottom: none; }
 .wl-sym {
-  width: 62px;
-  padding: 8px 14px;
+  width: 100px;
+  padding: 8px 12px;
   font-family: var(--mono); font-size: 13px; font-weight: 600;
   color: var(--tx);
   border-right: 1px solid var(--line);
