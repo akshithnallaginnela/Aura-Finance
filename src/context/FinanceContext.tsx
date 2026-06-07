@@ -223,8 +223,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         body: JSON.stringify({
           ticker: activeTicker,
           prompt: message,
-          historical: stockData,
-          forecast: stockForecast,
           history: chatHistory
         })
       });

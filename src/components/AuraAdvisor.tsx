@@ -164,7 +164,12 @@ export const AuraAdvisor: React.FC = () => {
         <button 
           onClick={clearChat}
           className="seg-btn"
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--red)' }}
+          style={{ 
+            display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', 
+            color: 'var(--red)', border: '1px solid rgba(239, 68, 68, 0.3)', 
+            background: 'rgba(239, 68, 68, 0.05)', borderRadius: 'var(--radius-md)', 
+            padding: '6px 12px', transition: 'all 0.2s ease', cursor: 'pointer' 
+          }}
         >
           <Trash2 size={14} /> Clear Chat
         </button>
@@ -204,13 +209,15 @@ export const AuraAdvisor: React.FC = () => {
                 {/* Bubble */}
                 <div style={{ 
                   padding: '14px 18px', 
-                  borderRadius: isUser ? 'var(--radius-lg) var(--radius-sm) var(--radius-lg) var(--radius-lg)' : 'var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg)',
-                  background: isUser ? 'var(--amber)' : 'var(--bg2)',
-                  color: isUser ? 'var(--bg1)' : 'var(--tx)',
+                  borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+                  background: isUser ? 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)' : 'var(--bg2)',
+                  color: isUser ? '#ffffff' : 'var(--tx)',
                   border: isUser ? 'none' : '1px solid var(--line)',
+                  boxShadow: isUser ? '0 4px 12px rgba(79, 70, 229, 0.2)' : '0 4px 16px rgba(0, 0, 0, 0.15)',
+                  backdropFilter: isUser ? 'none' : 'blur(10px)',
                 }}>
                   {isUser ? (
-                    <p style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>{msg.content}</p>
+                    <p style={{ fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>{msg.content}</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {parseMarkdown(msg.content)}

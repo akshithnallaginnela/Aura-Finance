@@ -306,8 +306,6 @@ def advisor_strategy():
     req = request.json or {}
     ticker = req.get('ticker', 'Unknown')
     prompt = req.get('prompt', '')
-    historical = req.get('historical', [])
-    forecast = req.get('forecast', [])
     history = req.get('history', [])
     
     api_keys_str = os.environ.get('VITE_GEMINI_API_KEYS') or os.environ.get('VITE_GEMINI_API_KEY')
@@ -325,8 +323,18 @@ def advisor_strategy():
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
         
-        current_price = historical[-1]['Close'] if historical else 'Unknown'
-        future_price = forecast[-1]['PredictedClose'] if forecast else 'Unknown'
+        normalized_sym = normalize_ticker(ticker)
+        analysis = get_analysis(normalized_sym)
+        current_price = "Unknown"
+        future_price = "Unknown"
+        
+        if analysis:
+            db_hist = analysis.get("historical", [])
+            if db_hist:
+                current_price = db_hist[-1].get("Close") or db_hist[-1].get("close") or "Unknown"
+            db_fore = analysis.get("forecast", [])
+            if db_fore:
+                future_price = db_fore[-1].get("PredictedClose") or db_fore[-1].get("predicted_close") or "Unknown"
         
         normalized_sym = normalize_ticker(ticker)
         analysis = get_analysis(normalized_sym)
@@ -351,12 +359,16 @@ def advisor_strategy():
                 history_context += f"{role}: {h.get('content')}\n"
         
         system_context = f"""
-You are Aura Intelligence, an elite and friendly quantitative financial analyst. 
-Respond concisely, with precise figures and structured data where appropriate (e.g. key performance indicators, risk items, and forecasts). 
-Always use standard Markdown formatting. For structured comparisons or tables, format them using clean Markdown tables, which the frontend will automatically parse and render beautifully.
-Ensure your response is directly relevant, helpful, and answers the user's specific prompt.
+You are Aura Broker, a warm, professional, and elite personal stock broker and investment advisor. 
+Your goal is to guide the user through their investment journey with a smooth, natural conversation.
 
-Stock Analysis Details:
+Behavioral Guidelines:
+1. Warmth & Dialogue: Greet the user politely, build rapport, and handle general questions (like greetings, introductions, or investment philosophy) conversationally, like a friendly human stock broker.
+2. Context Sensitivity: If the user is just saying hi, hello, or asking general investment questions, respond in kind. Do NOT immediately dump stock analysis tables or technical metrics (like current price, forecast, sentiment score) unless they have specifically asked about a stock, or asked for a technical analysis/report of the current stock ({ticker}).
+3. Technical Depth on Demand: When the user asks about a stock, its outlook, analysis, or performance, provide highly detailed insights. Present data clearly: use standard Markdown tables for structured comparisons, and bullet points for risk/momentum factors.
+4. Keep the conversation flowing naturally: Ask clarifying questions if needed to understand their risk tolerance or investment goals.
+
+Current Context Information (only use when relevant to the user's question or when stock analysis of {ticker} is requested):
 - Ticker: {ticker}
 - Current Price: {current_price}
 - Aura 6-Month Smart Forecast Target: {future_price}
@@ -364,6 +376,7 @@ Stock Analysis Details:
 - Disaster Risk: {disaster_risk} (range 0 to 1)
 - Fundamental Summary: {fundamental_summary}
 {fundamentals_txt}
+
 {history_context}
 User Prompt: {prompt}
 """
