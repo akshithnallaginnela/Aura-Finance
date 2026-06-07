@@ -331,7 +331,7 @@ export const Watchlist: React.FC = () => {
                           <button 
                             onClick={e => handleEditHoldingsClick(item, e)} 
                             title="Edit holdings" 
-                            style={{ border: '1px solid var(--line)', background: 'var(--bg2)', color: 'var(--tx2)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
+                            style={{ border: '1px solid var(--green)', background: 'rgba(16, 185, 129, 0.05)', color: 'var(--green)', padding: '5px', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s ease' }}
                             className="seg-btn"
                           >
                             <Edit3 size={14} />
@@ -339,7 +339,7 @@ export const Watchlist: React.FC = () => {
                           <button 
                             onClick={e => handleDropFromWatchlist(item.ticker, e)} 
                             title="Drop stock" 
-                            style={{ border: '1px solid var(--line)', background: 'var(--bg2)', color: 'var(--red)', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
+                            style={{ border: '1px solid var(--red)', background: 'rgba(239, 68, 68, 0.05)', color: 'var(--red)', padding: '5px', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s ease' }}
                             className="seg-btn"
                           >
                             <Trash2 size={14} />
