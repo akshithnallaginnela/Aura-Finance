@@ -10,7 +10,7 @@ import { MacroView } from './components/MacroView';
 import { Watchlist } from './components/Watchlist';
 
 function AppContent() {
-  const { activeView, setActiveView } = useFinance();
+  const { activeView } = useFinance();
 
   if (activeView === 'login') {
     return <Login />;
