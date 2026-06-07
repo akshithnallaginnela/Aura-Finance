@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { ArrowRight, ArrowLeft, Check, Sparkles, TrendingUp, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 
 interface StockOption {
   ticker: string;
