@@ -224,7 +224,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           ticker: activeTicker,
           prompt: message,
           historical: stockData,
-          forecast: stockForecast
+          forecast: stockForecast,
+          history: chatHistory
         })
       });
 

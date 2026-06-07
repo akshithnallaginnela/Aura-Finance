@@ -280,6 +280,15 @@ export const AuraAdvisor: React.FC = () => {
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Ask Aura anything about the markets..."
           disabled={isChatLoading}
+          style={{ 
+            flex: 1, 
+            width: '100%', 
+            height: '46px', 
+            fontSize: '13.5px', 
+            borderRadius: 'var(--radius-md)', 
+            padding: '10px 16px', 
+            fontFamily: 'var(--sans)' 
+          }}
         />
         <button 
           type="submit" 
