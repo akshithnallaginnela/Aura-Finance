@@ -4,7 +4,7 @@ import { useFinance } from '../context/FinanceContext';
 
 export const Settings: React.FC = () => {
   const { theme, setTheme } = useTheme();
-  const { user, logoutAction } = useFinance();
+  const { user, logoutAction, setActiveView } = useFinance();
   const [isSmartAlerts, setIsSmartAlerts] = useState(true);
 
   const handleSignOut = async () => {
@@ -12,6 +12,13 @@ export const Settings: React.FC = () => {
       await logoutAction();
     } catch (err) {
       console.error("Failed to sign out:", err);
+    }
+  };
+
+  const handleResetOnboarding = () => {
+    if (user) {
+      localStorage.removeItem(`aura_onboarding_completed_${user.id}`);
+      setActiveView('onboarding');
     }
   };
 
