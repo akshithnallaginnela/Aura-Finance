@@ -182,7 +182,7 @@ export const Watchlist: React.FC = () => {
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0.0;
 
   return (
-    <div style={{ display: 'flex', gap: '20px', margin: '10px 0', width: '100%', alignItems: 'stretch' }}>
+    <div style={{ display: 'flex', gap: '20px', margin: '20px', width: 'calc(100% - 40px)', alignItems: 'stretch', height: 'calc(100vh - 130px)' }}>
       {/* LEFT COLUMN: Holdings & Watchlist Grid */}
       <div className="panel" style={{ flex: '3 1 60%', padding: '24px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
