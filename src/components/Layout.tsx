@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { useTheme } from '../context/ThemeContext';
+import { getIndianMarketStatus } from '../utils/marketStatus';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { activeView, setActiveView, fetchStockData } = useFinance();
-  const [time, setTime] = useState('--:--:-- EDT');
+  const [time, setTime] = useState('--:--:-- IST');
+  const [marketStatus, setMarketStatus] = useState(getIndianMarketStatus());
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setTime(now.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false }) + ' EDT');
+      setTime(now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: false }) + ' IST');
+      setMarketStatus(getIndianMarketStatus());
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const statusColor = marketStatus.state === 'OPEN' ? 'var(--green)'
+    : marketStatus.state === 'PRE-MARKET' || marketStatus.state === 'AFTER-HOURS' ? 'var(--amber)'
+    : 'var(--red)';
 
   return (
     <>
@@ -55,6 +61,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <div className="nav-section-label">Markets</div>
           <div className={`nav-item ${activeView === 'watchlist' ? 'active' : ''}`} onClick={() => setActiveView('watchlist')}><span className="nav-dot"></span>Watchlist</div>
           <div className={`nav-item ${activeView === 'screener' ? 'active' : ''}`} onClick={() => setActiveView('screener')}><span className="nav-dot"></span>Screener</div>
+          <div className={`nav-item ${activeView === 'macro' ? 'active' : ''}`} onClick={() => setActiveView('macro')}><span className="nav-dot"></span>Macro</div>
 
           <div className="nav-section-label">System</div>
           <div className={`nav-item ${activeView === 'settings' ? 'active' : ''}`} onClick={() => setActiveView('settings')}><span className="nav-dot"></span>Settings</div>
@@ -88,7 +95,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 if (e.key === 'Enter') {
                   const target = e.target as HTMLInputElement;
                   if (target.value.trim()) {
-                    let ticker = target.value.trim().toUpperCase();
+                    const ticker = target.value.trim().toUpperCase();
                     fetchStockData(ticker);
                     setActiveView('dashboard');
                     target.value = '';
@@ -99,7 +106,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
 
           <div className="topbar-right">
-            <div className="market-status"><span className="conn-dot"></span>MARKET OPEN</div>
+            <div className="market-status" style={{ color: statusColor }}>
+              <span className="conn-dot" style={{ background: statusColor, animation: marketStatus.isLive ? 'blink 3s ease-in-out infinite' : 'none' }}></span>
+              {marketStatus.label}
+            </div>
             <div className="topbar-time" id="liveClock">{time}</div>
           </div>
         </div>

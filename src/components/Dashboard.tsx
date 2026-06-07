@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid
 } from 'recharts';
+import { getIndianMarketStatus } from '../utils/marketStatus';
 
 type TimeRange = '1W' | '1M' | '3M' | '6M' | '1Y' | 'Max';
 
@@ -19,18 +20,25 @@ export const Dashboard: React.FC = () => {
     stockForecast, 
     fundamentalSummary,
     disasterRiskScore,
-    lastUpdated,
     fundamentals,
     backtestAccuracy,
     fetchStockData, 
     isLoadingData, 
     errorData,
     watchlist,
-    marketIndex,
     portfolioValue,
+    chatHistory,
+    isChatLoading,
+    sendAdvisorMessage,
   } = useFinance();
 
   const [timeRange, setTimeRange] = useState<TimeRange>('Max');
+  const [copilotInput, setCopilotInput] = useState('');
+  const copilotEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    copilotEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory, isChatLoading]);
 
   const handleTickerClick = (ticker: string) => {
     fetchStockData(`${ticker}.NS`);
@@ -173,11 +181,7 @@ export const Dashboard: React.FC = () => {
             <span>Risk Score:</span> {(disasterRiskScore * 100).toFixed(0)}%
           </div>
         </div>
-        <div className="stat-cell">
-          <div className="stat-cell-label">Market Status</div>
-          <div className="stat-cell-val up">OPEN</div>
-          <div className="stat-cell-chg up"><span>Live updating</span></div>
-        </div>
+        <MarketStatusCell />
       </div>
 
       {/* GRID ROW 1: Chart & Watchlist */}
@@ -353,17 +357,75 @@ export const Dashboard: React.FC = () => {
               <div className="msg-tag ai">SYS</div>
               <div className="msg-body">Hello. I am Aura. How can I assist you with your portfolio today?</div>
             </div>
+            {chatHistory.map((msg) => (
+              <div className="msg" key={msg.id}>
+                <div className={`msg-tag ${msg.sender === 'user' ? 'usr' : 'ai'}`}>
+                  {msg.sender === 'user' ? 'YOU' : 'AI'}
+                </div>
+                <div className="msg-body">{msg.content}</div>
+              </div>
+            ))}
+            {isChatLoading && (
+              <div className="msg">
+                <div className="msg-tag ai">AI</div>
+                <div className="msg-body" style={{ opacity: 0.5 }}>Thinking...</div>
+              </div>
+            )}
+            <div ref={copilotEndRef} />
           </div>
           <div className="copilot-chips">
-            <div className="chip">Explain {activeTicker} forecast</div>
-            <div className="chip">Show me market trends</div>
+            <div className="chip" onClick={() => sendAdvisorMessage(`Explain ${activeTicker} forecast`)}>Explain {activeTicker} forecast</div>
+            <div className="chip" onClick={() => sendAdvisorMessage('Show me market trends')}>Show me market trends</div>
           </div>
           <div className="copilot-input-row">
-            <input type="text" placeholder="Type a message..." />
-            <button className="copilot-send">SEND</button>
+            <input
+              type="text"
+              placeholder="Type a message..."
+              value={copilotInput}
+              onChange={(e) => setCopilotInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && copilotInput.trim() && !isChatLoading) {
+                  sendAdvisorMessage(copilotInput.trim());
+                  setCopilotInput('');
+                }
+              }}
+              disabled={isChatLoading}
+            />
+            <button
+              className="copilot-send"
+              disabled={isChatLoading || !copilotInput.trim()}
+              onClick={() => {
+                if (copilotInput.trim() && !isChatLoading) {
+                  sendAdvisorMessage(copilotInput.trim());
+                  setCopilotInput('');
+                }
+              }}
+            >
+              SEND
+            </button>
           </div>
         </div>
       </div>
     </>
+  );
+};
+
+/* ─── Market Status Sub-component ─── */
+const MarketStatusCell: React.FC = () => {
+  const [status, setStatus] = useState(getIndianMarketStatus());
+
+  useEffect(() => {
+    const interval = setInterval(() => setStatus(getIndianMarketStatus()), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const colorClass = status.state === 'OPEN' ? 'up' : status.state === 'CLOSED' ? 'dn' : 'amber';
+
+  return (
+    <div className="stat-cell">
+      <div className="stat-cell-label">Market Status</div>
+      <div className={`stat-cell-val ${colorClass}`}>{status.state}</div>
+      <div className={`stat-cell-chg ${colorClass}`}><span>{status.subLabel}</span></div>
+    </div>
   );
 };

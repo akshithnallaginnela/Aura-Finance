@@ -1,13 +1,15 @@
-import { FinanceProvider, useFinance } from './context/FinanceContext';
+import { useFinance } from './context/FinanceContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { AuraAdvisor } from './components/AuraAdvisor';
 import { Optimizer } from './components/Optimizer';
 import { Login } from './components/Login';
 import { Settings } from './components/Settings';
+import { Screener } from './components/Screener';
+import { MacroView } from './components/MacroView';
 
 function AppContent() {
-  const { activeView } = useFinance();
+  const { activeView, setActiveView } = useFinance();
 
   if (activeView === 'login') {
     return <Login />;
@@ -19,6 +21,7 @@ function AppContent() {
       {activeView === 'advisor' && <AuraAdvisor />}
       {activeView === 'optimizer' && <Optimizer />}
       {activeView === 'settings' && <Settings />}
+      {activeView === 'macro' && <MacroView />}
       {/* 
         Runway Predictor (forecaster) can remain under construction 
         or be mapped to something else later.
@@ -36,13 +39,7 @@ function AppContent() {
           <p>For now, you can view your real-time watchlist in the <strong style={{ color: 'var(--amber)', cursor: 'pointer' }} onClick={() => setActiveView('dashboard')}>Dashboard</strong>.</p>
         </div>
       )}
-      {activeView === 'screener' && (
-        <div className="panel" style={{ margin: '20px', padding: '40px', textAlign: 'center', color: 'var(--tx3)' }}>
-          <h2 style={{ color: 'var(--tx)' }}>Market Screener</h2>
-          <p>The advanced multi-factor stock screener is currently under development.</p>
-          <p>It will allow filtering the market by P/E ratio, Market Cap, Technicals, and AI Disaster Risk.</p>
-        </div>
-      )}
+      {activeView === 'screener' && <Screener />}
     </Layout>
   );
 }

@@ -9,7 +9,8 @@ export const AimlLab: React.FC = () => {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/ml_metrics');
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const res = await fetch(`${backendUrl}/api/ml_metrics`);
         if (!res.ok) throw new Error('Failed to fetch ML metrics');
         const data = await res.json();
         setMetrics(data);

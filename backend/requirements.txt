@@ -11,3 +11,6 @@ lightgbm
 yfinance
 google-generativeai
 python-dotenv
+torch
+transformers
+sentencepiece

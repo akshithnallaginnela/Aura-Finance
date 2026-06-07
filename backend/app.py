@@ -1,8 +1,10 @@
 import os
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pathlib import Path
 from dotenv import load_dotenv
+from functools import lru_cache
 
 from database import get_analysis, upsert_analysis
 from monitoring import check_disaster_risk
@@ -12,8 +14,33 @@ env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 app = Flask(__name__)
-CORS(app)
 
+# Enterprise CORS: Restrict to known origins in production
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://aura-finance.vercel.app" # Example production domain
+]
+CORS(app, origins=allowed_origins)
+
+# --- Global Error Handler ---
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Global error handler for all unhandled exceptions."""
+    print(f"Unhandled Exception: {e}")
+    return jsonify({
+        "error": "An internal server error occurred.",
+        "details": str(e)
+    }), 500
+
+# --- Caching Layer for yfinance ---
+@lru_cache(maxsize=100)
+def get_cached_market_data(ticker, period="3mo"):
+    """Caches historical data for 5 minutes (via manual expiry check if needed, 
+    but LRU is a start). For enterprise, use Redis."""
+    import yfinance as yf
+    t_obj = yf.Ticker(ticker)
+    return t_obj.history(period=period)
 
 def normalize_ticker(raw_ticker):
     """
@@ -60,10 +87,8 @@ def on_demand_analysis(ticker):
 @app.route('/api/market_index', methods=['GET'])
 def get_market_index():
     """Fetch actual Nifty 50 Index data for the market overview chart."""
-    import yfinance as yf
     try:
-        t_obj = yf.Ticker('^NSEI')
-        hist = t_obj.history(period="3mo")
+        hist = get_cached_market_data('^NSEI', period="3mo")
         data = []
         for date, row in hist.iterrows():
             data.append({
@@ -80,12 +105,10 @@ def get_watchlist():
     """Fetch live data for the watchlist."""
     tickers = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "WIPRO.NS"]
     try:
-        import yfinance as yf
         results = []
         for ticker in tickers:
             try:
-                t_obj = yf.Ticker(ticker)
-                hist = t_obj.history(period="5d")
+                hist = get_cached_market_data(ticker, period="5d")
                 if not hist.empty:
                     closes = hist['Close'].dropna().values
                     if len(closes) >= 2:
@@ -167,7 +190,7 @@ def advisor_strategy():
     import google.generativeai as genai
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         current_price = historical[-1]['Close'] if historical else 'Unknown'
         future_price = forecast[-1]['PredictedClose'] if forecast else 'Unknown'
@@ -292,6 +315,84 @@ def optimize_portfolio():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/screener', methods=['GET'])
+def get_screener():
+    """
+    Enterprise Market Screener:
+    Fetches all pre-computed stock analysis from the database for multi-factor filtering.
+    """
+    from database import get_connection
+    try:
+        conn = get_connection()
+        from psycopg2.extras import RealDictCursor
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute("""
+            SELECT ticker, sentiment_score, disaster_risk_score, backtest_accuracy, fundamentals, last_updated
+            FROM stock_analysis
+        """)
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Format results for the frontend
+        formatted = []
+        for r in results:
+            fundamentals = r.get('fundamentals') or {}
+            formatted.append({
+                "ticker": r['ticker'],
+                "sentiment": round(r['sentiment_score'], 2),
+                "risk": round(r['disaster_risk_score'], 2),
+                "accuracy": round(r['backtest_accuracy'], 2),
+                "pe": fundamentals.get('pe_ratio', 'N/A'),
+                "market_cap": fundamentals.get('market_cap', 'N/A'),
+                "last_updated": r['last_updated']
+            })
+            
+        return jsonify(formatted)
+    except Exception as e:
+        print(f"Screener Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/macro', methods=['GET'])
+def get_macro_data():
+    """
+    Macro View: Fetches global indices and currency pairs.
+    """
+    tickers = {
+        "^GSPC": "S&P 500",
+        "^IXIC": "Nasdaq",
+        "^FTSE": "FTSE 100",
+        "^N225": "Nikkei 225",
+        "USDINR=X": "USD/INR",
+        "BTC-USD": "Bitcoin"
+    }
+    try:
+        results = []
+        for ticker, name in tickers.items():
+            try:
+                hist = get_cached_market_data(ticker, period="5d")
+                if not hist.empty:
+                    closes = hist['Close'].dropna().values
+                    curr = float(closes[-1])
+                    prev = float(closes[-2]) if len(closes) > 1 else curr
+                    change = curr - prev
+                    pct = (change / prev) * 100 if prev != 0 else 0
+                    results.append({
+                        "ticker": ticker,
+                        "name": name,
+                        "price": round(curr, 2),
+                        "change": round(change, 2),
+                        "changePct": round(pct, 2)
+                    })
+            except Exception:
+                continue
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/ml_metrics', methods=['GET'])
 def get_ml_metrics():
     """
@@ -343,12 +444,14 @@ def get_ml_metrics():
             "coverage": "Nifty 50 (50 stocks)"
         },
         "gemini": {
-            "model_version": "gemini-2.5-flash",
+            "model_version": "gemini-1.5-flash",
             "role": "Fundamental Analysis Summarizer",
             "rate_limit_status": "Healthy (Exponential Backoff Enabled)"
         }
     })
 
 if __name__ == '__main__':
+    from database import init_db
+    init_db()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

@@ -36,7 +36,8 @@ export const Optimizer: React.FC = () => {
     setResult(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/optimize_portfolio', {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/optimize_portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

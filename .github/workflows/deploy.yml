@@ -9,13 +9,54 @@ permissions:
   contents: write
 
 jobs:
-  deploy-backend:
+  # ─── Job 1: Verify Frontend Build ───────────────────────────────────
+  build-frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: TypeScript Check & Build
+        run: npm run build
+
+  # ─── Job 2: Deploy Backend to Hugging Face ──────────────────────────
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Validate Secrets
+        run: |
+          if [ -z "${{ secrets.HF_TOKEN }}" ]; then
+            echo "::error::HF_TOKEN secret is not set. Go to Settings → Secrets → Actions and add it."
+            exit 1
+          fi
+          if [ -z "${{ secrets.HF_USERNAME }}" ]; then
+            echo "::error::HF_USERNAME secret is not set."
+            exit 1
+          fi
+          if [ -z "${{ secrets.HF_SPACE_NAME }}" ]; then
+            echo "::error::HF_SPACE_NAME secret is not set."
+            exit 1
+          fi
+
+      - name: Install git-lfs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-lfs
 
       - name: Push to Hugging Face Hub
         env:
@@ -24,13 +65,25 @@ jobs:
           HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
         run: |
           # The Hugging Face Space expects the Dockerfile at the root.
-          # We copy the backend folder contents to a temporary directory and push that as the root.
+          # Copy the backend folder contents to a temporary directory and push as root.
           mkdir -p /tmp/hf-space
           cp -r backend/* /tmp/hf-space/
           cd /tmp/hf-space
+
+          # Remove local database files (should not be deployed)
           rm -f *.db
-          
+
+          # Initialize git with LFS support
           git init
+          git lfs install
+
+          # Create .gitattributes for any large model files
+          echo "*.bin filter=lfs diff=lfs merge=lfs -text" > .gitattributes
+          echo "*.safetensors filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
+          echo "*.h5 filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
+          echo "*.onnx filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
+          echo "*.pkl filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
+
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
           git add .

@@ -113,7 +113,7 @@ def generate_quick_summary(ticker_symbol, headlines, sentiment, disaster_risk):
     
     try:
         genai.configure(api_key=random.choice(api_keys))
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
         return response.text.strip()[:500]
     except Exception as e:

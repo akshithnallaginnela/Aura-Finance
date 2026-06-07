@@ -240,7 +240,7 @@ def analyze_fundamentals(ticker_symbol):
     for attempt in range(max_retries):
         try:
             genai.configure(api_key=random.choice(api_keys))
-            model = genai.GenerativeModel('gemini-2.5-flash')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(prompt)
             raw_text = response.text.replace('```json', '').replace('```', '').strip()
             
