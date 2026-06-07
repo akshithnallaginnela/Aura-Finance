@@ -37,7 +37,6 @@ __pycache__/
 
 aura-logo
 run.bat
-public/
 
 .vercel
 .env*.local

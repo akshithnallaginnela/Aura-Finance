@@ -48,7 +48,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* SIDEBAR */}
       <nav className="sidebar">
         <div className="brand">
-          <div className="brand-icon">AF</div>
+          <img src="/logo.png" className="brand-icon" alt="Aura Logo" />
           <div className="brand-name">AURA</div>
           <div className="brand-ver">v2.4</div>
         </div>
