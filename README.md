@@ -19,7 +19,26 @@
 
 Aura Finance is an enterprise-grade quantitative wealth management platform. It integrates a **5-model Machine Learning Ensemble**, **FinBERT Natural Language Processing**, and a **Real-Time News Sentinel** to deliver high-fidelity market forecasts, live sentiment scores, and portfolio optimization matching Modern Portfolio Theory (MPT).
 
+### 🔗 Live Demo
+Experience Aura Finance live: **[aura-finance-five.vercel.app](https://aura-finance-five.vercel.app)**
+
 ---
+
+## 📷 Screenshots
+
+Here is a visual walkthrough of the Aura Finance terminal:
+
+| **Landing & Authentication** | **Market Screener** |
+| :---: | :---: |
+| ![Aura Landing Page](public/screenshots/landing.png) | ![Multi-Factor Market Screener](public/screenshots/screener.png) |
+
+| **Ensemble ML Forecasting** | **MPT Portfolio Optimizer** |
+| :---: | :---: |
+| ![ML Forecast Charts](public/screenshots/forecaster.png) | ![Sharpe Ratio Optimizer](public/screenshots/optimizer.png) |
+
+| **Global Macro Tracker** | **Aura AI Broker Chat** |
+| :---: | :---: |
+| ![Global Macro Insights](public/screenshots/macro.png) | ![Aura AI Copilot](public/screenshots/advisor.png) |
 
 ## 📖 Table of Contents
 * [🚀 Key Enterprise Modules](#-key-enterprise-modules)

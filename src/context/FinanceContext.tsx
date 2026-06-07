@@ -114,13 +114,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (session) {
         setIsAuthenticated(true);
         setUser(session.user);
-        if (activeView === 'login' || activeView === 'landing') {
-          const onboardingCompleted = localStorage.getItem(`aura_onboarding_completed_${session.user.id}`);
-          if (onboardingCompleted === 'true') {
-            setActiveView('dashboard');
-          } else {
-            setActiveView('onboarding');
-          }
+        const onboardingCompleted = localStorage.getItem(`aura_onboarding_completed_${session.user.id}`);
+        if (onboardingCompleted === 'true') {
+          setActiveView('dashboard');
+        } else {
+          setActiveView('onboarding');
         }
       }
     });
@@ -143,7 +141,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     return () => subscription.unsubscribe();
-  }, [activeView]);
+  }, []);
 
   const loginAction = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
