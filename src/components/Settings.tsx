@@ -17,7 +17,7 @@ export const Settings: React.FC = () => {
 
   const handleResetOnboarding = () => {
     if (user) {
-      localStorage.removeItem(`aura_onboarding_completed_${user.id}`);
+      localStorage.removeItem(`aura_onboarding_completed_${user.uid}`);
       setActiveView('onboarding');
     }
   };
@@ -75,7 +75,7 @@ export const Settings: React.FC = () => {
             </div>
           )}
           <div style={{ fontSize: '11px', color: 'var(--tx2)', marginBottom: '16px' }}>
-            Your authentication session is managed securely via Supabase Auth. Click the button below to sign out of your current session.
+            Your authentication session is managed securely via Firebase Auth. Click the button below to sign out of your current session.
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button 

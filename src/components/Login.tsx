@@ -44,7 +44,17 @@ export const Login: React.FC = () => {
         await loginAction(email, password);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "An authentication error occurred.");
+      let msg = err.message || "An authentication error occurred.";
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        msg = "Invalid email or password.";
+      } else if (err.code === 'auth/email-already-in-use') {
+        msg = "An account already exists with this email address.";
+      } else if (err.code === 'auth/weak-password') {
+        msg = "Password must be at least 6 characters.";
+      } else if (err.code === 'auth/invalid-email') {
+        msg = "Invalid email format.";
+      }
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }

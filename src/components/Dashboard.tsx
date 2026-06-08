@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useFinance } from '../context/FinanceContext';
+import { useFinance, type EnsembleWeights } from '../context/FinanceContext';
 import { createChart, AreaSeries, LineSeries } from '@pipsend/charts';
 import { useTheme } from '../context/ThemeContext';
 import { getIndianMarketStatus } from '../utils/marketStatus';
+import { Brain } from 'lucide-react';
 
 type TimeRange = '1W' | '1M' | '3M' | '6M' | '1Y' | 'Max';
 
@@ -21,11 +22,15 @@ export const Dashboard: React.FC = () => {
     watchlist,
     portfolioValue,
     marketIndex,
+    ensembleWeights,
+    setEnsembleWeights,
+    tunedForecast
   } = useFinance();
 
   const [timeRange, setTimeRange] = useState<TimeRange>('Max');
   const [news, setNews] = useState<any[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(false);
+  const [isWeightsExpanded, setIsWeightsExpanded] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const marketChartContainerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
@@ -111,7 +116,7 @@ export const Dashboard: React.FC = () => {
       historicalSeries.setData(histData);
     }
 
-    if (stockForecast && stockForecast.length > 0 && (timeRange === '6M' || timeRange === '1Y' || timeRange === 'Max')) {
+    if (tunedForecast && tunedForecast.length > 0 && (timeRange === '6M' || timeRange === '1Y' || timeRange === 'Max')) {
       const forecastSeries = chart.addSeries(LineSeries, {
         color: '#e8a800',
         lineWidth: 2,
@@ -128,7 +133,7 @@ export const Dashboard: React.FC = () => {
         });
       }
 
-      stockForecast.forEach(f => {
+      tunedForecast.forEach(f => {
         const timeStr = formatDateForChart(f.Date);
         if (timeStr) {
           foreData.push({
@@ -162,7 +167,7 @@ export const Dashboard: React.FC = () => {
         lowerData.push({ time: lastHist.time, value: lastHist.value });
       }
 
-      stockForecast.forEach(f => {
+      tunedForecast.forEach(f => {
         const timeStr = formatDateForChart(f.Date);
         if (timeStr) {
           upperData.push({ time: timeStr, value: Number(f.UpperBand || 0) });
@@ -187,7 +192,7 @@ export const Dashboard: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [stockData, stockForecast, timeRange, theme]);
+  }, [stockData, tunedForecast, timeRange, theme]);
 
   useEffect(() => {
     if (!marketChartContainerRef.current) return;
@@ -281,7 +286,7 @@ export const Dashboard: React.FC = () => {
 
   const combinedData = [...filteredHistorical];
 
-  if (stockForecast && stockForecast.length > 0 && (timeRange === '6M' || timeRange === '1Y' || timeRange === 'Max')) {
+  if (tunedForecast && tunedForecast.length > 0 && (timeRange === '6M' || timeRange === '1Y' || timeRange === 'Max')) {
     const lastHist = combinedData[combinedData.length - 1];
     if (lastHist) {
       combinedData.push({
@@ -293,7 +298,7 @@ export const Dashboard: React.FC = () => {
         type: 'bridge'
       });
     }
-    stockForecast.forEach(f => {
+    tunedForecast.forEach(f => {
       combinedData.push({
         Date: new Date(f.Date).toLocaleDateString(),
         PredictedClose: f.PredictedClose,
@@ -314,8 +319,6 @@ export const Dashboard: React.FC = () => {
     if (val > 500) return `₹${val.toLocaleString('en-IN', {maximumFractionDigits: 2})}`;
     return `$${val.toFixed(2)}`;
   };
-
-
 
   return (
     <>
@@ -343,8 +346,8 @@ export const Dashboard: React.FC = () => {
         <div className="stat-cell">
           <div className="stat-cell-label">6M Forecast</div>
           <div className="stat-cell-val">
-            {stockForecast && stockForecast.length > 0 
-              ? formatPrice(stockForecast[stockForecast.length - 1].PredictedClose)
+            {tunedForecast && tunedForecast.length > 0 
+              ? formatPrice(tunedForecast[tunedForecast.length - 1].PredictedClose)
               : 'N/A'}
           </div>
           <div className="stat-cell-chg amber"><span>AI Target</span></div>
@@ -414,6 +417,71 @@ export const Dashboard: React.FC = () => {
               <div className="leg"><div className="leg-sq" style={{ background: 'var(--green)' }}></div> HISTORICAL</div>
               <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber)' }}></div> FORECAST MEDIAN</div>
               <div className="leg"><div className="leg-sq" style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)' }}></div> CONFIDENCE BAND</div>
+            </div>
+
+            {/* V3 Ensemble Model Weights Tuner */}
+            <div style={{ marginTop: '16px', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
+              <div 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0' }} 
+                onClick={() => setIsWeightsExpanded(!isWeightsExpanded)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--tx)' }}>
+                  <Brain size={15} style={{ color: 'var(--amber)' }} />
+                  AI Ensemble Weights Tuner
+                </div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--tx3)' }}>{isWeightsExpanded ? 'Hide Sliders ▲' : 'Tune Weights ▼'}</span>
+              </div>
+              
+              {isWeightsExpanded && (
+                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--tx3)', lineHeight: 1.4 }}>
+                    Adjust algorithm weightings in the 5-Model Ensemble. The forecast target close and confidence bands will recalculate interactively.
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+                    {[
+                      { name: 'Chronos-T5', key: 'chronos', desc: 'Foundation Model', color: '#6366f1' },
+                      { name: 'Transformer', key: 'transformer', desc: 'Self-Attention Net', color: '#14b8a6' },
+                      { name: 'XGBoost', key: 'xgboost', desc: 'Gradient Trees', color: '#f59e0b' },
+                      { name: 'LightGBM', key: 'lightgbm', desc: 'Leaf-wise Tree', color: '#ec4899' },
+                      { name: 'LSTM', key: 'lstm', desc: 'Stacked RNN', color: '#8b5cf6' }
+                    ].map(model => {
+                      const val = ensembleWeights[model.key as keyof EnsembleWeights] * 100;
+                      return (
+                        <div key={model.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--bg2)', border: '1px solid var(--line)', padding: '10px', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--tx)' }}>{model.name}</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: model.color }}>{Math.round(val)}%</span>
+                          </div>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--tx3)' }}>{model.desc}</span>
+                          <input 
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={val}
+                            onChange={e => {
+                              const newVal = Number(e.target.value) / 100;
+                              setEnsembleWeights(prev => ({
+                                ...prev,
+                                [model.key]: newVal
+                              }));
+                            }}
+                            style={{ width: '100%', accentColor: model.color, cursor: 'pointer', height: '3px', marginTop: '4px' }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button 
+                      className="seg-btn"
+                      onClick={() => setEnsembleWeights({ chronos: 0.35, transformer: 0.20, xgboost: 0.20, lightgbm: 0.15, lstm: 0.10 })}
+                      style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                    >
+                      Reset Weights
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

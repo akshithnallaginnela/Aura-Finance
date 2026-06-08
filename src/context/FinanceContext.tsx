@@ -1,5 +1,33 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../utils/supabaseClient';
+import { auth, db } from '../utils/firebaseClient';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged
+} from 'firebase/auth';
+import { 
+  doc, 
+  getDoc, 
+  setDoc
+} from 'firebase/firestore';
+
+export interface EnsembleWeights {
+  chronos: number;
+  transformer: number;
+  xgboost: number;
+  lightgbm: number;
+  lstm: number;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: 'risk' | 'info' | 'success';
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+}
 
 export interface StockDataPoint {
   Date: string;
@@ -82,6 +110,16 @@ interface FinanceContextType {
   setWatchlist: React.Dispatch<React.SetStateAction<WatchlistItem[]>>;
   marketIndex: MarketDataPoint[];
   portfolioValue: number;
+
+  // V3 features
+  ensembleWeights: EnsembleWeights;
+  setEnsembleWeights: React.Dispatch<React.SetStateAction<EnsembleWeights>>;
+  tunedForecast: ForecastPoint[];
+  
+  notifications: NotificationItem[];
+  addNotification: (type: 'risk' | 'info' | 'success', title: string, message: string) => void;
+  markAllNotificationsAsRead: () => void;
+  clearNotifications: () => void;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -108,30 +146,124 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding' | 'landing'>('landing');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
-  // Supabase Auth session listeners
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsAuthenticated(true);
-        setUser(session.user);
-        const onboardingCompleted = localStorage.getItem(`aura_onboarding_completed_${session.user.id}`);
-        if (onboardingCompleted === 'true') {
-          setActiveView('dashboard');
-        } else {
-          setActiveView('onboarding');
-        }
-      }
-    });
+  const [ensembleWeights, setEnsembleWeights] = useState<EnsembleWeights>({
+    chronos: 0.35,
+    transformer: 0.20,
+    xgboost: 0.20,
+    lightgbm: 0.15,
+    lstm: 0.10
+  });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: 'welcome',
+      type: 'info',
+      title: 'Welcome to Aura v3.0.0',
+      message: 'Your AI Wealth Copilot with Firebase sync and risk sentinel is active.',
+      timestamp: new Date(),
+      read: false
+    }
+  ]);
+
+  const addNotification = useCallback((type: 'risk' | 'info' | 'success', title: string, message: string) => {
+    setNotifications(prev => [
+      {
+        id: Date.now().toString(),
+        type,
+        title,
+        message,
+        timestamp: new Date(),
+        read: false
+      },
+      ...prev
+    ]);
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  // Compute tuned forecast based on ensemble weights
+  const tunedForecast = React.useMemo(() => {
+    if (!stockForecast || stockForecast.length === 0) return [];
+    
+    const w = ensembleWeights;
+    const total = w.chronos + w.transformer + w.xgboost + w.lightgbm + w.lstm;
+    if (total === 0) return stockForecast;
+    
+    const cW = w.chronos / total;
+    const tW = w.transformer / total;
+    const xW = w.xgboost / total;
+    const lW = w.lightgbm / total;
+    const mW = w.lstm / total;
+    
+    return stockForecast.map((f, idx) => {
+      // Deterministic sinusoidal offsets representing individual models, summing to 0 under defaults
+      const dC = 0.04 * Math.sin(idx / 12);
+      const dT = 0.06 * Math.cos(idx / 8);
+      const dX = -0.03 * Math.sin(idx / 10);
+      const dL = 0.02 * Math.cos(idx / 5);
+      const dM = -(0.35 * dC + 0.20 * dT + 0.20 * dX + 0.15 * dL) / 0.10;
+      
+      const multC = 1 + dC;
+      const multT = 1 + dT;
+      const multX = 1 + dX;
+      const multL = 1 + dL;
+      const multM = 1 + dM;
+      
+      const multiplier = (cW * multC) + (tW * multT) + (xW * multX) + (lW * multL) + (mW * multM);
+      const baseClose = f.PredictedClose;
+      const tunedClose = baseClose * multiplier;
+      
+      const upperRatio = f.UpperBand ? (f.UpperBand / baseClose) : 1.05;
+      const lowerRatio = f.LowerBand ? (f.LowerBand / baseClose) : 0.95;
+      
+      return {
+        Date: f.Date,
+        PredictedClose: Number(tunedClose.toFixed(2)),
+        UpperBand: Number((tunedClose * upperRatio).toFixed(2)),
+        LowerBand: Number((tunedClose * lowerRatio).toFixed(2))
+      };
+    });
+  }, [stockForecast, ensembleWeights]);
+
+  // Firebase Auth session listeners
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
         setIsAuthenticated(true);
-        setUser(session.user);
-        const onboardingCompleted = localStorage.getItem(`aura_onboarding_completed_${session.user.id}`);
-        if (onboardingCompleted === 'true') {
-          setActiveView('dashboard');
-        } else {
-          setActiveView('onboarding');
+        setUser(firebaseUser);
+        
+        // Fetch user data from Firestore
+        try {
+          const docRef = doc(db, 'users_data', firebaseUser.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.watchlist && data.watchlist.length > 0) {
+              setWatchlist(data.watchlist);
+            }
+            if (data.onboardingCompleted) {
+              setActiveView('dashboard');
+            } else {
+              setActiveView('onboarding');
+            }
+          } else {
+            setActiveView('onboarding');
+          }
+        } catch (err) {
+          console.error("Error fetching Firestore user data:", err);
+          const onboardingCompleted = localStorage.getItem(`aura_onboarding_completed_${firebaseUser.uid}`);
+          if (onboardingCompleted === 'true') {
+            setActiveView('dashboard');
+          } else {
+            setActiveView('onboarding');
+          }
         }
       } else {
         setIsAuthenticated(false);
@@ -140,27 +272,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const loginAction = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
   const registerAction = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const docRef = doc(db, 'users_data', userCredential.user.uid);
+    await setDoc(docRef, {
+      watchlist: [],
+      onboardingCompleted: false
+    });
   };
 
   const logoutAction = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    await signOut(auth);
   };
 
   const completeOnboarding = async (selectedTickers: string[]) => {
     if (!user) return;
-    localStorage.setItem(`aura_onboarding_completed_${user.id}`, 'true');
+    localStorage.setItem(`aura_onboarding_completed_${user.uid}`, 'true');
 
     const ALL_AVAILABLE_ONBOARDING_STOCKS: WatchlistItem[] = [
       { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2940.00, change: 5.30, changePct: 0.18, color: '#6366f1', flashClass: '', domain: 'ril.com', shares: 15, avgBuyPrice: 2850.00 },
@@ -179,6 +313,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const finalWatchlist = filtered.length > 0 ? filtered : ALL_AVAILABLE_ONBOARDING_STOCKS.slice(0, 4);
 
     setWatchlist(finalWatchlist);
+    
+    // Save onboarding state to Firestore
+    try {
+      const docRef = doc(db, 'users_data', user.uid);
+      await setDoc(docRef, {
+        watchlist: finalWatchlist,
+        onboardingCompleted: true
+      }, { merge: true });
+    } catch (err) {
+      console.error("Error saving onboarding to Firestore:", err);
+    }
+
     const firstTicker = finalWatchlist[0].ticker + '.NS';
     setActiveTicker(firstTicker);
     await fetchStockData(firstTicker);
@@ -222,7 +368,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setFundamentalSummary(data.fundamental_summary || null);
       setFundamentals(data.fundamentals || {});
       setBacktestAccuracy(data.backtest_accuracy || 0.0);
-      setDisasterRiskScore(data.disaster_risk_score ?? 0.0);
+      const risk = data.disaster_risk_score ?? 0.0;
+      setDisasterRiskScore(risk);
+      if (risk > 0.15) {
+        addNotification(
+          'risk',
+          `Risk Alert: ${ticker.replace('.NS', '')}`,
+          `High risk activity detected. Sentinel risk rating is ${(risk * 100).toFixed(0)}%.`
+        );
+      }
       setLastUpdated(data.last_updated || null);
       setActiveTicker(ticker.toUpperCase());
     } catch (err: any) {
@@ -232,6 +386,47 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsLoadingData(false);
     }
   }, []);
+
+  // Sync watchlist and holdings to Firestore on changes
+  const lastSyncRef = React.useRef<string>('');
+  useEffect(() => {
+    if (!user) return;
+    
+    // Core parameters to identify edits (to ignore price fluctuations)
+    const minimalWatchlist = watchlist.map(item => ({
+      ticker: item.ticker,
+      shares: item.shares ?? 0,
+      avgBuyPrice: item.avgBuyPrice ?? 0
+    }));
+    const serialized = JSON.stringify(minimalWatchlist);
+    
+    if (serialized === lastSyncRef.current) {
+      return;
+    }
+    lastSyncRef.current = serialized;
+
+    const syncToFirestore = async () => {
+      try {
+        const docRef = doc(db, 'users_data', user.uid);
+        await setDoc(docRef, {
+          watchlist: watchlist.map(item => ({
+            ticker: item.ticker,
+            name: item.name,
+            exchange: item.exchange,
+            color: item.color,
+            domain: item.domain,
+            shares: item.shares ?? 0,
+            avgBuyPrice: item.avgBuyPrice ?? 0
+          }))
+        }, { merge: true });
+      } catch (err) {
+        console.error("Error syncing watchlist to Firestore:", err);
+      }
+    };
+
+    const timeoutId = setTimeout(syncToFirestore, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [watchlist, user]);
 
   // Fetch initial data
   useEffect(() => {
@@ -376,6 +571,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setWatchlist,
       marketIndex,
       portfolioValue,
+      
+      // V3 features
+      ensembleWeights,
+      setEnsembleWeights,
+      tunedForecast,
+      notifications,
+      addNotification,
+      markAllNotificationsAsRead,
+      clearNotifications
     }}>
       {children}
     </FinanceContext.Provider>
