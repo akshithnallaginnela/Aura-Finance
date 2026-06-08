@@ -131,7 +131,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="brand">
           <img src="/logo.png" className="brand-icon" alt="Aura Logo" />
           <div className="brand-name">AURA</div>
-          <div className="brand-ver">v2.4</div>
+          <div className="brand-ver">v3.0</div>
         </div>
         <div className="nav">
           <div className="nav-section-label">Workspace</div>
@@ -212,6 +212,93 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <span className="conn-dot" style={{ background: statusColor, animation: marketStatus.isLive ? 'blink 3s ease-in-out infinite' : 'none' }}></span>
               {marketStatus.label}
             </div>
+            
+            {/* V3 Notifications Center Dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                style={{ 
+                  background: 'none', border: 'none', color: 'var(--tx)', 
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', 
+                  justifyContent: 'center', padding: '6px', position: 'relative',
+                  borderRadius: '50%', transition: 'background 0.2s'
+                }}
+                className="seg-btn"
+                title="Notifications"
+              >
+                <Bell size={15} />
+                {notifications.some(n => !n.read) && (
+                  <span style={{ 
+                    position: 'absolute', top: 2, right: 2, 
+                    width: 7, height: 7, borderRadius: '50%', 
+                    background: 'var(--red)', border: '1px solid var(--bg-elevated)',
+                    animation: 'pulse 2s infinite'
+                  }} />
+                )}
+              </button>
+              
+              {isNotificationsOpen && (
+                <div 
+                  className="glass-panel" 
+                  style={{ 
+                    position: 'absolute', top: '35px', right: 0, 
+                    width: '300px', maxHeight: '400px', overflowY: 'auto',
+                    zIndex: 9999, padding: '16px', background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-subtle)', boxShadow: '0 20px 40px rgba(0,0,0,0.35)',
+                    borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--tx)' }}>Notifications</span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        onClick={markAllNotificationsAsRead}
+                        style={{ background: 'none', border: 'none', color: 'var(--amber)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Read All
+                      </button>
+                      <button 
+                        onClick={clearNotifications}
+                        style={{ background: 'none', border: 'none', color: 'var(--tx3)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--tx3)', fontSize: '0.8rem' }}>
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {notifications.map(n => (
+                        <div 
+                          key={n.id} 
+                          style={{ 
+                            padding: '10px', borderRadius: '6px', 
+                            background: n.read ? 'transparent' : 'rgba(239, 68, 68, 0.05)',
+                            border: `1px solid ${n.read ? 'var(--border-subtle)' : 'rgba(239, 68, 68, 0.2)'}`,
+                            display: 'flex', flexDirection: 'column', gap: '4px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.8rem', color: n.type === 'risk' ? 'var(--red)' : 'var(--tx)' }}>
+                              {n.title}
+                            </span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--tx3)' }}>
+                              {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--tx2)', lineHeight: 1.3 }}>{n.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="topbar-time" id="liveClock">{time}</div>
           </div>
         </div>
@@ -221,6 +308,34 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {children}
         </div>
       </div>
+
+      {/* V3 Risk Warning Toast Banner Overlay */}
+      {activeToast && (
+        <div 
+          className="animate-fade-in-up"
+          style={{
+            position: 'fixed', bottom: '20px', right: '20px', 
+            width: '320px', background: 'rgba(15, 23, 42, 0.85)', 
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid var(--red)', borderLeft: '4px solid var(--red)',
+            borderRadius: 'var(--radius-md)', padding: '16px', zIndex: 100000,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
+            display: 'flex', flexDirection: 'column', gap: '6px'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--red)', letterSpacing: '0.05em' }}>RISK WARNING ALERT</span>
+            <button 
+              onClick={() => setActiveToast(null)} 
+              style={{ background: 'none', border: 'none', color: 'var(--tx3)', cursor: 'pointer', fontSize: '0.9rem', lineHeight: 1 }}
+            >
+              ×
+            </button>
+          </div>
+          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--tx)' }}>{activeToast.title}</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--tx2)', lineHeight: 1.3 }}>{activeToast.message}</div>
+        </div>
+      )}
     </>
   );
 };
