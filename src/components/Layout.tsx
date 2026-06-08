@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { getIndianMarketStatus } from '../utils/marketStatus';
-import { LayoutGrid, Sparkles, Briefcase, Eye, Sliders, Globe, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutGrid, Sparkles, Briefcase, Eye, Sliders, Globe, Settings as SettingsIcon, Bell } from 'lucide-react';
 
 const FALLBACK_TOP_STOCKS = [
   { ticker: 'RELIANCE', price: 2950.40, changePct: 1.15 },
