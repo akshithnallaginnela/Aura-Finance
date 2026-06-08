@@ -12,7 +12,35 @@ import { Onboarding } from './components/Onboarding';
 import { LandingPage } from './components/LandingPage';
 
 function AppContent() {
-  const { activeView } = useFinance();
+  const { activeView, isAuthLoading } = useFinance();
+
+  if (isAuthLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        minHeight: '100vh',
+        width: '100vw',
+        background: 'var(--bg-base)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--tx)',
+        fontFamily: 'Inter, sans-serif',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <img src="/logo.png" style={{ width: '48px', height: '48px', objectFit: 'contain' }} alt="Aura Logo" />
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '0.05em' }}>
+            AURA
+          </h2>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--tx3)' }}>
+          <span className="conn-dot" style={{ background: 'var(--accent-primary)', animation: 'blink 1.5s ease-in-out infinite' }}></span>
+          Securing session with Firebase Auth...
+        </div>
+      </div>
+    );
+  }
 
   if (activeView === 'landing') {
     return <LandingPage />;

@@ -23,7 +23,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     fetchStockData,
     notifications,
     markAllNotificationsAsRead,
-    clearNotifications
+    clearNotifications,
+    user,
+    resendVerificationEmail
   } = useFinance();
   
   const [time, setTime] = useState('--:--:-- IST');
@@ -170,8 +172,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
         <div className="sidebar-bottom">
           <div className="user-row">
-            <div className="user-ava">U</div>
-            <div><div className="user-n">User</div><div className="user-t">PRO · COPILOT</div></div>
+            <div className="user-ava">
+              {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div>
+              <div className="user-n" style={{ maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.email ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1) : 'User'}
+              </div>
+              <div className="user-t">PRO · COPILOT</div>
+            </div>
           </div>
           <div className="conn-row"><div className="conn-dot"></div>Gemini AI Connected</div>
         </div>
@@ -305,6 +314,80 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
         {/* CONTENT */}
         <div className="content">
+          {user && !user.emailVerified && (
+            <div 
+              style={{
+                background: 'rgba(245, 158, 11, 0.06)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderLeft: '4px solid var(--amber)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 20px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '0.8rem',
+                color: 'var(--tx)',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ 
+                  background: 'var(--amber)', 
+                  color: '#1e1b4b', 
+                  padding: '3px 8px', 
+                  borderRadius: '4px', 
+                  fontWeight: 800,
+                  fontSize: '0.65rem',
+                  letterSpacing: '0.05em'
+                }}>UNVERIFIED</span>
+                <span>Please verify your email address (<strong style={{ color: 'var(--amber)' }}>{user.email}</strong>) to secure your account. Check your inbox/spam folder.</span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button
+                  onClick={async () => {
+                    try {
+                      await user.reload();
+                      window.location.reload();
+                    } catch (err) {
+                      console.error("Error refreshing user session:", err);
+                    }
+                  }}
+                  className="seg-btn"
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '0.75rem',
+                    borderColor: 'rgba(255, 255, 255, 0.15)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'var(--tx2)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  I've Verified
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      await resendVerificationEmail();
+                    } catch (e: any) {
+                      console.error("Resend verification failed:", e);
+                    }
+                  }}
+                  className="seg-btn"
+                  style={{ 
+                    padding: '4px 10px', 
+                    fontSize: '0.75rem', 
+                    borderColor: 'rgba(245, 158, 11, 0.4)', 
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    color: 'var(--amber)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Resend Email
+                </button>
+              </div>
+            </div>
+          )}
           {children}
         </div>
       </div>

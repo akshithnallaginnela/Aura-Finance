@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendEmailVerification
 } from 'firebase/auth';
 import { 
   doc, 
@@ -120,6 +121,12 @@ interface FinanceContextType {
   addNotification: (type: 'risk' | 'info' | 'success', title: string, message: string) => void;
   markAllNotificationsAsRead: () => void;
   clearNotifications: () => void;
+  
+  isAuthLoading: boolean;
+  disasterAlertsEnabled: boolean;
+  setDisasterAlertsEnabled: (enabled: boolean) => Promise<void>;
+  resetOnboardingAction: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -144,7 +151,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any | null>(null);
   const [activeView, setActiveView] = useState<'login' | 'dashboard' | 'forecaster' | 'optimizer' | 'macro' | 'advisor' | 'settings' | 'watchlist' | 'screener' | 'onboarding' | 'landing'>('landing');
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [disasterAlertsEnabled, setDisasterAlertsEnabledState] = useState(true);
 
   const [ensembleWeights, setEnsembleWeights] = useState<EnsembleWeights>({
     chronos: 0.35,
@@ -231,9 +240,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, [stockForecast, ensembleWeights]);
 
+  // Wrap setActiveView to persist view on reload
+  const handleSetActiveView = useCallback((view: typeof activeView) => {
+    setActiveView(view);
+    if (auth.currentUser) {
+      localStorage.setItem(`aura_active_view_${auth.currentUser.uid}`, view);
+    }
+  }, []);
+
   // Firebase Auth session listeners
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setIsAuthLoading(true);
       if (firebaseUser) {
         setIsAuthenticated(true);
         setUser(firebaseUser);
@@ -248,8 +266,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (data.watchlist && data.watchlist.length > 0) {
               setWatchlist(data.watchlist);
             }
+            if (data.disasterAlertsEnabled !== undefined) {
+              setDisasterAlertsEnabledState(data.disasterAlertsEnabled);
+            }
             if (data.onboardingCompleted) {
-              setActiveView('dashboard');
+              const savedView = localStorage.getItem(`aura_active_view_${firebaseUser.uid}`) as typeof activeView;
+              const targetView = (savedView && savedView !== 'login' && savedView !== 'landing' && savedView !== 'onboarding') ? savedView : 'dashboard';
+              setActiveView(targetView);
             } else {
               setActiveView('onboarding');
             }
@@ -260,7 +283,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           console.error("Error fetching Firestore user data:", err);
           const onboardingCompleted = localStorage.getItem(`aura_onboarding_completed_${firebaseUser.uid}`);
           if (onboardingCompleted === 'true') {
-            setActiveView('dashboard');
+            const savedView = localStorage.getItem(`aura_active_view_${firebaseUser.uid}`) as typeof activeView;
+            const targetView = (savedView && savedView !== 'login' && savedView !== 'landing' && savedView !== 'onboarding') ? savedView : 'dashboard';
+            setActiveView(targetView);
           } else {
             setActiveView('onboarding');
           }
@@ -270,6 +295,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setUser(null);
         setActiveView('landing');
       }
+      setIsAuthLoading(false);
     });
 
     return () => unsubscribe();
@@ -281,15 +307,58 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const registerAction = async (email: string, password: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    // Send verification email
+    try {
+      await sendEmailVerification(userCredential.user);
+    } catch (e) {
+      console.error("Failed to send email verification during registration:", e);
+    }
     const docRef = doc(db, 'users_data', userCredential.user.uid);
     await setDoc(docRef, {
       watchlist: [],
-      onboardingCompleted: false
+      onboardingCompleted: false,
+      disasterAlertsEnabled: true
     });
   };
 
   const logoutAction = async () => {
+    // Clear persisted active view on sign out
+    if (user) {
+      localStorage.removeItem(`aura_active_view_${user.uid}`);
+    }
     await signOut(auth);
+  };
+
+  const setDisasterAlertsEnabled = async (enabled: boolean) => {
+    setDisasterAlertsEnabledState(enabled);
+    if (user) {
+      try {
+        const docRef = doc(db, 'users_data', user.uid);
+        await setDoc(docRef, { disasterAlertsEnabled: enabled }, { merge: true });
+      } catch (err) {
+        console.error("Error saving settings to Firestore:", err);
+      }
+    }
+  };
+
+  const resetOnboardingAction = async () => {
+    if (!user) return;
+    localStorage.removeItem(`aura_onboarding_completed_${user.uid}`);
+    localStorage.removeItem(`aura_active_view_${user.uid}`);
+    try {
+      const docRef = doc(db, 'users_data', user.uid);
+      await setDoc(docRef, { onboardingCompleted: false }, { merge: true });
+    } catch (err) {
+      console.error("Error resetting onboarding in Firestore:", err);
+    }
+    setActiveView('onboarding');
+  };
+
+  const resendVerificationEmail = async () => {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+      addNotification('success', 'Verification Resent', 'Verification email link has been sent to your inbox.');
+    }
   };
 
   const completeOnboarding = async (selectedTickers: string[]) => {
@@ -566,11 +635,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       authMode,
       setAuthMode,
       activeView,
-      setActiveView,
+      setActiveView: handleSetActiveView,
       watchlist,
       setWatchlist,
       marketIndex,
       portfolioValue,
+      isAuthLoading,
+      disasterAlertsEnabled,
+      setDisasterAlertsEnabled,
+      resetOnboardingAction,
+      resendVerificationEmail,
       
       // V3 features
       ensembleWeights,

@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 
 export const Settings: React.FC = () => {
   const { theme, setTheme } = useTheme();
-  const { user, logoutAction, setActiveView } = useFinance();
-  const [isSmartAlerts, setIsSmartAlerts] = useState(true);
+  const { 
+    user, 
+    logoutAction, 
+    disasterAlertsEnabled, 
+    setDisasterAlertsEnabled, 
+    resetOnboardingAction 
+  } = useFinance();
 
   const handleSignOut = async () => {
     try {
@@ -15,10 +20,11 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const handleResetOnboarding = () => {
-    if (user) {
-      localStorage.removeItem(`aura_onboarding_completed_${user.uid}`);
-      setActiveView('onboarding');
+  const handleResetOnboarding = async () => {
+    try {
+      await resetOnboardingAction();
+    } catch (err) {
+      console.error("Failed to reset onboarding:", err);
     }
   };
 
@@ -54,11 +60,11 @@ export const Settings: React.FC = () => {
             <div style={{ fontSize: '10px', color: 'var(--tx3)' }}>Get notified when AI detects high market risk.</div>
           </div>
           <button 
-            className={`seg-btn ${isSmartAlerts ? 'active' : ''}`}
-            onClick={() => setIsSmartAlerts(!isSmartAlerts)}
+            className={`seg-btn ${disasterAlertsEnabled ? 'active' : ''}`}
+            onClick={() => setDisasterAlertsEnabled(!disasterAlertsEnabled)}
             style={{ padding: '6px 12px' }}
           >
-            {isSmartAlerts ? 'ENABLED' : 'DISABLED'}
+            {disasterAlertsEnabled ? 'ENABLED' : 'DISABLED'}
           </button>
         </div>
       </div>
