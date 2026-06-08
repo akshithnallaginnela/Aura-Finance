@@ -415,7 +415,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
 
   // Portfolio value = sum of (shares * price) for holding stocks, fallback to price * 10 if shares not set
-  const portfolioValue = watchlist.reduce((sum, item) => sum + item.price * (item.shares || 10), 0);
+  const portfolioValue = watchlist.reduce((sum, item) => sum + (item.price || 0) * (item.shares || 10), 0);
 
   const fetchStockData = useCallback(async (ticker: string) => {
     setIsLoadingData(true);
