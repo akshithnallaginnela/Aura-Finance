@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 import { ShieldCheck, AlertTriangle, Activity, Database, Sparkles, RefreshCw, LogOut } from 'lucide-react';
+
+const PREMIUM_COLORS = [
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Rose', value: '#f43f5e' },
+  { name: 'Purple', value: '#8b5cf6' },
+  { name: 'Emerald', value: '#10b981' }
+];
 
 export const Settings: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -13,11 +22,27 @@ export const Settings: React.FC = () => {
     resetOnboardingAction,
     virtualCash,
     resetSandboxAction,
-    adjustCashAction
+    adjustCashAction,
+    displayName,
+    avatarColor,
+    updateProfile,
+    notificationSoundsEnabled,
+    setNotificationSoundsEnabled
   } = useFinance();
 
   const [cashAmount, setCashAmount] = useState<string>('');
   const [cashError, setCashError] = useState<string | null>(null);
+  const [editedName, setEditedName] = useState(displayName);
+  const [editedColor, setEditedColor] = useState(avatarColor);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEditedName(displayName);
+  }, [displayName]);
+
+  useEffect(() => {
+    setEditedColor(avatarColor);
+  }, [avatarColor]);
 
   const handleSignOut = async () => {
     try {
@@ -79,10 +104,6 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const username = user?.email ? user.email.split('@')[0] : 'Guest User';
-  const displayName = username.charAt(0).toUpperCase() + username.slice(1);
-  const avatarChar = displayName.charAt(0) || 'U';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 20px 20px 20px', overflowY: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
       {/* PROFILE DASHBOARD CARD */}
@@ -104,21 +125,21 @@ export const Settings: React.FC = () => {
             width: '64px', 
             height: '64px', 
             borderRadius: '50%', 
-            background: 'linear-gradient(135deg, var(--accent-primary) 0%, #312e81 100%)',
+            background: avatarColor,
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             fontSize: '1.8rem', 
             fontWeight: 800, 
-            color: 'var(--tx)',
-            boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)',
-            border: '2px solid rgba(99, 102, 241, 0.3)'
+            color: '#ffffff',
+            boxShadow: `0 0 15px ${avatarColor}`,
+            border: '2px solid rgba(255, 255, 255, 0.2)'
           }}>
-            {avatarChar}
+            {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h2 style={{ margin: 0, color: 'var(--tx)', fontSize: '1.4rem', fontWeight: 800 }}>{displayName}</h2>
+              <h2 style={{ margin: 0, color: 'var(--tx)', fontSize: '1.4rem', fontWeight: 800 }}>{displayName || 'User'}</h2>
               <span style={{ 
                 fontSize: '9px', 
                 fontWeight: 800, 
@@ -179,6 +200,90 @@ export const Settings: React.FC = () => {
         
         {/* LEFT COLUMN: System Config & Account Sec */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Profile Customization Panel */}
+          <div className="panel" style={{ padding: '20px' }}>
+            <div className="panel-head" style={{ marginBottom: '16px', borderBottom: 'none', padding: 0 }}>
+              <div className="panel-title"><span className="panel-title-dot"></span>PROFILE CUSTOMIZATION</div>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="settings-group">
+                <label style={{ fontSize: '11px', color: 'var(--tx3)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Display Name</label>
+                <input 
+                  type="text" 
+                  value={editedName} 
+                  onChange={(e) => setEditedName(e.target.value)} 
+                  placeholder="Enter display name"
+                  style={{ 
+                    width: '100%', 
+                    padding: '8px 12px', 
+                    background: 'var(--bg1)', 
+                    border: '1px solid var(--line)', 
+                    color: 'var(--tx)', 
+                    borderRadius: '4px',
+                    fontSize: '13px'
+                  }}
+                />
+              </div>
+
+              <div className="settings-group">
+                <label style={{ fontSize: '11px', color: 'var(--tx3)', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Avatar Color</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  {PREMIUM_COLORS.map(c => (
+                    <button
+                      key={c.value}
+                      onClick={() => setEditedColor(c.value)}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: c.value,
+                        border: editedColor === c.value ? '2px solid var(--tx)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        padding: 0,
+                        boxShadow: editedColor === c.value ? `0 0 10px ${c.value}` : 'none',
+                        transition: 'transform 0.15s, border-color 0.15s'
+                      }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                className="seg-btn"
+                onClick={async () => {
+                  setProfileSuccess(null);
+                  if (!editedName.trim()) return;
+                  try {
+                    await updateProfile(editedName.trim(), editedColor);
+                    setProfileSuccess('Profile updated successfully!');
+                    setTimeout(() => setProfileSuccess(null), 3000);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                style={{
+                  padding: '8px 16px',
+                  background: 'var(--accent-primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  alignSelf: 'flex-start',
+                  marginTop: '4px'
+                }}
+              >
+                Save Profile
+              </button>
+              {profileSuccess && (
+                <div style={{ color: 'var(--emerald)', fontSize: '12px', fontWeight: 600 }}>{profileSuccess}</div>
+              )}
+            </div>
+          </div>
+
           {/* Appearance Panel */}
           <div className="panel" style={{ padding: '20px' }}>
             <div className="panel-head" style={{ marginBottom: '16px', borderBottom: 'none', padding: 0 }}>
@@ -206,18 +311,34 @@ export const Settings: React.FC = () => {
               <div className="panel-title"><span className="panel-title-dot"></span>SENTINEL ALERTS</div>
             </div>
             
-            <div className="settings-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <label style={{ margin: 0, fontSize: '12px', color: 'var(--tx)', fontWeight: 600 }}>Disaster Risk Alerts</label>
-                <div style={{ fontSize: '10px', color: 'var(--tx3)', marginTop: '2px' }}>Get notified when AI predicts high market risk.</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="settings-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <label style={{ margin: 0, fontSize: '12px', color: 'var(--tx)', fontWeight: 600 }}>Disaster Risk Alerts</label>
+                  <div style={{ fontSize: '10px', color: 'var(--tx3)', marginTop: '2px' }}>Get notified when AI predicts high market risk.</div>
+                </div>
+                <button 
+                  className={`seg-btn ${disasterAlertsEnabled ? 'active' : ''}`}
+                  onClick={() => setDisasterAlertsEnabled(!disasterAlertsEnabled)}
+                  style={{ padding: '6px 12px' }}
+                >
+                  {disasterAlertsEnabled ? 'ENABLED' : 'DISABLED'}
+                </button>
               </div>
-              <button 
-                className={`seg-btn ${disasterAlertsEnabled ? 'active' : ''}`}
-                onClick={() => setDisasterAlertsEnabled(!disasterAlertsEnabled)}
-                style={{ padding: '6px 12px' }}
-              >
-                {disasterAlertsEnabled ? 'ENABLED' : 'DISABLED'}
-              </button>
+
+              <div className="settings-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
+                <div>
+                  <label style={{ margin: 0, fontSize: '12px', color: 'var(--tx)', fontWeight: 600 }}>Notification Sound Effects</label>
+                  <div style={{ fontSize: '10px', color: 'var(--tx3)', marginTop: '2px' }}>Play double chimes for success and warning tones for risk.</div>
+                </div>
+                <button 
+                  className={`seg-btn ${notificationSoundsEnabled ? 'active' : ''}`}
+                  onClick={() => setNotificationSoundsEnabled(!notificationSoundsEnabled)}
+                  style={{ padding: '6px 12px' }}
+                >
+                  {notificationSoundsEnabled ? 'ENABLED' : 'DISABLED'}
+                </button>
+              </div>
             </div>
           </div>
 

@@ -25,7 +25,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     markAllNotificationsAsRead,
     clearNotifications,
     user,
-    resendVerificationEmail
+    resendVerificationEmail,
+    displayName,
+    avatarColor
   } = useFinance();
   
   const [time, setTime] = useState('--:--:-- IST');
@@ -172,12 +174,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
         <div className="sidebar-bottom">
           <div className="user-row">
-            <div className="user-ava">
-              {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+            <div className="user-ava" style={{ backgroundColor: avatarColor }}>
+              {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
             </div>
             <div>
               <div className="user-n" style={{ maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user?.email ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1) : 'User'}
+                {displayName || 'User'}
               </div>
               <div className="user-t">PRO · COPILOT</div>
             </div>

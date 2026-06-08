@@ -135,6 +135,11 @@ interface FinanceContextType {
   executeTrade: (ticker: string, type: 'BUY' | 'SELL', sharesCount: number, price: number) => Promise<boolean>;
   resetSandboxAction: () => Promise<void>;
   adjustCashAction: (amount: number) => Promise<void>;
+  displayName: string;
+  avatarColor: string;
+  notificationSoundsEnabled: boolean;
+  updateProfile: (name: string, color: string) => Promise<void>;
+  setNotificationSoundsEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -172,6 +177,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [disasterAlertsEnabled, setDisasterAlertsEnabledState] = useState(true);
   const [virtualCash, setVirtualCash] = useState(1000000);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [displayName, setDisplayName] = useState('');
+  const [avatarColor, setAvatarColor] = useState('#6366f1');
+  const [notificationSoundsEnabled, setNotificationSoundsEnabledState] = useState(true);
 
   const [ensembleWeights, setEnsembleWeights] = useState<EnsembleWeights>({
     chronos: 0.35,
@@ -180,6 +188,41 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     lightgbm: 0.15,
     lstm: 0.10
   });
+
+const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    const playTone = (freq: number, duration: number, startTime: number, typeTone: OscillatorType = 'sine', volEnd: number = 0.0001) => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      osc.type = typeTone;
+      osc.frequency.setValueAtTime(freq, startTime);
+      gainNode.gain.setValueAtTime(0.12, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(volEnd, startTime + duration);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    const now = ctx.currentTime;
+    if (type === 'success') {
+      playTone(523.25, 0.15, now, 'sine'); // C5
+      playTone(659.25, 0.3, now + 0.08, 'sine'); // E5
+    } else if (type === 'risk') {
+      playTone(329.63, 0.2, now, 'triangle'); // E4
+      playTone(261.63, 0.3, now + 0.15, 'triangle'); // C4
+    } else {
+      playTone(440, 0.1, now, 'sine'); // A4
+    }
+  } catch (e) {
+    console.warn("AudioContext playback blocked or failed:", e);
+  }
+};
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
@@ -193,6 +236,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   ]);
 
   const addNotification = useCallback((type: 'risk' | 'info' | 'success', title: string, message: string) => {
+    if (notificationSoundsEnabled) {
+      playNotificationSound(type);
+    }
     setNotifications(prev => [
       {
         id: Date.now().toString(),
@@ -204,7 +250,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       },
       ...prev
     ]);
-  }, []);
+  }, [notificationSoundsEnabled]);
 
   const markAllNotificationsAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -297,6 +343,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             } else {
               setTransactions([]);
             }
+            if (data.displayName !== undefined) {
+              setDisplayName(data.displayName);
+            } else {
+              const emailPrefix = firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User';
+              setDisplayName(emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1));
+            }
+            if (data.avatarColor !== undefined) {
+              setAvatarColor(data.avatarColor);
+            } else {
+              setAvatarColor('#6366f1');
+            }
+            if (data.notificationSoundsEnabled !== undefined) {
+              setNotificationSoundsEnabledState(data.notificationSoundsEnabled);
+            } else {
+              setNotificationSoundsEnabledState(true);
+            }
             if (data.onboardingCompleted) {
               const savedView = localStorage.getItem(`aura_active_view_${firebaseUser.uid}`) as typeof activeView;
               const targetView = (savedView && savedView !== 'login' && savedView !== 'landing' && savedView !== 'onboarding') ? savedView : 'dashboard';
@@ -306,13 +368,21 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
           } else {
             // Initialize document for Google sign-in or new users
+            const emailPrefix = firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User';
+            const initialName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
             await setDoc(docRef, {
               watchlist: [],
               onboardingCompleted: false,
               disasterAlertsEnabled: true,
               virtualCash: 1000000,
-              transactions: []
+              transactions: [],
+              displayName: initialName,
+              avatarColor: '#6366f1',
+              notificationSoundsEnabled: true
             });
+            setDisplayName(initialName);
+            setAvatarColor('#6366f1');
+            setNotificationSoundsEnabledState(true);
             setActiveView('onboarding');
           }
         } catch (err) {
@@ -355,12 +425,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.error("Failed to send email verification during registration:", e);
     }
     const docRef = doc(db, 'users_data', userCredential.user.uid);
+    const emailPrefix = email ? email.split('@')[0] : 'User';
+    const initialName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
     await setDoc(docRef, {
       watchlist: [],
       onboardingCompleted: false,
       disasterAlertsEnabled: true,
       virtualCash: 1000000,
-      transactions: []
+      transactions: [],
+      displayName: initialName,
+      avatarColor: '#6366f1',
+      notificationSoundsEnabled: true
     });
   };
 
@@ -530,6 +605,34 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addNotification('success', 'Cash Adjusted', `Virtual cash balance adjusted by ₹${amount.toLocaleString('en-IN')}.`);
     } catch (e) {
       console.error("Failed to adjust cash:", e);
+    }
+  };
+
+  const updateProfile = async (name: string, color: string) => {
+    if (!user) return;
+    setDisplayName(name);
+    setAvatarColor(color);
+    try {
+      const docRef = doc(db, 'users_data', user.uid);
+      await setDoc(docRef, {
+        displayName: name,
+        avatarColor: color
+      }, { merge: true });
+      addNotification('success', 'Profile Updated', 'Your display name and avatar color preference have been synchronized.');
+    } catch (e) {
+      console.error("Failed to update profile:", e);
+    }
+  };
+
+  const setNotificationSoundsEnabled = async (enabled: boolean) => {
+    setNotificationSoundsEnabledState(enabled);
+    if (user) {
+      try {
+        const docRef = doc(db, 'users_data', user.uid);
+        await setDoc(docRef, { notificationSoundsEnabled: enabled }, { merge: true });
+      } catch (err) {
+        console.error("Error saving sound preference:", err);
+      }
     }
   };
 
@@ -815,6 +918,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       executeTrade,
       resetSandboxAction,
       adjustCashAction,
+      displayName,
+      avatarColor,
+      notificationSoundsEnabled,
+      updateProfile,
+      setNotificationSoundsEnabled,
       
       // V3 features
       ensembleWeights,
