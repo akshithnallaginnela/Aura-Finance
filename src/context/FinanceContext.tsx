@@ -133,6 +133,8 @@ interface FinanceContextType {
   virtualCash: number;
   transactions: any[];
   executeTrade: (ticker: string, type: 'BUY' | 'SELL', sharesCount: number, price: number) => Promise<boolean>;
+  resetSandboxAction: () => Promise<void>;
+  adjustCashAction: (amount: number) => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -500,6 +502,37 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return success;
   }, [user, virtualCash, watchlist, transactions, addNotification]);
 
+  const resetSandboxAction = async () => {
+    if (!user) return;
+    setVirtualCash(1000000);
+    setTransactions([]);
+    try {
+      const docRef = doc(db, 'users_data', user.uid);
+      await setDoc(docRef, {
+        virtualCash: 1000000,
+        transactions: []
+      }, { merge: true });
+      addNotification('success', 'Sandbox Reset', 'Your virtual cash balance has been reset to ₹10,00,000 and transaction logs cleared.');
+    } catch (e) {
+      console.error("Failed to reset sandbox:", e);
+    }
+  };
+
+  const adjustCashAction = async (amount: number) => {
+    if (!user) return;
+    const newCash = Math.max(0, virtualCash + amount);
+    setVirtualCash(newCash);
+    try {
+      const docRef = doc(db, 'users_data', user.uid);
+      await setDoc(docRef, {
+        virtualCash: newCash
+      }, { merge: true });
+      addNotification('success', 'Cash Adjusted', `Virtual cash balance adjusted by ₹${amount.toLocaleString('en-IN')}.`);
+    } catch (e) {
+      console.error("Failed to adjust cash:", e);
+    }
+  };
+
   const completeOnboarding = async (selectedTickers: string[]) => {
     if (!user) return;
     localStorage.setItem(`aura_onboarding_completed_${user.uid}`, 'true');
@@ -780,6 +813,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       virtualCash,
       transactions,
       executeTrade,
+      resetSandboxAction,
+      adjustCashAction,
       
       // V3 features
       ensembleWeights,
