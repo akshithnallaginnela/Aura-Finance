@@ -11,7 +11,6 @@ export const Dashboard: React.FC = () => {
   const { 
     activeTicker, 
     stockData, 
-    stockForecast, 
     fundamentalSummary,
     disasterRiskScore,
     fundamentals,
