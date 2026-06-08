@@ -5,7 +5,9 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  sendEmailVerification
+  sendEmailVerification,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { 
   doc, 
@@ -98,6 +100,7 @@ interface FinanceContextType {
   setIsAuthenticated: (auth: boolean) => void;
   user: any | null;
   loginAction: (email: string, password: string) => Promise<void>;
+  loginWithGoogleAction: () => Promise<void>;
   registerAction: (email: string, password: string) => Promise<void>;
   logoutAction: () => Promise<void>;
   
@@ -277,6 +280,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
               setActiveView('onboarding');
             }
           } else {
+            // Initialize document for Google sign-in or new users
+            await setDoc(docRef, {
+              watchlist: [],
+              onboardingCompleted: false,
+              disasterAlertsEnabled: true
+            });
             setActiveView('onboarding');
           }
         } catch (err) {
@@ -303,6 +312,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const loginAction = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const loginWithGoogleAction = async () => {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
   };
 
   const registerAction = async (email: string, password: string) => {
@@ -629,6 +643,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsAuthenticated,
       user,
       loginAction,
+      loginWithGoogleAction,
       registerAction,
       logoutAction,
       completeOnboarding,
