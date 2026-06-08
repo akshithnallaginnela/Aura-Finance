@@ -347,9 +347,9 @@ export const Watchlist: React.FC = () => {
                     
                     {/* Live Price & Day Change */}
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 600, fontSize: '13px' }}>₹{item.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
-                      <div style={{ fontSize: '0.75rem', color: item.changePct >= 0 ? 'var(--emerald)' : 'var(--rose)', fontWeight: 'bold' }}>
-                        {item.changePct >= 0 ? '▲ +' : '▼ '}{item.changePct.toFixed(2)}%
+                      <div style={{ fontWeight: 600, fontSize: '13px' }}>₹{(item.price || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                      <div style={{ fontSize: '0.75rem', color: (item.changePct || 0) >= 0 ? 'var(--emerald)' : 'var(--rose)', fontWeight: 'bold' }}>
+                        {(item.changePct || 0) >= 0 ? '▲ +' : '▼ '}{(item.changePct || 0).toFixed(2)}%
                       </div>
                     </div>
 
