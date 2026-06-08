@@ -17,10 +17,33 @@ const FALLBACK_TOP_STOCKS = [
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { activeView, setActiveView, fetchStockData } = useFinance();
+  const { 
+    activeView, 
+    setActiveView, 
+    fetchStockData,
+    notifications,
+    markAllNotificationsAsRead,
+    clearNotifications
+  } = useFinance();
+  
   const [time, setTime] = useState('--:--:-- IST');
   const [marketStatus, setMarketStatus] = useState(getIndianMarketStatus());
   const [topStocks, setTopStocks] = useState<any[]>(FALLBACK_TOP_STOCKS);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [activeToast, setActiveToast] = useState<any | null>(null);
+
+  useEffect(() => {
+    const latestRisk = notifications.find(n => !n.read && n.type === 'risk');
+    if (latestRisk) {
+      setActiveToast(latestRisk);
+      const timer = setTimeout(() => {
+        setActiveToast(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    } else {
+      setActiveToast(null);
+    }
+  }, [notifications]);
 
   useEffect(() => {
     const updateTime = () => {
