@@ -220,11 +220,15 @@ Configure your local environment variables in a `.env` file in the root director
 VITE_BACKEND_URL="http://localhost:5000"
 VITE_GEMINI_API_KEYS="your_key_1,your_key_2"
 
-# Supabase Authentication
-VITE_SUPABASE_URL="https://project.supabase.co"
-VITE_SUPABASE_ANON_KEY="anon-key-here"
+# Firebase Client Authentication & State Sync
+VITE_FIREBASE_API_KEY="your-api-key"
+VITE_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID="your-project-id"
+VITE_FIREBASE_STORAGE_BUCKET="your-project.appspot.com"
+VITE_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
+VITE_FIREBASE_APP_ID="your-app-id"
 
-# Supabase PostgreSQL Database Connection
+# Backend PostgreSQL Database Connection (Supabase/RDS)
 DATABASE_URL="postgresql://postgres.project:password@pooler.supabase.com:6543/postgres"
 ```
 Instantly compile and start:
