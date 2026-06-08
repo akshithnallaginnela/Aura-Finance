@@ -8,12 +8,29 @@ import { Briefcase, Edit3, Trash2, ArrowUpRight, Check, X, ShieldAlert } from 'l
 const COLORS = ['#6366f1', '#14b8a6', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
 
 export const Watchlist: React.FC = () => {
-  const { watchlist, setWatchlist, portfolioValue, fetchStockData, setActiveView } = useFinance();
+  const { 
+    watchlist, 
+    setWatchlist, 
+    portfolioValue, 
+    fetchStockData, 
+    setActiveView,
+    virtualCash,
+    transactions,
+    executeTrade
+  } = useFinance();
   const { theme } = useTheme();
   
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [selectedStockDetails, setSelectedStockDetails] = useState<any>(null);
   const [isLoadingChart, setIsLoadingChart] = useState(false);
+  
+  // Simulated Paper Trading states
+  const [rightPanelTab, setRightPanelTab] = useState<'allocation' | 'trade'>('trade');
+  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
+  const [tradeQty, setTradeQty] = useState<number>(10);
+  const [tradeError, setTradeError] = useState<string | null>(null);
+  const [tradeSuccess, setTradeSuccess] = useState<string | null>(null);
+  const [isSubmittingTrade, setIsSubmittingTrade] = useState(false);
   
   // Editing state for holding units
   const [editingItem, setEditingItem] = useState<string | null>(null);
@@ -22,6 +39,36 @@ export const Watchlist: React.FC = () => {
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<any>(null);
+
+  // Reset trade error/success on ticker change
+  useEffect(() => {
+    setTradeError(null);
+    setTradeSuccess(null);
+  }, [selectedTicker]);
+
+  const handleExecuteSimulatorTrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedItem) return;
+    
+    setTradeError(null);
+    setTradeSuccess(null);
+    setIsSubmittingTrade(true);
+    
+    try {
+      const livePrice = selectedItem.price || 0;
+      const success = await executeTrade(selectedItem.ticker, tradeType, tradeQty, livePrice);
+      if (success) {
+        setTradeSuccess(`Successfully executed order to ${tradeType} ${tradeQty} shares of ${selectedItem.ticker}!`);
+        setTradeQty(10);
+      } else {
+        setTradeError("Trade execution failed. Check watchlist status.");
+      }
+    } catch (err: any) {
+      setTradeError(err.message || "An unexpected error occurred during the trade.");
+    } finally {
+      setIsSubmittingTrade(false);
+    }
+  };
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -493,69 +540,310 @@ export const Watchlist: React.FC = () => {
               </div>
             </div>
 
-            {/* PORTFOLIO WEIGHT DISTRIBUTION */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', fontFamily: 'var(--mono)' }}>
-                Holding Asset Distribution
-              </div>
-              
-              {pieData.length > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', height: '140px', marginTop: '10px' }}>
-                  <div style={{ width: '140px', height: '140px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={35}
-                          outerRadius={55}
-                          paddingAngle={2}
-                          dataKey="value"
-                          nameKey="name"
-                        >
-                          {pieData.map((entry, index) => {
-                            const isCurrent = entry.name === selectedTicker;
-                            return (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={isCurrent ? 'var(--amber)' : COLORS[index % COLORS.length]} 
-                                opacity={isCurrent ? 1 : 0.45}
-                                stroke="rgba(255,255,255,0.2)"
-                                strokeWidth={1}
-                              />
-                            );
-                          })}
-                        </Pie>
-                        <RechartsTooltip formatter={(val: any) => `₹${Number(val || 0).toLocaleString()}`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div style={{ flex: 1, paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', maxHeight: '140px' }}>
-                    {watchlist.map((item, idx) => {
-                      const shares = item.shares || 0;
-                      if (shares === 0) return null;
-                      const val = shares * item.price;
-                      const weightPct = portfolioValue > 0 ? (val / portfolioValue) * 100 : 0;
-                      const isCurrent = item.ticker === selectedTicker;
-                      return (
-                        <div key={item.ticker} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', background: isCurrent ? 'var(--bg2)' : 'transparent', padding: '3px 6px', borderRadius: '4px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: isCurrent ? 'var(--amber)' : COLORS[idx % COLORS.length] }} />
-                            <span style={{ fontWeight: isCurrent ? 700 : 500, color: isCurrent ? 'var(--amber)' : 'var(--tx)' }}>{item.ticker}</span>
-                          </div>
-                          <span style={{ color: 'var(--tx3)', fontFamily: 'var(--mono)' }}>{weightPct.toFixed(1)}%</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>
-                  No active holding shares. Edit a watchlist asset's holdings Qty to display portfolio allocation weights.
-                </div>
-              )}
+            {/* TABS SELECTOR */}
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', marginBottom: '16px', gap: '16px', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
+              <button 
+                onClick={() => setRightPanelTab('trade')}
+                style={{
+                  paddingBottom: '8px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: rightPanelTab === 'trade' ? '2px solid var(--amber)' : '2px solid transparent',
+                  color: rightPanelTab === 'trade' ? 'var(--tx)' : 'var(--tx3)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  cursor: 'pointer'
+                }}
+              >
+                Simulate Trade
+              </button>
+              <button 
+                onClick={() => setRightPanelTab('allocation')}
+                style={{
+                  paddingBottom: '8px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: rightPanelTab === 'allocation' ? '2px solid var(--amber)' : '2px solid transparent',
+                  color: rightPanelTab === 'allocation' ? 'var(--tx)' : 'var(--tx3)',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  cursor: 'pointer'
+                }}
+              >
+                Portfolio Allocation
+              </button>
             </div>
+
+            {rightPanelTab === 'allocation' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', fontFamily: 'var(--mono)' }}>
+                  Holding Asset Distribution
+                </div>
+                
+                {pieData.length > 0 ? (
+                  <div style={{ display: 'flex', alignItems: 'center', height: '140px', marginTop: '10px' }}>
+                    <div style={{ width: '140px', height: '140px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={35}
+                            outerRadius={55}
+                            paddingAngle={2}
+                            dataKey="value"
+                            nameKey="name"
+                          >
+                            {pieData.map((entry, index) => {
+                              const isCurrent = entry.name === selectedTicker;
+                              return (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={isCurrent ? 'var(--amber)' : COLORS[index % COLORS.length]} 
+                                  opacity={isCurrent ? 1 : 0.45}
+                                  stroke="rgba(255,255,255,0.2)"
+                                  strokeWidth={1}
+                                />
+                              );
+                            })}
+                          </Pie>
+                          <RechartsTooltip formatter={(val: any) => `₹${Number(val || 0).toLocaleString()}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ flex: 1, paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', maxHeight: '140px' }}>
+                      {watchlist.map((item, idx) => {
+                        const shares = item.shares || 0;
+                        if (shares === 0) return null;
+                        const val = shares * item.price;
+                        const weightPct = portfolioValue > 0 ? (val / portfolioValue) * 100 : 0;
+                        const isCurrent = item.ticker === selectedTicker;
+                        return (
+                          <div key={item.ticker} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', background: isCurrent ? 'var(--bg2)' : 'transparent', padding: '3px 6px', borderRadius: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: isCurrent ? 'var(--amber)' : COLORS[idx % COLORS.length] }} />
+                              <span style={{ fontWeight: isCurrent ? 700 : 500, color: isCurrent ? 'var(--amber)' : 'var(--tx)' }}>{item.ticker}</span>
+                            </div>
+                            <span style={{ color: 'var(--tx3)', fontFamily: 'var(--mono)' }}>{weightPct.toFixed(1)}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>
+                    No active holding shares. Simulate a trade or edit Qty to display portfolio allocation weights.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {rightPanelTab === 'trade' && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+                {/* Cash Balance Indicator */}
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.02)', 
+                  border: '1px solid var(--br)', 
+                  borderRadius: '6px', 
+                  padding: '12px', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center' 
+                }}>
+                  <div>
+                    <div style={{ fontSize: '10px', color: 'var(--tx3)', textTransform: 'uppercase', fontWeight: 600 }}>Virtual Cash Balance</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--amber)', marginTop: '2px' }}>
+                      ₹{virtualCash.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--tx3)', textTransform: 'uppercase', fontWeight: 600 }}>Positions Value</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--tx)', marginTop: '2px' }}>
+                      ₹{portfolioValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trade Form */}
+                <form onSubmit={handleExecuteSimulatorTrade} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {/* BUY/SELL selector */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      type="button"
+                      onClick={() => { setTradeType('BUY'); setTradeError(null); setTradeSuccess(null); }}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '4px',
+                        border: '1px solid ' + (tradeType === 'BUY' ? 'var(--emerald)' : 'var(--line)'),
+                        background: tradeType === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                        color: tradeType === 'BUY' ? 'var(--emerald)' : 'var(--tx3)',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      BUY
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => { setTradeType('SELL'); setTradeError(null); setTradeSuccess(null); }}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '4px',
+                        border: '1px solid ' + (tradeType === 'SELL' ? 'var(--rose)' : 'var(--line)'),
+                        background: tradeType === 'SELL' ? 'rgba(244, 63, 94, 0.1)' : 'transparent',
+                        color: tradeType === 'SELL' ? 'var(--rose)' : 'var(--tx3)',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      SELL
+                    </button>
+                  </div>
+
+                  {/* Quantity Slider / Input */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '11px', color: 'var(--tx2)', fontWeight: 600 }}>Shares Count</label>
+                      <input 
+                        type="number" 
+                        min="1"
+                        max="10000"
+                        value={tradeQty} 
+                        onChange={(e) => setTradeQty(Math.max(1, Number(e.target.value)))}
+                        style={{
+                          width: '70px',
+                          padding: '4px 6px',
+                          background: 'var(--bg1)',
+                          border: '1px solid var(--line)',
+                          borderRadius: '4px',
+                          color: 'var(--tx)',
+                          fontSize: '11px',
+                          textAlign: 'center'
+                        }}
+                      />
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="100" 
+                      value={tradeQty > 100 ? 100 : tradeQty} 
+                      onChange={(e) => setTradeQty(Number(e.target.value))}
+                      style={{ accentColor: 'var(--amber)', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  {/* Estimated Cost calculation */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '8px 10px',
+                    background: 'var(--bg1)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    color: 'var(--tx2)'
+                  }}>
+                    <span>Est. Order Value:</span>
+                    <strong style={{ color: 'var(--tx)' }}>
+                      ₹{(tradeQty * (selectedItem.price || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </strong>
+                  </div>
+
+                  {tradeError && (
+                    <div style={{ fontSize: '11px', color: 'var(--rose)', background: 'rgba(244, 63, 94, 0.05)', border: '1px solid rgba(244, 63, 94, 0.2)', padding: '6px 10px', borderRadius: '4px' }}>
+                      {tradeError}
+                    </div>
+                  )}
+
+                  {tradeSuccess && (
+                    <div style={{ fontSize: '11px', color: 'var(--emerald)', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '6px 10px', borderRadius: '4px' }}>
+                      {tradeSuccess}
+                    </div>
+                  )}
+
+                  <button 
+                    type="submit" 
+                    disabled={isSubmittingTrade || tradeQty <= 0}
+                    style={{
+                      padding: '10px',
+                      background: tradeType === 'BUY' ? 'var(--emerald)' : 'var(--rose)',
+                      color: '#000000',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                    className="seg-btn"
+                  >
+                    {isSubmittingTrade ? 'EXECUTING...' : `SUBMIT ${tradeType} ORDER`}
+                  </button>
+                </form>
+
+                {/* Transactions Log Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--tx3)', textTransform: 'uppercase', fontWeight: 700, borderBottom: '1px solid var(--line)', paddingBottom: '4px' }}>
+                    Recent Simulator Trades ({selectedItem.ticker})
+                  </div>
+                  {transactions.filter(t => t.ticker === selectedItem.ticker).length === 0 ? (
+                    <div style={{ fontSize: '11px', color: 'var(--tx3)', fontStyle: 'italic', padding: '10px 0', textAlign: 'center' }}>
+                      No trades registered for {selectedItem.ticker} yet.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '110px', overflowY: 'auto' }}>
+                      {transactions.filter(t => t.ticker === selectedItem.ticker).slice(0, 3).map((t, idx) => (
+                        <div 
+                          key={t.id || idx}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '11px',
+                            background: 'var(--bg1)',
+                            padding: '6px 10px',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ 
+                              color: t.type === 'BUY' ? 'var(--emerald)' : 'var(--rose)', 
+                              fontWeight: 800,
+                              fontSize: '9px',
+                              background: t.type === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+                              padding: '1px 4px',
+                              borderRadius: '2px'
+                            }}>{t.type}</span>
+                            <span style={{ color: 'var(--tx)' }}>{t.shares} units</span>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--tx2)' }}>₹{t.price.toLocaleString('en-IN')}</span>
+                            <div style={{ fontSize: '8.5px', color: 'var(--tx3)', marginTop: '1px' }}>
+                              {new Date(t.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'var(--tx3)', textAlign: 'center' }}>

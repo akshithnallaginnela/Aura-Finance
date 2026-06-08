@@ -130,6 +130,9 @@ interface FinanceContextType {
   setDisasterAlertsEnabled: (enabled: boolean) => Promise<void>;
   resetOnboardingAction: () => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
+  virtualCash: number;
+  transactions: any[];
+  executeTrade: (ticker: string, type: 'BUY' | 'SELL', sharesCount: number, price: number) => Promise<boolean>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -138,6 +141,14 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTicker, setActiveTicker] = useState('RELIANCE.NS');
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([
+    { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2940.00, change: 5.30, changePct: 0.18, color: '#6366f1', flashClass: '', domain: 'ril.com', shares: 15, avgBuyPrice: 2850.00 },
+    { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3770.00, change: 12.15, changePct: 0.32, color: '#0d9488', flashClass: '', domain: 'tcs.com', shares: 8, avgBuyPrice: 3600.00 },
+    { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1560.00, change: 4.80, changePct: 0.31, color: '#f59e0b', flashClass: '', domain: 'infosys.com', shares: 12, avgBuyPrice: 1500.00 },
+    { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1720.00, change: 3.45, changePct: 0.20, color: '#ef4444', flashClass: '', domain: 'hdfcbank.com', shares: 20, avgBuyPrice: 1650.00 },
+    { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1280.00, change: 5.60, changePct: 0.44, color: '#8b5cf6', flashClass: '', domain: 'icicibank.com', shares: 25, avgBuyPrice: 1200.00 },
+    { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 460.00, change: 2.35, changePct: 0.51, color: '#ec4899', flashClass: '', domain: 'wipro.com', shares: 30, avgBuyPrice: 440.00 },
+  ]);
   const [stockData, setStockData] = useState<StockDataPoint[]>([]);
   const [stockForecast, setStockForecast] = useState<ForecastPoint[]>([]);
   const [sentimentScore, setSentimentScore] = useState<number | null>(null);
@@ -157,6 +168,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [disasterAlertsEnabled, setDisasterAlertsEnabledState] = useState(true);
+  const [virtualCash, setVirtualCash] = useState(1000000);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   const [ensembleWeights, setEnsembleWeights] = useState<EnsembleWeights>({
     chronos: 0.35,
@@ -272,6 +285,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (data.disasterAlertsEnabled !== undefined) {
               setDisasterAlertsEnabledState(data.disasterAlertsEnabled);
             }
+            if (data.virtualCash !== undefined) {
+              setVirtualCash(data.virtualCash);
+            } else {
+              setVirtualCash(1000000);
+            }
+            if (data.transactions !== undefined) {
+              setTransactions(data.transactions);
+            } else {
+              setTransactions([]);
+            }
             if (data.onboardingCompleted) {
               const savedView = localStorage.getItem(`aura_active_view_${firebaseUser.uid}`) as typeof activeView;
               const targetView = (savedView && savedView !== 'login' && savedView !== 'landing' && savedView !== 'onboarding') ? savedView : 'dashboard';
@@ -284,7 +307,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             await setDoc(docRef, {
               watchlist: [],
               onboardingCompleted: false,
-              disasterAlertsEnabled: true
+              disasterAlertsEnabled: true,
+              virtualCash: 1000000,
+              transactions: []
             });
             setActiveView('onboarding');
           }
@@ -331,7 +356,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await setDoc(docRef, {
       watchlist: [],
       onboardingCompleted: false,
-      disasterAlertsEnabled: true
+      disasterAlertsEnabled: true,
+      virtualCash: 1000000,
+      transactions: []
     });
   };
 
@@ -375,6 +402,104 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const executeTrade = useCallback(async (ticker: string, type: 'BUY' | 'SELL', sharesCount: number, currentPrice: number) => {
+    if (!user) return false;
+    
+    let success = false;
+    let newCash = virtualCash;
+    let newWatchlist = [...watchlist];
+    const strippedTicker = ticker.replace('.NS', '');
+    const itemIndex = newWatchlist.findIndex(item => item.ticker === strippedTicker || item.ticker + '.NS' === ticker);
+    
+    if (itemIndex === -1) {
+      console.error("Stock not in watchlist. Cannot trade.");
+      return false;
+    }
+    
+    const item = newWatchlist[itemIndex];
+    const currentShares = item.shares || 0;
+    const currentAvgPrice = item.avgBuyPrice || 0;
+    
+    const tradeValue = sharesCount * currentPrice;
+    
+    if (type === 'BUY') {
+      if (virtualCash < tradeValue) {
+        throw new Error(`Insufficient funds. You need ₹${tradeValue.toLocaleString('en-IN')} but only have ₹${virtualCash.toLocaleString('en-IN')}.`);
+      }
+      newCash = virtualCash - tradeValue;
+      const totalShares = currentShares + sharesCount;
+      const totalCost = (currentShares * currentAvgPrice) + tradeValue;
+      const newAvgPrice = totalShares > 0 ? Number((totalCost / totalShares).toFixed(2)) : 0;
+      
+      newWatchlist[itemIndex] = {
+        ...item,
+        shares: totalShares,
+        avgBuyPrice: newAvgPrice
+      };
+      success = true;
+    } else {
+      // SELL
+      if (currentShares < sharesCount) {
+        throw new Error(`Insufficient shares. You only own ${currentShares} shares of ${strippedTicker} but tried to sell ${sharesCount}.`);
+      }
+      newCash = virtualCash + tradeValue;
+      const totalShares = currentShares - sharesCount;
+      const newAvgPrice = totalShares > 0 ? currentAvgPrice : 0;
+      
+      newWatchlist[itemIndex] = {
+        ...item,
+        shares: totalShares,
+        avgBuyPrice: newAvgPrice
+      };
+      success = true;
+    }
+    
+    if (success) {
+      const newTx = {
+        id: Date.now().toString(),
+        ticker: strippedTicker,
+        type,
+        shares: sharesCount,
+        price: currentPrice,
+        timestamp: new Date().toISOString()
+      };
+      
+      const updatedTxs = [newTx, ...transactions];
+      
+      setVirtualCash(newCash);
+      setTransactions(updatedTxs);
+      setWatchlist(newWatchlist);
+      
+      // Save changes immediately to Firestore
+      try {
+        const docRef = doc(db, 'users_data', user.uid);
+        await setDoc(docRef, {
+          virtualCash: newCash,
+          transactions: updatedTxs,
+          watchlist: newWatchlist.map(wItem => ({
+            ticker: wItem.ticker,
+            name: wItem.name,
+            exchange: wItem.exchange,
+            color: wItem.color,
+            domain: wItem.domain,
+            shares: wItem.shares ?? 0,
+            avgBuyPrice: wItem.avgBuyPrice ?? 0
+          }))
+        }, { merge: true });
+        
+        addNotification(
+          'success', 
+          `Trade Executed: ${type} ${strippedTicker}`, 
+          `Successfully ${type === 'BUY' ? 'bought' : 'sold'} ${sharesCount} shares at ₹${currentPrice.toLocaleString('en-IN')}.`
+        );
+      } catch (err) {
+        console.error("Error saving trade to Firestore:", err);
+      }
+    }
+    
+    return success;
+  }, [user, virtualCash, watchlist, transactions, addNotification]);
+
   const completeOnboarding = async (selectedTickers: string[]) => {
     if (!user) return;
     localStorage.setItem(`aura_onboarding_completed_${user.uid}`, 'true');
@@ -415,14 +540,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // ─── Watchlist (simulated live prices) ────────────────────────────────────
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([
-    { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2940.00, change: 5.30, changePct: 0.18, color: '#6366f1', flashClass: '', domain: 'ril.com', shares: 15, avgBuyPrice: 2850.00 },
-    { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3770.00, change: 12.15, changePct: 0.32, color: '#0d9488', flashClass: '', domain: 'tcs.com', shares: 8, avgBuyPrice: 3600.00 },
-    { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1560.00, change: 4.80, changePct: 0.31, color: '#f59e0b', flashClass: '', domain: 'infosys.com', shares: 12, avgBuyPrice: 1500.00 },
-    { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1720.00, change: 3.45, changePct: 0.20, color: '#ef4444', flashClass: '', domain: 'hdfcbank.com', shares: 20, avgBuyPrice: 1650.00 },
-    { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1280.00, change: 5.60, changePct: 0.44, color: '#8b5cf6', flashClass: '', domain: 'icicibank.com', shares: 25, avgBuyPrice: 1200.00 },
-    { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 460.00, change: 2.35, changePct: 0.51, color: '#ec4899', flashClass: '', domain: 'wipro.com', shares: 30, avgBuyPrice: 440.00 },
-  ]);
 
   const [marketIndex, setMarketIndex] = useState<MarketDataPoint[]>([]);
 
@@ -660,6 +777,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setDisasterAlertsEnabled,
       resetOnboardingAction,
       resendVerificationEmail,
+      virtualCash,
+      transactions,
+      executeTrade,
       
       // V3 features
       ensembleWeights,
