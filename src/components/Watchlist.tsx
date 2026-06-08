@@ -181,6 +181,20 @@ export const Watchlist: React.FC = () => {
   const totalPnl = portfolioValue - totalCost;
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0.0;
 
+  // Calculate best/worst performing assets in the watchlist/portfolio
+  const holdingsWithCost = watchlist.filter(item => (item.shares || 0) > 0 && (item.avgBuyPrice || 0) > 0);
+  let bestAsset: any = null;
+  let worstAsset: any = null;
+  if (holdingsWithCost.length > 0) {
+    const sortedByPerformance = [...holdingsWithCost].sort((a, b) => {
+      const pnlPctA = ((a.price - (a.avgBuyPrice || 0)) / (a.avgBuyPrice || 1)) * 100;
+      const pnlPctB = ((b.price - (b.avgBuyPrice || 0)) / (b.avgBuyPrice || 1)) * 100;
+      return pnlPctB - pnlPctA;
+    });
+    bestAsset = sortedByPerformance[0];
+    worstAsset = sortedByPerformance[sortedByPerformance.length - 1];
+  }
+
   return (
     <div style={{ display: 'flex', gap: '20px', margin: '20px', width: 'calc(100% - 40px)', alignItems: 'stretch', height: 'calc(100vh - 130px)' }}>
       {/* LEFT COLUMN: Holdings & Watchlist Grid */}
@@ -205,6 +219,80 @@ export const Watchlist: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* V3.0 Holdings Analytics Dashboard */}
+        {watchlist.length > 0 && (
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', 
+            gap: '12px', 
+            marginBottom: '20px',
+            padding: '14px', 
+            background: 'var(--bg2)', 
+            border: '1px solid var(--line)', 
+            borderRadius: '8px'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--tx3)', fontWeight: 600, textTransform: 'uppercase' }}>Capital Invested</span>
+              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--tx)' }}>
+                ₹{totalCost.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+              </span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--tx3)' }}>Initial cost basis</span>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--tx3)', fontWeight: 600, textTransform: 'uppercase' }}>Portfolio Yield</span>
+              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: totalPnl >= 0 ? 'var(--emerald)' : 'var(--rose)' }}>
+                {totalPnl >= 0 ? '+' : ''}{totalPnlPct.toFixed(2)}%
+              </span>
+              <span style={{ fontSize: '0.65rem', color: totalPnl >= 0 ? 'var(--emerald)' : 'var(--rose)' }}>
+                ₹{totalPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })} net gain
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--tx3)', fontWeight: 600, textTransform: 'uppercase' }}>Best Performer</span>
+              {bestAsset ? (
+                <>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--emerald)' }}>
+                    {bestAsset.ticker}
+                  </span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--emerald)' }}>
+                    +{(((bestAsset.price - bestAsset.avgBuyPrice) / bestAsset.avgBuyPrice) * 100).toFixed(1)}% yield
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: '0.9rem', color: 'var(--tx3)', fontStyle: 'italic' }}>No active holdings</span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--tx3)', fontWeight: 600, textTransform: 'uppercase' }}>Worst Performer</span>
+              {worstAsset ? (
+                <>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 800, color: (worstAsset.price >= worstAsset.avgBuyPrice ? 'var(--emerald)' : 'var(--rose)') }}>
+                    {worstAsset.ticker}
+                  </span>
+                  <span style={{ fontSize: '0.65rem', color: (worstAsset.price >= worstAsset.avgBuyPrice ? 'var(--emerald)' : 'var(--rose)') }}>
+                    {(((worstAsset.price - worstAsset.avgBuyPrice) / worstAsset.avgBuyPrice) * 100).toFixed(1)}% yield
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: '0.9rem', color: 'var(--tx3)', fontStyle: 'italic' }}>No active holdings</span>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--tx3)', fontWeight: 600, textTransform: 'uppercase' }}>Assets Tracked</span>
+              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--tx)' }}>
+                {watchlist.length} Tickers
+              </span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--tx3)' }}>
+                {holdingsWithCost.length} active positions
+              </span>
+            </div>
+          </div>
+        )}
 
         {watchlist.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--tx3)' }}>
