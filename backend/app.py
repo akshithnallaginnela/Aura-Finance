@@ -1,10 +1,10 @@
 import os
 import time
+import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pathlib import Path
 from dotenv import load_dotenv
-from functools import lru_cache
 
 from database import get_analysis, upsert_analysis
 from monitoring import check_disaster_risk
@@ -16,11 +16,16 @@ load_dotenv(dotenv_path=env_path)
 app = Flask(__name__)
 
 # Enterprise CORS: Restrict to known origins in production
+# Read from env so the deployed URL can be configured without code changes
+_extra_origin = os.environ.get('VITE_APP_URL', '')
 allowed_origins = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://aura-finance.vercel.app" # Example production domain
+    "https://aura-finance-five.vercel.app",
 ]
+if _extra_origin and _extra_origin not in allowed_origins:
+    allowed_origins.append(_extra_origin)
+
 CORS(app, origins=allowed_origins)
 
 from werkzeug.exceptions import HTTPException
@@ -50,14 +55,29 @@ def index():
     })
 
 
-# --- Caching Layer for yfinance ---
-@lru_cache(maxsize=100)
-def get_cached_market_data(ticker, period="3mo"):
-    """Caches historical data for 5 minutes (via manual expiry check if needed, 
-    but LRU is a start). For enterprise, use Redis."""
+# --- Caching Layer for yfinance (TTL-aware, thread-safe) ---
+_cache_store: dict = {}
+_cache_lock = threading.Lock()
+_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+def get_cached_market_data(ticker: str, period: str = "3mo"):
+    """
+    Thread-safe TTL cache for yfinance data.
+    Returns a fresh pandas DataFrame. Invalidates after _CACHE_TTL_SECONDS.
+    """
     import yfinance as yf
+    cache_key = f"{ticker}:{period}"
+    now = time.time()
+    with _cache_lock:
+        entry = _cache_store.get(cache_key)
+        if entry and (now - entry["ts"]) < _CACHE_TTL_SECONDS:
+            return entry["data"]
+    # Fetch outside lock to avoid holding it during network I/O
     t_obj = yf.Ticker(ticker)
-    return t_obj.history(period=period)
+    data = t_obj.history(period=period)
+    with _cache_lock:
+        _cache_store[cache_key] = {"data": data, "ts": now}
+    return data
 
 def normalize_ticker(raw_ticker):
     """
@@ -78,26 +98,35 @@ def on_demand_analysis(ticker):
     Fundamentals run first so sentiment can be injected as ML features.
     """
     from pipeline import fetch_and_train, analyze_fundamentals
-    
+
     print(f"[On-Demand] Running real-time analysis for {ticker}...")
-    
+
     # Run fundamentals FIRST to get sentiment for ML features
     sentiment, summary, disaster_risk, news_count, fundamentals = analyze_fundamentals(ticker)
-    
-    historical_df, forecast, _raw, backtest_acc = fetch_and_train(ticker, sentiment_score=sentiment,
-                                                      disaster_risk=disaster_risk,
-                                                      news_count=news_count)
-    if historical_df is None:
+
+    result = fetch_and_train(
+        ticker,
+        sentiment_score=sentiment,
+        disaster_risk=disaster_risk,
+        news_count=news_count,
+    )
+
+    # fetch_and_train returns (None, None) on failure — guard the unpack
+    if result is None or result[0] is None:
         return None
-    
+
+    historical_df, forecast, _raw, backtest_acc = result
     historical_data = historical_df.to_dict('records')
-    
+
     # Save to database for future instant access
-    upsert_analysis(ticker, historical_data, forecast, sentiment, summary, disaster_risk, fundamentals=fundamentals, backtest_accuracy=backtest_acc)
-    
+    upsert_analysis(
+        ticker, historical_data, forecast, sentiment, summary,
+        disaster_risk, fundamentals=fundamentals, backtest_accuracy=backtest_acc
+    )
+
     # Check for disaster risk alerts
     check_disaster_risk(ticker, disaster_risk)
-    
+
     return get_analysis(ticker)
 
 
@@ -322,12 +351,18 @@ def advisor_strategy():
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
-        
+
+        # Single DB lookup — reused for all context building below
         normalized_sym = normalize_ticker(ticker)
         analysis = get_analysis(normalized_sym)
+
         current_price = "Unknown"
         future_price = "Unknown"
-        
+        fundamentals_txt = ""
+        sentiment_score = 0.0
+        disaster_risk = 0.0
+        fundamental_summary = ""
+
         if analysis:
             db_hist = analysis.get("historical", [])
             if db_hist:
@@ -335,21 +370,17 @@ def advisor_strategy():
             db_fore = analysis.get("forecast", [])
             if db_fore:
                 future_price = db_fore[-1].get("PredictedClose") or db_fore[-1].get("predicted_close") or "Unknown"
-        
-        normalized_sym = normalize_ticker(ticker)
-        analysis = get_analysis(normalized_sym)
-        fundamentals_txt = ""
-        sentiment_score = 0.0
-        disaster_risk = 0.0
-        fundamental_summary = ""
-        
-        if analysis:
             sentiment_score = analysis.get("sentiment_score", 0.0)
             disaster_risk = analysis.get("disaster_risk_score", 0.0)
             fundamental_summary = analysis.get("fundamental_summary", "")
             f = analysis.get("fundamentals", {})
             if f:
-                fundamentals_txt = f"\n- P/E Ratio: {f.get('pe_ratio', 'N/A')}\n- EPS: {f.get('eps', 'N/A')}\n- Market Cap: {f.get('market_cap', 'N/A')}\n- 52-Week High: {f.get('fifty_two_week_high', 'N/A')}"
+                fundamentals_txt = (
+                    f"\n- P/E Ratio: {f.get('pe_ratio', 'N/A')}"
+                    f"\n- EPS: {f.get('eps', 'N/A')}"
+                    f"\n- Market Cap: {f.get('market_cap', 'N/A')}"
+                    f"\n- 52-Week High: {f.get('fifty_two_week_high', 'N/A')}"
+                )
 
         # Fetch all available stock analyses from the database
         all_stocks_summary = ""

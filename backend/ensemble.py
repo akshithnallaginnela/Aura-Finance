@@ -492,9 +492,10 @@ def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130
         dict with keys: median, upper_band, lower_band (numpy arrays)
     """
     closes = df_with_indicators['Close'].values.astype(float)
-    emas = df_with_indicators.get('EMA_20', pd.Series(closes)).values.astype(float)
-    rsis = df_with_indicators.get('RSI', pd.Series(np.full(len(closes), 50.0))).values.astype(float)
-    macds = df_with_indicators.get('MACD', pd.Series(np.zeros(len(closes)))).values.astype(float)
+    # Use .get() safe pattern: check column existence before accessing
+    emas = df_with_indicators['EMA_20'].values.astype(float) if 'EMA_20' in df_with_indicators.columns else np.full(len(closes), closes.mean())
+    rsis = df_with_indicators['RSI'].values.astype(float) if 'RSI' in df_with_indicators.columns else np.full(len(closes), 50.0)
+    macds = df_with_indicators['MACD'].values.astype(float) if 'MACD' in df_with_indicators.columns else np.zeros(len(closes))
     
     # Run all models
     print(f"  [Ensemble] Running Chronos-T5-Small (weight={WEIGHTS['chronos']})...")
