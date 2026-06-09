@@ -1,8 +1,8 @@
 """
-Aura Finance — Enterprise ML Pipeline
-======================================
-Fetches historical data for Nifty 50, runs the 3-model ensemble,
-applies FinBERT sentiment adjustment, and stores results in the database.
+Aura Finance — Enterprise Forecasting Pipeline
+===============================================
+Fetches historical data for Nifty 50, runs the 5-signal ensemble,
+applies sentiment adjustment, and stores results in the database.
 """
 
 import os
@@ -55,25 +55,25 @@ DISASTER_KEYWORDS = [
     "shutdown", "strike", "embargo", "tariff", "inflation surge"
 ]
 
-# ─── Initialize Hugging Face Models ───────────────────────────────────────────
+# ─── Initialize ML Components ────────────────────────────────────────────────
 
-print("Initializing Hugging Face Models...")
+print("Initializing ML Components...")
 try:
     chronos = ChronosPipeline.from_pretrained(
         "amazon/chronos-t5-small",
         device_map="cpu",
         torch_dtype=torch.float32,
     )
-    print("[OK] Chronos-T5-Small loaded.")
+    print("[OK] Foundation signal component loaded.")
 except Exception as e:
-    print(f"[WARN] Failed to load Chronos: {e}")
+    print(f"[WARN] Foundation component failed to load: {e}")
     chronos = None
 
 try:
     finbert = hf_pipeline("sentiment-analysis", model="ProsusAI/finbert")
-    print("[OK] FinBERT loaded.")
+    print("[OK] Sentiment classifier loaded.")
 except Exception as e:
-    print(f"[WARN] Failed to load FinBERT: {e}")
+    print(f"[WARN] Sentiment classifier failed to load: {e}")
     finbert = None
 
 
@@ -167,12 +167,12 @@ def fetch_and_train(ticker_symbol, sentiment_score=0.0, disaster_risk=0.0, news_
     return df, predictions, result, round(float(backtest_acc), 2)
 
 
-# ─── Fundamental Analysis with FinBERT ─────────────────────────────────────────
+# ─── Fundamental Analysis with Sentiment Scoring ───────────────────────────────
 
 def analyze_fundamentals(ticker_symbol):
     """
-    Fetches recent news, uses FinBERT for sentiment, detects disaster keywords,
-    and uses Gemini for a summary.
+    Fetches recent news, uses sentiment analysis for scoring, detects disaster keywords,
+    and uses Advisory Engine for a summary.
     Returns: (sentiment_score, summary, disaster_risk, news_count)
     """
     ticker = yf.Ticker(ticker_symbol)
@@ -204,7 +204,7 @@ def analyze_fundamentals(ticker_symbol):
     if not headlines:
         return 0.0, "No parseable news headlines were found for this asset today.", 0.0, 0, fundamentals
     
-    # FinBERT sentiment scoring
+    # Score with sentiment classifier
     finbert_score = 0.0
     if finbert:
         try:
@@ -217,7 +217,7 @@ def analyze_fundamentals(ticker_symbol):
                     total_score -= res['score']
             finbert_score = float(total_score / len(results))
         except Exception as e:
-            print(f"  FinBERT error for {ticker_symbol}: {e}")
+            print(f"  Sentiment scoring error for {ticker_symbol}: {e}")
     
     # Disaster risk detection
     all_text = " ".join(headlines).lower()
@@ -232,7 +232,7 @@ def analyze_fundamentals(ticker_symbol):
     prompt = f"""
     You are an elite quantitative financial analyst specializing in the Indian Stock Market.
     Analyze the following recent news headlines for the stock {ticker_symbol}.
-    The calculated AI sentiment score (using FinBERT) is {finbert_score:.2f} (from -1.0 to 1.0).
+    The calculated sentiment score is {finbert_score:.2f} (from -1.0 to 1.0).
     Disaster risk detected: {disaster_risk:.2f} (0=none, 1=extreme).
     
     News Headlines:
@@ -266,10 +266,10 @@ def analyze_fundamentals(ticker_symbol):
         except Exception as e:
             if "429" in str(e) or "Quota exceeded" in str(e):
                 if attempt < max_retries - 1:
-                    print(f"  [{ticker_symbol}] Gemini Rate Limit hit. Waiting {retry_delay}s...", flush=True)
+                    print(f"  [{ticker_symbol}] Advisory Engine Rate Limit hit. Waiting {retry_delay}s...", flush=True)
                     time.sleep(retry_delay)
                     continue
-            print(f"  [{ticker_symbol}] Gemini Error: {e}", flush=True)
+            print(f"  [{ticker_symbol}] Advisory Engine Error: {e}", flush=True)
             return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk, len(headlines), fundamentals
             
     return finbert_score, "Fundamental analysis summary unavailable due to API limits.", disaster_risk, len(headlines), fundamentals
@@ -281,7 +281,7 @@ def run_pipeline():
     print(f"\n{'='*60}")
     print(f"  Starting Aura Enterprise Ensemble Pipeline")
     print(f"  Time: {datetime.now()}")
-    print(f"  Models: Chronos (35%) + Transformer (20%) + XGBoost (20%) + LightGBM (15%) + LSTM (10%)")
+    print(f"  Ensemble: 5-component weighted signal system")
     print(f"  Forecast Horizon: {PREDICTION_LENGTH} trading days (~6 months)")
     print(f"{'='*60}\n")
     
@@ -290,8 +290,8 @@ def run_pipeline():
     for idx, symbol in enumerate(NIFTY_50):
         print(f"\n[{idx+1}/{len(NIFTY_50)}] --- Analyzing {symbol} ---")
         
-        # 1. Fundamental Analysis FIRST (FinBERT + Gemini) — so we have sentiment for ML
-        print("  Fetching News & Running FinBERT Sentiment...")
+        # 1. Fundamental Analysis FIRST (sentiment + advisory engine) — so we have sentiment for prediction
+        print("  Fetching News & Running Sentiment Analysis...")
         sentiment, summary, disaster_risk, news_count, fundamentals = analyze_fundamentals(symbol)
         print(f"  Sentiment: {sentiment:.2f} | Disaster Risk: {disaster_risk:.2f} | Headlines: {news_count}")
         

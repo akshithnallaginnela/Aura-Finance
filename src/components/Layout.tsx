@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { getIndianMarketStatus } from '../utils/marketStatus';
+import { auth } from '../utils/firebaseClient';
 import { LayoutGrid, Sparkles, Briefcase, Eye, Sliders, Globe, Settings as SettingsIcon, Bell } from 'lucide-react';
 
 const FALLBACK_TOP_STOCKS = [
@@ -35,6 +36,19 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [topStocks, setTopStocks] = useState<any[]>(FALLBACK_TOP_STOCKS);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [activeToast, setActiveToast] = useState<any | null>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Close notification panel on outside click
+  useEffect(() => {
+    if (!isNotificationsOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isNotificationsOpen]);
 
   useEffect(() => {
     const latestRisk = notifications.find(n => !n.read && n.type === 'risk');
@@ -225,7 +239,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </div>
             
             {/* V3 Notifications Center Dropdown */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }} ref={notifRef}>
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 style={{ 
@@ -349,8 +363,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <button
                   onClick={async () => {
                     try {
-                      await user.reload();
-                      window.location.reload();
+                      if (auth.currentUser) {
+                        await auth.currentUser.reload();
+                        // Force token refresh to trigger onAuthStateChanged
+                        await auth.currentUser.getIdToken(true);
+                      }
                     } catch (err) {
                       console.error("Error refreshing user session:", err);
                     }

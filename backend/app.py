@@ -647,45 +647,45 @@ def get_macro_data():
 @app.route('/api/ml_metrics', methods=['GET'])
 def get_ml_metrics():
     """
-    AIML Lab: Exposes technical metrics about the Ensemble model architecture.
+    Exposes technical metrics about the Ensemble signal architecture.
     """
     return jsonify({
         "ensemble": {
             "models": [
                 {
-                    "name": "Amazon Chronos-T5-Small (Foundation Model)",
+                    "name": "Signal A — Foundation",
                     "weight": 0.35,
-                    "type": "Zero-Shot Time Series Transformer",
-                    "description": "Pre-trained on billions of time series datapoints. Generates probabilistic samples."
+                    "type": "Zero-Shot Time Series",
+                    "description": "Pre-trained on large-scale time series corpora. Generates probabilistic forecast samples."
                 },
                 {
-                    "name": "PyTorch Transformer Encoder",
+                    "name": "Signal B — Pattern",
                     "weight": 0.20,
-                    "type": "Self-Attention Neural Network",
+                    "type": "Self-Attention Network",
                     "description": "4-head attention, 2 encoder layers, learnable positional encoding, GELU activation."
                 },
                 {
-                    "name": "XGBoost Gradient Boosted Trees",
+                    "name": "Signal C — Technical",
                     "weight": 0.20,
-                    "type": "Supervised ML (Technical Indicators)",
+                    "type": "Gradient Boosted Trees",
                     "description": "200 estimators, depth 6, trained on RSI/MACD/EMA with L1+L2 regularization."
                 },
                 {
-                    "name": "LightGBM (Leaf-wise Boosting)",
+                    "name": "Signal D — Momentum",
                     "weight": 0.15,
-                    "type": "Gradient Boosting (Histogram-based)",
-                    "description": "300 estimators, 31 leaves, depth 8. Leaf-wise growth for finer splits."
+                    "type": "Histogram-based Boosting",
+                    "description": "300 estimators, 31 leaves, depth 8. Leaf-wise growth for finer feature splits."
                 },
                 {
-                    "name": "PyTorch LSTM (2-Layer RNN)",
+                    "name": "Signal E — Sequence",
                     "weight": 0.10,
                     "type": "Recurrent Neural Network",
-                    "description": "2 stacked LSTM layers, 64 hidden units, Huber loss, dropout 0.2."
+                    "description": "2 stacked recurrent layers, 64 hidden units, Huber loss, dropout 0.2."
                 }
             ],
             "forecast_horizon": "130 trading days (~6 months)",
             "confidence_bands": "P10 / P50 (Median) / P90",
-            "sentiment_engine": "FinBERT (ProsusAI/finbert)",
+            "sentiment_engine": "NLP Sentiment Classifier (Financial)",
             "disaster_detection": "Keyword-based risk scorer (23 categories)"
         },
         "news_sentinel": {
@@ -694,9 +694,9 @@ def get_ml_metrics():
             "trigger": "ANY new news article → immediate re-prediction",
             "coverage": "Nifty 50 (50 stocks)"
         },
-        "gemini": {
+        "advisory": {
             "model_version": "gemini-2.5-flash",
-            "role": "Fundamental Analysis Summarizer",
+            "role": "Fundamental Analysis & Advisory",
             "rate_limit_status": "Healthy (Exponential Backoff Enabled)"
         }
     })

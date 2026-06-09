@@ -76,7 +76,7 @@ export const AimlLab: React.FC = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#58a6ff' }}>
             <Brain size={18} />
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Ensemble Prediction Engine (3 Models)</span>
+            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Ensemble Prediction Engine ({metrics.ensemble?.models?.length ?? 0} Signal Components)</span>
           </div>
           
           <div style={{ background: '#010409', padding: '16px', borderRadius: '6px', border: '1px solid #21262d' }}>
@@ -161,26 +161,26 @@ export const AimlLab: React.FC = () => {
           </div>
         </div>
 
-        {/* Gemini Stats */}
+        {/* Advisory Stats */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', color: '#ff7b72' }}>
             <Zap size={18} />
-            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Google Gemini AI (Fundamental Summarizer)</span>
+            <span style={{ fontWeight: 700, fontSize: '1rem' }}>Advisory Engine (Fundamental Analyser)</span>
           </div>
           
           <div style={{ background: '#010409', padding: '16px', borderRadius: '6px', border: '1px solid #21262d' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               <div>
-                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>MODEL VERSION</div>
-                <div style={{ color: '#79c0ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini?.model_version}</div>
+                <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>ENGINE VERSION</div>
+                <div style={{ color: '#79c0ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.advisory?.model_version}</div>
               </div>
               <div>
                 <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>ROLE</div>
-                <div style={{ color: '#d2a8ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini?.role}</div>
+                <div style={{ color: '#d2a8ff', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.advisory?.role}</div>
               </div>
               <div>
                 <div style={{ color: '#8b949e', fontSize: '0.75rem', marginBottom: '4px' }}>RATE LIMIT STATUS</div>
-                <div style={{ color: '#3fb950', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.gemini?.rate_limit_status}</div>
+                <div style={{ color: '#3fb950', fontSize: '0.9rem', fontWeight: 600 }}>{metrics.advisory?.rate_limit_status}</div>
               </div>
             </div>
           </div>
@@ -188,13 +188,13 @@ export const AimlLab: React.FC = () => {
 
         {/* Console logs */}
         <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#8b949e', lineHeight: 1.6 }}>
-          <div>[INFO] Loading 5-Model Ensemble Engine... OK</div>
-          <div>[INFO] Chronos-T5-Small Foundation Model: Loaded (35% weight)</div>
-          <div>[INFO] PyTorch Transformer Encoder: Loaded (20% weight)</div>
-          <div>[INFO] XGBoost Gradient Boosted Trees: Loaded (20% weight)</div>
-          <div>[INFO] LightGBM Leaf-wise Boosting: Loaded (15% weight)</div>
-          <div>[INFO] PyTorch LSTM (2-Layer RNN): Loaded (10% weight)</div>
-          <div>[INFO] FinBERT Sentiment Engine: Loaded</div>
+          <div>[INFO] Loading Ensemble Prediction Engine... OK</div>
+          <div>[INFO] Signal Component A (Foundation) — weight {((metrics.ensemble?.models?.[0]?.weight ?? 0.35) * 100).toFixed(0)}%</div>
+          <div>[INFO] Signal Component B (Pattern) — weight {((metrics.ensemble?.models?.[1]?.weight ?? 0.20) * 100).toFixed(0)}%</div>
+          <div>[INFO] Signal Component C (Technical) — weight {((metrics.ensemble?.models?.[2]?.weight ?? 0.20) * 100).toFixed(0)}%</div>
+          <div>[INFO] Signal Component D (Momentum) — weight {((metrics.ensemble?.models?.[3]?.weight ?? 0.15) * 100).toFixed(0)}%</div>
+          <div>[INFO] Signal Component E (Sequence) — weight {((metrics.ensemble?.models?.[4]?.weight ?? 0.10) * 100).toFixed(0)}%</div>
+          <div>[INFO] Sentiment Engine: Loaded</div>
           <div>[INFO] News Sentinel: Active — polling every 5 min</div>
           <div>[INFO] Awaiting frontend connections on port 5000...</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>

@@ -1,13 +1,13 @@
 """
-Aura Finance — Robust Ensemble Prediction Engine (5 Models)
-=============================================================
-Combines 5 ML/DL models into a weighted ensemble with confidence intervals:
+Aura Finance — Robust Ensemble Prediction Engine (5 Signal Components)
+========================================================================
+Combines 5 independent signal components into a weighted ensemble with confidence intervals:
 
-  1. Amazon Chronos-T5-Small (Foundation Model)    — 35% weight
-  2. PyTorch Transformer Encoder (Time Series)     — 20% weight
-  3. XGBoost Gradient Boosted Trees                — 20% weight
-  4. LightGBM Gradient Boosting                    — 15% weight
-  5. PyTorch LSTM Recurrent Neural Network         — 10% weight
+  1. Foundation Signal Component (Time Series)      — 35% weight
+  2. Pattern Recognition Signal (Deep Learning)     — 20% weight
+  3. Technical Indicator Signal A (Tree-based)      — 20% weight
+  4. Technical Indicator Signal B (Boosted Trees)   — 15% weight
+  5. Sequential Pattern Signal (Recurrent Network)  — 10% weight
 
 Outputs: median forecast + upper/lower confidence bands (P10/P90)
 """
@@ -22,12 +22,12 @@ import lightgbm as lgb
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Model 1: Chronos-T5-Small Foundation Model (35% weight)
+# Signal Component 1: Foundation Signal Component (35% weight)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def chronos_forecast(chronos_pipeline, closes, prediction_length=130):
     """
-    Uses Amazon Chronos-T5 to generate probabilistic forecasts.
+    Foundation signal component that generates probabilistic forecasts.
     Returns full sample distribution for confidence bands.
     """
     if chronos_pipeline is None:
@@ -56,7 +56,7 @@ def chronos_forecast(chronos_pipeline, closes, prediction_length=130):
         
         return {"median": median, "p10": p10, "p90": p90}
     except Exception as e:
-        print(f"  [Chronos] Prediction failed: {e}")
+        print(f"  [Foundation Signal] Prediction failed: {e}")
         last = float(closes[-1])
         volatility = np.std(closes[-30:]) / np.mean(closes[-30:]) if len(closes) > 30 else 0.05
         volatility = max(0.01, min(0.15, volatility))
@@ -68,12 +68,12 @@ def chronos_forecast(chronos_pipeline, closes, prediction_length=130):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Model 2: PyTorch Transformer Encoder for Time Series (20% weight)
+# Signal Component 2: Pattern Recognition Signal (20% weight)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TimeSeriesTransformer(nn.Module):
     """
-    A lightweight Transformer Encoder model for time series forecasting.
+    Pattern recognition signal component for time series forecasting.
     Uses positional encoding + multi-head self-attention to capture
     long-range dependencies in price sequences.
     """
@@ -118,7 +118,7 @@ class TimeSeriesTransformer(nn.Module):
 
 def transformer_forecast(closes, prediction_length=130):
     """
-    Trains a small Transformer on historical prices and generates forecasts.
+    Pattern recognition signal trained on historical prices to generate forecasts.
     """
     if len(closes) < 80:
         return np.array([float(closes[-1])] * prediction_length)
@@ -195,20 +195,20 @@ def transformer_forecast(closes, prediction_length=130):
         
         return predictions
     except Exception as e:
-        print(f"  [Transformer] Training/prediction failed: {e}")
+        print(f"  [Pattern Signal] Training/prediction failed: {e}")
         return np.array([float(closes[-1])] * prediction_length)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Model 3: XGBoost Gradient Boosted Trees (20% weight)
+# Signal Component 3: Technical Indicator Signal A (20% weight)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def xgboost_forecast(closes, emas, rsis, macds, prediction_length=130,
                      sentiment_score=0.0, disaster_risk=0.0, news_count=0):
     """
-    XGBoost regressor trained on technical indicator features + news sentiment.
+    Technical indicator signal trained on indicator features + news sentiment.
     Sentiment, disaster risk, and news volume are injected as features so the
-    model can learn their relationship to price movement.
+    signal can learn their relationship to price movement.
     """
     lookback = 14
     
@@ -273,18 +273,18 @@ def xgboost_forecast(closes, emas, rsis, macds, prediction_length=130,
         
         return np.array(predictions)
     except Exception as e:
-        print(f"  [XGBoost] Failed: {e}")
+        print(f"  [Technical Signal A] Failed: {e}")
         return np.array([float(closes[-1])] * prediction_length)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Model 4: LightGBM Gradient Boosting (15% weight)
+# Signal Component 4: Technical Indicator Signal B (15% weight)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def lightgbm_forecast(closes, emas, rsis, macds, prediction_length=130,
                       sentiment_score=0.0, disaster_risk=0.0, news_count=0):
     """
-    LightGBM — leaf-wise tree growth often outperforms XGBoost on tabular data.
+    Technical indicator signal B using leaf-wise tree growth optimization.
     Uses technical indicator features + news sentiment as input.
     """
     lookback = 14
@@ -351,17 +351,17 @@ def lightgbm_forecast(closes, emas, rsis, macds, prediction_length=130,
         
         return np.array(predictions)
     except Exception as e:
-        print(f"  [LightGBM] Failed: {e}")
+        print(f"  [Technical Signal B] Failed: {e}")
         return np.array([float(closes[-1])] * prediction_length)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Model 5: PyTorch LSTM Recurrent Neural Network (10% weight)
+# Signal Component 5: Sequential Pattern Signal (10% weight)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class LSTMModel(nn.Module):
     """
-    Proper PyTorch LSTM with 2 stacked layers, dropout, and a linear output head.
+    Sequential pattern signal with 2 stacked recurrent layers, dropout, and output head.
     """
     def __init__(self, input_size=1, hidden_size=64, num_layers=2, dropout=0.2):
         super().__init__()
@@ -387,7 +387,7 @@ class LSTMModel(nn.Module):
 
 def lstm_forecast(closes, prediction_length=130):
     """
-    PyTorch LSTM with proper training, gradient clipping, and learning rate scheduling.
+    Sequential pattern signal with proper training, gradient clipping, and learning rate scheduling.
     """
     if len(closes) < 80:
         return np.array([float(closes[-1])] * prediction_length)
@@ -457,7 +457,7 @@ def lstm_forecast(closes, prediction_length=130):
         
         return predictions
     except Exception as e:
-        print(f"  [LSTM] Failed: {e}")
+        print(f"  [Sequential Signal] Failed: {e}")
         return np.array([float(closes[-1])] * prediction_length)
 
 
@@ -474,19 +474,19 @@ WEIGHTS = {
 }
 
 MODEL_NAMES = {
-    "chronos": "Amazon Chronos-T5-Small",
-    "transformer": "PyTorch Transformer Encoder",
-    "xgboost": "XGBoost (Gradient Boosted Trees)",
-    "lightgbm": "LightGBM (Leaf-wise Boosting)",
-    "lstm": "PyTorch LSTM (2-Layer RNN)"
+    "chronos": "Signal Component A (Foundation)",
+    "transformer": "Signal Component B (Pattern Recognition)",
+    "xgboost": "Signal Component C (Technical Indicators)",
+    "lightgbm": "Signal Component D (Boosted Trees)",
+    "lstm": "Signal Component E (Sequential Pattern)"
 }
 
 def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130,
                      sentiment_score=0.0, disaster_risk=0.0, news_count=0):
     """
-    Runs all 5 models and combines into a weighted ensemble.
+    Runs all 5 signal components and combines into a weighted ensemble.
     Sentiment, disaster risk, and news volume are passed as features
-    to the tree-based models (XGBoost + LightGBM).
+    to the technical indicator signals.
     
     Returns:
         dict with keys: median, upper_band, lower_band (numpy arrays)
@@ -497,22 +497,22 @@ def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130
     rsis = df_with_indicators['RSI'].values.astype(float) if 'RSI' in df_with_indicators.columns else np.full(len(closes), 50.0)
     macds = df_with_indicators['MACD'].values.astype(float) if 'MACD' in df_with_indicators.columns else np.zeros(len(closes))
     
-    # Run all models
-    print(f"  [Ensemble] Running Chronos-T5-Small (weight={WEIGHTS['chronos']})...")
+    # Run all signal components
+    print(f"  [Ensemble] Running Foundation Signal (weight={WEIGHTS['chronos']})...")
     chronos_result = chronos_forecast(chronos_pipeline, closes, prediction_length)
     
-    print(f"  [Ensemble] Running Transformer Encoder (weight={WEIGHTS['transformer']})...")
+    print(f"  [Ensemble] Running Pattern Recognition Signal (weight={WEIGHTS['transformer']})...")
     transformer_preds = transformer_forecast(closes, prediction_length)
     
-    print(f"  [Ensemble] Running XGBoost (weight={WEIGHTS['xgboost']}, sentiment={sentiment_score:.2f})...")
+    print(f"  [Ensemble] Running Technical Signal A (weight={WEIGHTS['xgboost']}, sentiment={sentiment_score:.2f})...")
     xgb_preds = xgboost_forecast(closes, emas, rsis, macds, prediction_length,
                                   sentiment_score, disaster_risk, news_count)
     
-    print(f"  [Ensemble] Running LightGBM (weight={WEIGHTS['lightgbm']}, sentiment={sentiment_score:.2f})...")
+    print(f"  [Ensemble] Running Technical Signal B (weight={WEIGHTS['lightgbm']}, sentiment={sentiment_score:.2f})...")
     lgbm_preds = lightgbm_forecast(closes, emas, rsis, macds, prediction_length,
                                     sentiment_score, disaster_risk, news_count)
     
-    print(f"  [Ensemble] Running PyTorch LSTM (weight={WEIGHTS['lstm']})...")
+    print(f"  [Ensemble] Running Sequential Pattern Signal (weight={WEIGHTS['lstm']})...")
     lstm_preds = lstm_forecast(closes, prediction_length)
     
     # Weighted ensemble
@@ -545,7 +545,7 @@ def ensemble_predict(chronos_pipeline, df_with_indicators, prediction_length=130
     lower_band = np.minimum(chronos_result["p10"], ensemble_median - (1.2 * model_std * dynamic_multiplier))
     lower_band = np.maximum(lower_band, 0)
     
-    print(f"  [Ensemble] Complete. 5 models combined (news features injected into XGB+LGBM).")
+    print(f"  [Ensemble] Complete. 5 signal components combined (news features injected).")
     print(f"    Median[0]={ensemble_median[0]:.2f}, Upper[0]={upper_band[0]:.2f}, Lower[0]={lower_band[0]:.2f}")
     
     return {
@@ -655,7 +655,7 @@ def apply_sentiment_adjustment(forecast_dict, sentiment_score, disaster_risk=0.0
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  Ensemble Engine — 5 Model Standalone Test")
+    print("  Ensemble Engine — 5 Signal Components Standalone Test")
     print("=" * 60)
     
     np.random.seed(42)
@@ -677,4 +677,4 @@ if __name__ == "__main__":
     adjusted = apply_sentiment_adjustment(result, sentiment_score=-0.5, disaster_risk=0.3)
     print(f"\nAfter sentiment=-0.5, disaster=0.3:")
     print(f"Adjusted median (first 5): {adjusted['median'][:5].round(2)}")
-    print("\n✅ All 5 models ran successfully!")
+    print("\n✅ All 5 signal components ran successfully!")

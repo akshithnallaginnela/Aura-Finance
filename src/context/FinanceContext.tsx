@@ -649,41 +649,8 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
     }
   };
 
-  const completeOnboarding = async (selectedTickers: string[]) => {
-    if (!user) return;
-    localStorage.setItem(`aura_onboarding_completed_${user.uid}`, 'true');
-
-    const filtered = DEFAULT_STOCKS.filter(s => selectedTickers.includes(s.ticker));
-    const finalWatchlist = filtered.length > 0 ? filtered : DEFAULT_STOCKS.slice(0, 4);
-
-    setWatchlist(finalWatchlist);
-    
-    // Save onboarding state to Firestore
-    try {
-      const docRef = doc(db, 'users_data', user.uid);
-      await setDoc(docRef, {
-        watchlist: finalWatchlist,
-        onboardingCompleted: true
-      }, { merge: true });
-    } catch (err) {
-      console.error("Error saving onboarding to Firestore:", err);
-    }
-
-    const firstTicker = finalWatchlist[0].ticker + '.NS';
-    setActiveTicker(firstTicker);
-    await fetchStockData(firstTicker);
-    setActiveView('dashboard');
-  };
-
-  // ─── Watchlist (simulated live prices) ────────────────────────────────────
-
-  const [marketIndex, setMarketIndex] = useState<MarketDataPoint[]>([]);
-
-
-
-  // Portfolio value = sum of (shares * price) for holding stocks, fallback to price * 10 if shares not set
-  const portfolioValue = watchlist.reduce((sum, item) => sum + (item.price || 0) * (item.shares || 10), 0);
-
+  // ─── Fetch Stock Data ──────────────────────────────────────────────────────
+  
   const fetchStockData = useCallback(async (ticker: string) => {
     setIsLoadingData(true);
     setErrorData(null);
@@ -694,7 +661,7 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
         try {
           const errData = await response.json();
           if (errData.error) errMsg = errData.error;
-        } catch(e) {}
+        } catch(e) { /* ignore parse error */ }
         throw new Error(errMsg);
       }
       const data = await response.json();
@@ -710,22 +677,65 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
         addNotification(
           'risk',
           `Risk Alert: ${ticker.replace('.NS', '')}`,
-          `High risk activity detected. Sentinel risk rating is ${(risk * 100).toFixed(0)}%.`
+          `Elevated market risk detected. Sentinel risk rating is ${(risk * 100).toFixed(0)}%.`
         );
       }
       setLastUpdated(data.last_updated || null);
       setActiveTicker(ticker.toUpperCase());
     } catch (err: any) {
       let friendlyMessage = err.message || 'Error fetching data';
-      if (friendlyMessage.toLowerCase().includes('failed to fetch') || friendlyMessage.toLowerCase().includes('networkerror') || friendlyMessage.toLowerCase().includes('load failed')) {
-        friendlyMessage = 'Sorry, I am having trouble connecting to the backend. Please check if the backend service is running and accessible.';
+      if (
+        friendlyMessage.toLowerCase().includes('failed to fetch') ||
+        friendlyMessage.toLowerCase().includes('networkerror') ||
+        friendlyMessage.toLowerCase().includes('load failed')
+      ) {
+        friendlyMessage = 'Unable to connect to the backend service. Please ensure it is running and accessible.';
       }
       setErrorData(friendlyMessage);
       console.error(err);
     } finally {
       setIsLoadingData(false);
     }
-  }, []);
+  }, [addNotification]);
+
+  const completeOnboarding = useCallback(async (selectedTickers: string[]) => {
+    if (!user) return;
+    localStorage.setItem(`aura_onboarding_completed_${user.uid}`, 'true');
+
+    const filtered = DEFAULT_STOCKS.filter(s => selectedTickers.includes(s.ticker));
+    const finalWatchlist = filtered.length > 0 ? filtered : DEFAULT_STOCKS.slice(0, 4);
+
+    setWatchlist(finalWatchlist);
+
+    // Save onboarding state to Firestore
+    try {
+      const docRef = doc(db, 'users_data', user.uid);
+      await setDoc(docRef, {
+        watchlist: finalWatchlist,
+        onboardingCompleted: true
+      }, { merge: true });
+    } catch (err) {
+      console.error("Error saving onboarding to Firestore:", err);
+    }
+
+    const firstTicker = finalWatchlist[0].ticker + '.NS';
+    setActiveTicker(firstTicker);
+    await fetchStockData(firstTicker);
+    setActiveView('dashboard');
+  }, [user, fetchStockData]);
+
+  // ─── Watchlist (simulated live prices) ────────────────────────────────────
+
+  const [marketIndex, setMarketIndex] = useState<MarketDataPoint[]>([]);
+
+
+
+  // Portfolio value = sum of (shares * price) — only count holdings where shares > 0
+  const portfolioValue = watchlist.reduce((sum, item) => {
+    const shares = item.shares ?? 0;
+    if (shares <= 0) return sum;
+    return sum + (item.price || 0) * shares;
+  }, 0);
 
   // Sync watchlist and holdings to Firestore on changes
   const lastSyncRef = React.useRef<string>('');
@@ -768,8 +778,11 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
     return () => clearTimeout(timeoutId);
   }, [watchlist, user]);
 
-  // Fetch initial data & setup polling/simulation intervals
+  // Fetch market data only after authentication is resolved and user is logged in
   useEffect(() => {
+    if (isAuthLoading) return;          // Wait until Firebase auth state is known
+    if (!isAuthenticated) return;       // Don't hit backend for unauthenticated visitors
+
     fetchStockData('RELIANCE.NS');
 
     // Fetch real-time market index
@@ -869,7 +882,7 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
       clearInterval(pollInterval);
       clearInterval(simInterval);
     };
-  }, [fetchStockData]);
+  }, [fetchStockData, isAuthLoading, isAuthenticated]);
 
   const sendAdvisorMessage = async (message: string) => {
     const newUserMsg: ChatMessage = {
