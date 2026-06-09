@@ -227,7 +227,7 @@ def analyze_fundamentals(ticker_symbol):
     if disaster_risk > 0:
         print(f"  [!] Disaster keywords detected! Risk score: {disaster_risk:.2f}")
     
-    # Gemini summary
+    # Advisory summary
     news_text = "\n".join([f"- {h}" for h in headlines])
     prompt = f"""
     You are an elite quantitative financial analyst specializing in the Indian Stock Market.

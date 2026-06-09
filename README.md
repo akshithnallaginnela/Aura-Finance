@@ -12,7 +12,7 @@
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.0-10b981?style=for-the-badge&logo=react&logoColor=fff" alt="React"/></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11-3776ab?style=for-the-badge&logo=python&logoColor=fff" alt="Python"/></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=fff" alt="PostgreSQL"/></a>
-  <a href="https://deepmind.google/technologies/gemini/"><img src="https://img.shields.io/badge/Gemini--AI-2.5--Flash-f43f5e?style=for-the-badge&logo=google-gemini&logoColor=fff" alt="Gemini"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/Advisory--AI-Language--Model-f43f5e?style=for-the-badge&logo=openai&logoColor=fff" alt="Advisory AI"/></a>
 </p>
 
 ---
@@ -95,7 +95,7 @@ Here is a visual walkthrough of the Aura Finance setup and dashboard:
 
 ### 💬 Consultative Aura AI Broker
 * A warm, professional personal stock broker chat agent.
-* Powered by Gemini 2.5 Flash, it engages in friendly greetings and conversation, only serving technical analysis tables and reports when requested.
+* Powered by advanced language models, it engages in friendly greetings and conversation, only serving technical analysis tables and reports when requested.
 * Latency-optimized by omitting large price arrays from the client request; details are fetched directly from PostgreSQL.
 
 ---
@@ -216,7 +216,7 @@ python app.py
 #### 2. Frontend Development Server
 Configure your local environment variables in a `.env` file in the root directory:
 ```env
-# API & Gemini Co-Pilot
+# API & Advisory Co-Pilot
 VITE_BACKEND_URL="http://localhost:5000"
 VITE_GEMINI_API_KEYS="your_key_1,your_key_2"
 
@@ -242,7 +242,7 @@ Open [http://localhost:5173/](http://localhost:5173/) in your browser.
 
 ## 🛡 Security, Latency, & Reliability
 * **CORS Access Protection**: Whitelisted origin access rules prevent unauthorized cross-origin API executions.
-* **Low-Latency Architecture**: By caching price histories in Supabase and fetching them locally on the backend, the payload size for chatAdvisor queries is reduced by **99%**, lowering Gemini model prompt latency.
+* **Low-Latency Architecture**: By caching price histories in Supabase and fetching them locally on the backend, the payload size for chatAdvisor queries is reduced by **99%**, lowering advisory model prompt latency.
 * **Error Resilience**: A global Flask error handler intercepts exceptions, mapping HTTP codes to clean JSON objects to safeguard system stability.
 
 ---

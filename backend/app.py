@@ -331,7 +331,7 @@ def get_news(ticker):
 
 @app.route('/api/advisor/strategy', methods=['POST'])
 def advisor_strategy():
-    """Generates an AI strategy using Gemini based on real stock data and ML predictions."""
+    """Generates an AI strategy using Advisory Engine based on real stock data and predictions."""
     req = request.json or {}
     ticker = req.get('ticker', 'Unknown')
     prompt = req.get('prompt', '')
@@ -340,7 +340,7 @@ def advisor_strategy():
     api_keys_str = os.environ.get('VITE_GEMINI_API_KEYS') or os.environ.get('VITE_GEMINI_API_KEY')
     if not api_keys_str:
         return jsonify({
-            "response": "Error: Gemini API Key is missing in the backend .env file."
+            "response": "Error: Advisory API Key is missing in the backend .env file."
         }), 400
         
     api_keys = [k.strip() for k in api_keys_str.split(',') if k.strip()]
@@ -458,13 +458,13 @@ User Prompt: {prompt}
         start_time = time.time()
         response = model.generate_content(system_context)
         latency = time.time() - start_time
-        print(f"[Gemini API] Strategy query for {ticker} completed in {latency:.2f} seconds", flush=True)
+        print(f"[Advisory API] Strategy query for {ticker} completed in {latency:.2f} seconds", flush=True)
         
         return jsonify({
             "response": response.text
         })
     except Exception as e:
-        print(f"Gemini API Error: {e}", flush=True)
+        print(f"Advisory API Error: {e}", flush=True)
         return jsonify({
             "response": f"Sorry, I encountered an error communicating with the AI model: {str(e)}"
         }), 500
@@ -695,7 +695,7 @@ def get_ml_metrics():
             "coverage": "Nifty 50 (50 stocks)"
         },
         "advisory": {
-            "model_version": "gemini-2.5-flash",
+            "model_version": "language-model-v2.5",
             "role": "Fundamental Analysis & Advisory",
             "rate_limit_status": "Healthy (Exponential Backoff Enabled)"
         }

@@ -198,7 +198,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <div className="user-t">PRO · COPILOT</div>
             </div>
           </div>
-          <div className="conn-row"><div className="conn-dot"></div>Gemini AI Connected</div>
+          <div className="conn-row"><div className="conn-dot"></div>Advisory Engine Connected</div>
         </div>
       </nav>
 
