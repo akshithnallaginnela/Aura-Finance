@@ -53,7 +53,11 @@ export const Optimizer: React.FC = () => {
 
       setResult(data);
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+      let friendlyMessage = err.message || 'An unexpected error occurred.';
+      if (friendlyMessage.toLowerCase().includes('failed to fetch') || friendlyMessage.toLowerCase().includes('networkerror') || friendlyMessage.toLowerCase().includes('load failed')) {
+        friendlyMessage = 'Sorry, I am having trouble connecting to the backend. Please check if the backend service is running and accessible.';
+      }
+      setError(friendlyMessage);
     } finally {
       setIsLoading(false);
     }

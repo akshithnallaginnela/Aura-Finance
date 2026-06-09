@@ -14,6 +14,7 @@ interface MacroItem {
 export const MacroView: React.FC = () => {
   const [data, setData] = useState<MacroItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [isLoadingChart, setIsLoadingChart] = useState(false);
@@ -28,6 +29,7 @@ export const MacroView: React.FC = () => {
   useEffect(() => {
     const fetchMacro = async () => {
       try {
+        setError(null);
         const res = await fetch(`${BACKEND_URL}/api/macro`);
         if (res.ok) {
           const json = await res.json();
@@ -35,8 +37,15 @@ export const MacroView: React.FC = () => {
           if (json.length > 0) {
             setSelectedTicker(json[0].ticker);
           }
+        } else {
+          throw new Error('Failed to fetch macro items');
         }
-      } catch (err) {
+      } catch (err: any) {
+        let friendlyMessage = err.message || 'Macro fetch error';
+        if (friendlyMessage.toLowerCase().includes('failed to fetch') || friendlyMessage.toLowerCase().includes('networkerror') || friendlyMessage.toLowerCase().includes('load failed')) {
+          friendlyMessage = 'Sorry, I am having trouble connecting to the backend. Please check if the backend service is running and accessible.';
+        }
+        setError(friendlyMessage);
         console.error('Macro fetch error', err);
       } finally {
         setIsLoading(false);
@@ -171,8 +180,18 @@ export const MacroView: React.FC = () => {
           <h2 style={{ margin: 0, color: 'var(--tx)', fontSize: '1.4rem', fontWeight: 800 }}>Global Macro View</h2>
         </div>
 
+        {error && (
+          <div style={{ padding: '12px 18px', background: 'var(--red-bg)', color: 'var(--red)', fontFamily: 'var(--mono)', fontSize: '11px', border: '1px solid var(--red)', marginBottom: '16px' }}>
+            {error}
+          </div>
+        )}
+
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontSize: '11px' }}>LOADING MACRO ASSETS...</div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--tx3)' }}>
+            Unable to load macro assets. Connection to backend failed.
+          </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flex: 1, overflowY: 'auto' }}>
             {data.map(item => {

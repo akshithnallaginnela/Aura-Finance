@@ -17,6 +17,7 @@ interface ScreenerData {
 export const Screener: React.FC = () => {
   const [data, setData] = useState<ScreenerData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [selectedStockDetails, setSelectedStockDetails] = useState<any>(null);
@@ -33,6 +34,7 @@ export const Screener: React.FC = () => {
   useEffect(() => {
     const fetchScreener = async () => {
       try {
+        setError(null);
         const res = await fetch(`${BACKEND_URL}/api/screener`);
         if (res.ok) {
           const json = await res.json();
@@ -40,8 +42,15 @@ export const Screener: React.FC = () => {
           if (json.length > 0) {
             setSelectedTicker(json[0].ticker);
           }
+        } else {
+          throw new Error('Failed to fetch screener data');
         }
-      } catch (err) {
+      } catch (err: any) {
+        let friendlyMessage = err.message || 'Screener fetch error';
+        if (friendlyMessage.toLowerCase().includes('failed to fetch') || friendlyMessage.toLowerCase().includes('networkerror') || friendlyMessage.toLowerCase().includes('load failed')) {
+          friendlyMessage = 'Sorry, I am having trouble connecting to the backend. Please check if the backend service is running and accessible.';
+        }
+        setError(friendlyMessage);
         console.error('Screener fetch error', err);
       } finally {
         setIsLoading(false);
@@ -220,8 +229,18 @@ export const Screener: React.FC = () => {
           />
         </div>
 
+        {error && (
+          <div style={{ padding: '12px 18px', background: 'var(--red-bg)', color: 'var(--red)', fontFamily: 'var(--mono)', fontSize: '11px', border: '1px solid var(--red)', marginBottom: '16px' }}>
+            {error}
+          </div>
+        )}
+
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--tx3)', fontFamily: 'var(--mono)', fontSize: '11px' }}>LOADING SCREENER DATA...</div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--tx3)' }}>
+            Unable to load screener data. Connection to backend failed.
+          </div>
         ) : (
           <div style={{ flex: 1, overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--tx)', fontSize: '12.5px' }}>

@@ -220,7 +220,7 @@ export const Watchlist: React.FC = () => {
   const holdingsWithShares = watchlist.filter(item => (item.shares || 0) > 0);
   const pieData = holdingsWithShares.map(item => ({
     name: item.ticker,
-    value: Math.round((item.shares || 0) * item.price)
+    value: Math.round((item.shares || 0) * (item.price || 0))
   }));
 
   const selectedItem = watchlist.find(item => item.ticker === selectedTicker);
@@ -234,8 +234,8 @@ export const Watchlist: React.FC = () => {
   let worstAsset: any = null;
   if (holdingsWithCost.length > 0) {
     const sortedByPerformance = [...holdingsWithCost].sort((a, b) => {
-      const pnlPctA = ((a.price - (a.avgBuyPrice || 0)) / (a.avgBuyPrice || 1)) * 100;
-      const pnlPctB = ((b.price - (b.avgBuyPrice || 0)) / (b.avgBuyPrice || 1)) * 100;
+      const pnlPctA = (((a.price || 0) - (a.avgBuyPrice || 0)) / (a.avgBuyPrice || 1)) * 100;
+      const pnlPctB = (((b.price || 0) - (b.avgBuyPrice || 0)) / (b.avgBuyPrice || 1)) * 100;
       return pnlPctB - pnlPctA;
     });
     bestAsset = sortedByPerformance[0];
@@ -305,7 +305,7 @@ export const Watchlist: React.FC = () => {
                     {bestAsset.ticker}
                   </span>
                   <span style={{ fontSize: '0.65rem', color: 'var(--emerald)' }}>
-                    +{(((bestAsset.price - bestAsset.avgBuyPrice) / bestAsset.avgBuyPrice) * 100).toFixed(1)}% yield
+                    +{((((bestAsset.price || 0) - bestAsset.avgBuyPrice) / bestAsset.avgBuyPrice) * 100).toFixed(1)}% yield
                   </span>
                 </>
               ) : (
@@ -317,11 +317,11 @@ export const Watchlist: React.FC = () => {
               <span style={{ fontSize: '0.72rem', color: 'var(--tx3)', fontWeight: 600, textTransform: 'uppercase' }}>Worst Performer</span>
               {worstAsset ? (
                 <>
-                  <span style={{ fontSize: '1.05rem', fontWeight: 800, color: (worstAsset.price >= worstAsset.avgBuyPrice ? 'var(--emerald)' : 'var(--rose)') }}>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 800, color: ((worstAsset.price || 0) >= worstAsset.avgBuyPrice ? 'var(--emerald)' : 'var(--rose)') }}>
                     {worstAsset.ticker}
                   </span>
-                  <span style={{ fontSize: '0.65rem', color: (worstAsset.price >= worstAsset.avgBuyPrice ? 'var(--emerald)' : 'var(--rose)') }}>
-                    {(((worstAsset.price - worstAsset.avgBuyPrice) / worstAsset.avgBuyPrice) * 100).toFixed(1)}% yield
+                  <span style={{ fontSize: '0.65rem', color: ((worstAsset.price || 0) >= worstAsset.avgBuyPrice ? 'var(--emerald)' : 'var(--rose)') }}>
+                    {((((worstAsset.price || 0) - worstAsset.avgBuyPrice) / worstAsset.avgBuyPrice) * 100).toFixed(1)}% yield
                   </span>
                 </>
               ) : (
@@ -364,7 +364,7 @@ export const Watchlist: React.FC = () => {
               {watchlist.map(item => {
                 const isSelected = selectedTicker === item.ticker;
                 const isEditing = editingItem === item.ticker;
-                const itemValue = (item.shares || 0) * item.price;
+                const itemValue = (item.shares || 0) * (item.price || 0);
                 const itemCost = (item.shares || 0) * (item.avgBuyPrice || 0);
                 const itemPnl = itemValue - itemCost;
                 const itemPnlPct = itemCost > 0 ? (itemPnl / itemCost) * 100 : 0.0;
@@ -620,7 +620,7 @@ export const Watchlist: React.FC = () => {
                       {watchlist.map((item, idx) => {
                         const shares = item.shares || 0;
                         if (shares === 0) return null;
-                        const val = shares * item.price;
+                        const val = shares * (item.price || 0);
                         const weightPct = portfolioValue > 0 ? (val / portfolioValue) * 100 : 0;
                         const isCurrent = item.ticker === selectedTicker;
                         return (
