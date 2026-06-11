@@ -58,7 +58,7 @@ def index():
 # --- Caching Layer for yfinance (TTL-aware, thread-safe) ---
 _cache_store: dict = {}
 _cache_lock = threading.Lock()
-_CACHE_TTL_SECONDS = 300  # 5 minutes
+_CACHE_TTL_SECONDS = 2  # 2 seconds for high-speed updates
 
 def get_cached_market_data(ticker: str, period: str = "3mo"):
     """
@@ -273,6 +273,50 @@ def get_stock(ticker):
         return jsonify({
             "error": f"Could not find or fetch data for '{ticker}'. Please check the ticker symbol is valid (e.g. RELIANCE.NS, TCS.NS, HDFCBANK.NS)."
         }), 404
+        
+    # Dynamically overlay/merge real-time yfinance historical data
+    try:
+        fresh_hist = get_cached_market_data(ticker, period="1mo")
+        if not fresh_hist.empty:
+            fresh_data = {}
+            for date, row in fresh_hist.iterrows():
+                date_str = date.strftime('%Y-%m-%d')
+                fresh_data[date_str] = {
+                    "Date": date_str,
+                    "Open": round(float(row['Open']), 2),
+                    "High": round(float(row['High']), 2),
+                    "Low": round(float(row['Low']), 2),
+                    "Close": round(float(row['Close']), 2),
+                    "Volume": int(row['Volume'])
+                }
+            
+            db_hist = analysis.get("historical", [])
+            merged_hist = []
+            seen_dates = set()
+            
+            for point in db_hist:
+                d = point.get("Date")
+                if d in fresh_data:
+                    merged_hist.append({**point, **fresh_data[d]})
+                    seen_dates.add(d)
+                else:
+                    merged_hist.append(point)
+                    seen_dates.add(d)
+            
+            for d in sorted(fresh_data.keys()):
+                if d not in seen_dates:
+                    merged_hist.append(fresh_data[d])
+            
+            merged_hist = sorted(merged_hist, key=lambda x: x.get("Date", ""))
+            analysis["historical"] = merged_hist
+            
+            if merged_hist:
+                last_hist_date = merged_hist[-1]["Date"]
+                db_forecast = analysis.get("forecast", [])
+                future_forecast = [p for p in db_forecast if p.get("Date", "") > last_hist_date]
+                analysis["forecast"] = future_forecast
+    except Exception as merge_err:
+        print(f"Error merging real-time data for {ticker}: {merge_err}", flush=True)
         
     return jsonify({
         "ticker": analysis["ticker"],
