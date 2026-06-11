@@ -164,8 +164,22 @@ def get_macro_chart(ticker):
 
 @app.route('/api/watchlist', methods=['GET'])
 def get_watchlist():
-    """Fetch live data for the watchlist."""
-    tickers = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "WIPRO.NS"]
+    """Fetch live data for the watchlist.
+    
+    Accepts an optional `tickers` query parameter (comma-separated list of
+    Yahoo Finance ticker symbols, e.g. RELIANCE.NS,TCS.NS).
+    Falls back to the full default Nifty-10 list when not provided.
+    """
+    DEFAULT_WATCHLIST = [
+        "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
+        "WIPRO.NS", "SBIN.NS", "LICI.NS", "ITC.NS", "HINDUNILVR.NS"
+    ]
+    raw_param = request.args.get('tickers', '')
+    if raw_param.strip():
+        tickers = [t.strip() for t in raw_param.split(',') if t.strip()]
+    else:
+        tickers = DEFAULT_WATCHLIST
+
     try:
         results = []
         for ticker in tickers:
@@ -183,6 +197,8 @@ def get_watchlist():
                         prev = curr
                         change = 0
                         pct = 0
+                    else:
+                        continue
                     results.append({
                         "ticker": ticker,
                         "price": round(curr, 2),

@@ -504,9 +504,9 @@ export const Dashboard: React.FC = () => {
               <div className="wl-item" key={item.ticker} onClick={() => handleTickerClick(item.ticker)}>
                 <div className="wl-sym">{item.ticker.replace('.NS', '')}</div>
                 <div className="wl-name">{item.exchange || 'NSE'}</div>
-                <div className="wl-price">₹{(item.price || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                <div className="wl-price">{(item.price || 0) > 0 ? `₹${item.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : 'Loading...'}</div>
                 <div className={`wl-chg ${(item.changePct || 0) >= 0 ? 'up' : 'dn'}`}>
-                  {(item.changePct || 0) >= 0 ? '+' : ''}{(item.changePct || 0).toFixed(2)}%
+                  {(item.price || 0) > 0 ? `${(item.changePct || 0) >= 0 ? '+' : ''}${(item.changePct || 0).toFixed(2)}%` : '—'}
                 </div>
               </div>
             ))}

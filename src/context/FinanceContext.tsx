@@ -143,16 +143,16 @@ interface FinanceContextType {
 }
 
 const DEFAULT_STOCKS: WatchlistItem[] = [
-  { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 2945.30, prevPrice: 2940.00, change: 5.30, changePct: 0.18, color: '#6366f1', flashClass: '', domain: 'ril.com', shares: 15, avgBuyPrice: 2850.00 },
-  { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 3782.15, prevPrice: 3770.00, change: 12.15, changePct: 0.32, color: '#0d9488', flashClass: '', domain: 'tcs.com', shares: 8, avgBuyPrice: 3600.00 },
-  { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 1564.80, prevPrice: 1560.00, change: 4.80, changePct: 0.31, color: '#f59e0b', flashClass: '', domain: 'infosys.com', shares: 12, avgBuyPrice: 1500.00 },
-  { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 1723.45, prevPrice: 1720.00, change: 3.45, changePct: 0.20, color: '#ef4444', flashClass: '', domain: 'hdfcbank.com', shares: 20, avgBuyPrice: 1650.00 },
-  { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 1285.60, prevPrice: 1280.00, change: 5.60, changePct: 0.44, color: '#8b5cf6', flashClass: '', domain: 'icicibank.com', shares: 25, avgBuyPrice: 1200.00 },
-  { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 462.35, prevPrice: 460.00, change: 2.35, changePct: 0.51, color: '#ec4899', flashClass: '', domain: 'wipro.com', shares: 30, avgBuyPrice: 440.00 },
-  { ticker: 'SBIN', name: 'State Bank of India', exchange: 'NSE', price: 832.10, prevPrice: 825.00, change: 7.10, changePct: 0.86, color: '#3b82f6', flashClass: '', domain: 'sbi.co.in', shares: 10, avgBuyPrice: 800.00 },
-  { ticker: 'LICI', name: 'LIC of India', exchange: 'NSE', price: 985.40, prevPrice: 990.00, change: -4.60, changePct: -0.46, color: '#eab308', flashClass: '', domain: 'licindia.in', shares: 5, avgBuyPrice: 950.00 },
-  { ticker: 'ITC', name: 'ITC Limited', exchange: 'NSE', price: 435.50, prevPrice: 434.00, change: 1.50, changePct: 0.35, color: '#10b981', flashClass: '', domain: 'itcportal.com', shares: 40, avgBuyPrice: 420.00 },
-  { ticker: 'HINDUNILVR', name: 'Hindustan Unilever', exchange: 'NSE', price: 2345.80, prevPrice: 2360.00, change: -14.20, changePct: -0.60, color: '#f43f5e', flashClass: '', domain: 'hul.co.in', shares: 4, avgBuyPrice: 2300.00 }
+  { ticker: 'RELIANCE', name: 'Reliance Ind.', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#6366f1', flashClass: '', domain: 'ril.com', shares: 15, avgBuyPrice: 2850.00 },
+  { ticker: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#0d9488', flashClass: '', domain: 'tcs.com', shares: 8, avgBuyPrice: 3600.00 },
+  { ticker: 'INFY', name: 'Infosys Ltd.', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#f59e0b', flashClass: '', domain: 'infosys.com', shares: 12, avgBuyPrice: 1500.00 },
+  { ticker: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#ef4444', flashClass: '', domain: 'hdfcbank.com', shares: 20, avgBuyPrice: 1650.00 },
+  { ticker: 'ICICIBANK', name: 'ICICI Bank', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#8b5cf6', flashClass: '', domain: 'icicibank.com', shares: 25, avgBuyPrice: 1200.00 },
+  { ticker: 'WIPRO', name: 'Wipro Ltd.', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#ec4899', flashClass: '', domain: 'wipro.com', shares: 30, avgBuyPrice: 440.00 },
+  { ticker: 'SBIN', name: 'State Bank of India', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#3b82f6', flashClass: '', domain: 'sbi.co.in', shares: 10, avgBuyPrice: 800.00 },
+  { ticker: 'LICI', name: 'LIC of India', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#eab308', flashClass: '', domain: 'licindia.in', shares: 5, avgBuyPrice: 950.00 },
+  { ticker: 'ITC', name: 'ITC Limited', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#10b981', flashClass: '', domain: 'itcportal.com', shares: 40, avgBuyPrice: 420.00 },
+  { ticker: 'HINDUNILVR', name: 'Hindustan Unilever', exchange: 'NSE', price: 0, prevPrice: 0, change: 0, changePct: 0, color: '#f43f5e', flashClass: '', domain: 'hul.co.in', shares: 4, avgBuyPrice: 2300.00 }
 ];
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -803,10 +803,12 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
     };
     fetchMarket();
 
-    // Fetch real-time watchlist prices
+    // Fetch real-time watchlist prices from Yahoo Finance via backend
     const fetchWatchlist = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/watchlist`);
+        // Build ticker query param from the user's actual watchlist
+        const tickerParam = watchlist.map(item => item.ticker + '.NS').join(',');
+        const res = await fetch(`${BACKEND_URL}/api/watchlist?tickers=${encodeURIComponent(tickerParam)}`);
         if (res.ok) {
           const liveData = await res.json();
           setWatchlist(prev => prev.map(item => {
@@ -816,8 +818,8 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
               const newChange = update.change;
               const newChangePct = update.changePct;
               let fClass: '' | 'price-up' | 'price-down' = '';
-              if (item.price && newPrice > item.price) fClass = 'price-up';
-              if (item.price && newPrice < item.price) fClass = 'price-down';
+              if (item.price && item.price > 0 && newPrice > item.price) fClass = 'price-up';
+              if (item.price && item.price > 0 && newPrice < item.price) fClass = 'price-down';
               
               return {
                 ...item,
@@ -841,52 +843,11 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
     };
     fetchWatchlist();
 
-    // Simulated micro-fluctuations (every 4 seconds) to keep UI dynamic and high-speed
-    const simulatePriceTick = () => {
-      setWatchlist(prev => {
-        const next = prev.map(item => {
-          const defaultStock = DEFAULT_STOCKS.find(s => s.ticker === item.ticker);
-          const basePrevPrice = item.prevPrice || defaultStock?.prevPrice || 100.0;
-          const currentPrice = item.price || defaultStock?.price || 100.0;
-          
-          // Random walk factor between -0.06% and +0.06%
-          const pctChange = (Math.random() * 0.12 - 0.06) / 100;
-          const priceShift = currentPrice * pctChange;
-          const newPrice = Number((currentPrice + priceShift).toFixed(2));
-          
-          let fClass: '' | 'price-up' | 'price-down' = '';
-          if (newPrice > currentPrice) fClass = 'price-up';
-          if (newPrice < currentPrice) fClass = 'price-down';
-          
-          const newChange = Number((newPrice - basePrevPrice).toFixed(2));
-          const newChangePct = basePrevPrice > 0 ? Number((newChange / basePrevPrice * 100).toFixed(2)) : 0.0;
-          
-          return {
-            ...item,
-            price: newPrice,
-            change: newChange,
-            changePct: newChangePct,
-            prevPrice: basePrevPrice,
-            flashClass: fClass
-          };
-        });
-        
-        // Clear flash class after animation
-        setTimeout(() => {
-          setWatchlist(currentList => currentList.map(item => ({ ...item, flashClass: '' })));
-        }, 800);
-        
-        return next;
-      });
-    };
-
-    // Intervals for updates
-    const pollInterval = setInterval(fetchWatchlist, 2000); // 2s backend poll
-    const simInterval = setInterval(simulatePriceTick, 4000); // 4s local micro-fluctuations
+    // Poll backend every 2 seconds for real-time prices (no local simulation)
+    const pollInterval = setInterval(fetchWatchlist, 2000);
 
     return () => {
       clearInterval(pollInterval);
-      clearInterval(simInterval);
     };
   }, [fetchStockData, isAuthLoading, isAuthenticated]);
 
