@@ -3,7 +3,7 @@ Aura Finance — 24/7 News Sentinel Agent
 =========================================
 Runs continuously in the background. Every 5 minutes, it scans all Nifty 50 
 stocks for NEW news articles. When ANY new article is found, it immediately:
-  1. Runs FinBERT sentiment analysis on the new headlines
+  1. Runs sentiment analysis on the new headlines
   2. Checks for disaster keywords
   3. Triggers a full ensemble re-prediction for that ticker
   4. Updates the database with the new forecast
@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-# These imports will also initialize the HuggingFace models (from pipeline.py)
+# These imports will also initialize the sentiment analysis (from pipeline.py)
 from pipeline import (
     NIFTY_50, DISASTER_KEYWORDS, finbert, chronos,
     repredict_ticker, analyze_fundamentals
@@ -72,7 +72,7 @@ def extract_headlines(ticker_symbol):
 
 
 def score_headlines_finbert(headlines):
-    """Run FinBERT on a list of headlines. Returns average sentiment score."""
+    """Run sentiment analysis on a list of headlines. Returns average sentiment score."""
     if not finbert or not headlines:
         return 0.0
     
@@ -86,7 +86,7 @@ def score_headlines_finbert(headlines):
                 total -= res['score']
         return float(total / len(results))
     except Exception as e:
-        print(f"  [ERROR] FinBERT scoring failed: {e}")
+        print(f"  [ERROR] Sentiment scoring failed: {e}")
         return 0.0
 
 
@@ -98,16 +98,16 @@ def detect_disaster_risk(headlines):
 
 
 def generate_quick_summary(ticker_symbol, headlines, sentiment, disaster_risk):
-    """Use Gemini to generate a quick summary of new headlines."""
+    """Use Advisory Engine to generate a quick summary of new headlines."""
     if not api_keys:
-        return f"New articles detected. FinBERT sentiment: {sentiment:.2f}"
+        return f"New articles detected. Sentiment: {sentiment:.2f}"
     
     news_text = "\n".join([f"- {h}" for h in headlines[:5]])
     prompt = f"""
     You are a financial news analyst. Briefly summarize (2 sentences max) 
     the impact of these new headlines on {ticker_symbol}:
     {news_text}
-    FinBERT sentiment: {sentiment:.2f}, Disaster risk: {disaster_risk:.2f}
+    Sentiment: {sentiment:.2f}, Disaster risk: {disaster_risk:.2f}
     Return ONLY the summary text, no JSON.
     """
     
@@ -117,7 +117,7 @@ def generate_quick_summary(ticker_symbol, headlines, sentiment, disaster_risk):
         response = model.generate_content(prompt)
         return response.text.strip()[:500]
     except Exception as e:
-        return f"New articles detected. FinBERT sentiment: {sentiment:.2f}"
+        return f"New articles detected. Sentiment: {sentiment:.2f}"
 
 
 # ─── Main Sentinel Loop ──────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ def run_sentinel():
                 for h in new_headlines[:3]:
                     print(f"     → {h[:80]}...")
                 
-                # Score with FinBERT
+                # Score with sentiment classifier
                 sentiment = score_headlines_finbert(new_headlines)
                 disaster_risk = detect_disaster_risk(new_headlines)
                 

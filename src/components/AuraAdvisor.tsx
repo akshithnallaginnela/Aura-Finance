@@ -10,7 +10,7 @@ import {
   Activity
 } from 'lucide-react';
 
-// Lightweight markdown parser for Gemini output
+// Lightweight markdown parser for advisory output
 const parseMarkdown = (text: string) => {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];

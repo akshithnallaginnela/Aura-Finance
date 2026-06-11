@@ -12,12 +12,12 @@
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.0-10b981?style=for-the-badge&logo=react&logoColor=fff" alt="React"/></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11-3776ab?style=for-the-badge&logo=python&logoColor=fff" alt="Python"/></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=fff" alt="PostgreSQL"/></a>
-  <a href="https://deepmind.google/technologies/gemini/"><img src="https://img.shields.io/badge/Gemini--AI-2.5--Flash-f43f5e?style=for-the-badge&logo=google-gemini&logoColor=fff" alt="Gemini"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/Advisory--AI-Language--Model-f43f5e?style=for-the-badge&logo=openai&logoColor=fff" alt="Advisory AI"/></a>
 </p>
 
 ---
 
-Aura Finance is an enterprise-grade quantitative wealth management platform. It integrates a **5-model Machine Learning Ensemble**, **FinBERT Natural Language Processing**, and a **Real-Time News Sentinel** to deliver high-fidelity market forecasts, live sentiment scores, and portfolio optimization matching Modern Portfolio Theory (MPT).
+Aura Finance is an enterprise-grade quantitative wealth management platform. It integrates a **5-Signal Ensemble Architecture**, **Sentiment Analysis Engine**, and a **Real-Time News Sentinel** to deliver high-fidelity market forecasts, live sentiment scores, and portfolio optimization matching Modern Portfolio Theory (MPT).
 
 ### 🔗 Live Demo
 Experience Aura Finance live: **[aura-finance-five.vercel.app](https://aura-finance-five.vercel.app)**
@@ -95,7 +95,7 @@ Here is a visual walkthrough of the Aura Finance setup and dashboard:
 
 ### 💬 Consultative Aura AI Broker
 * A warm, professional personal stock broker chat agent.
-* Powered by Gemini 2.5 Flash, it engages in friendly greetings and conversation, only serving technical analysis tables and reports when requested.
+* Powered by advanced language models, it engages in friendly greetings and conversation, only serving technical analysis tables and reports when requested.
 * Latency-optimized by omitting large price arrays from the client request; details are fetched directly from PostgreSQL.
 
 ---
@@ -136,20 +136,20 @@ The project has been cleaned and organized to keep root files to an absolute min
 
 Our proprietary forecasting pipeline merges multiple statistical, neural, and tree-based architectures for maximum robustness:
 
-| Model | Weight | Type | Purpose |
+| Signal Component | Weight | Type | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Amazon Chronos-T5-Small** | **35%** | Zero-Shot Time Series Transformer | Generalizes long-term cyclical patterns |
-| **PyTorch Transformer Encoder** | **20%** | Self-Attention Neural Network | Extracts key cross-attention dependencies |
-| **XGBoost Regressor** | **20%** | Gradient Boosted Trees | Evaluates technical indicators (RSI, MACD, EMA) |
-| **LightGBM** | **15%** | Leaf-wise Gradient Boosting | Computes non-linear local price splits |
-| **PyTorch LSTM** | **10%** | 2-Layer Recurrent RNN | Captures sequential momentum memory |
+| **Foundation Signal** | **35%** | Zero-Shot Time Series | Generalizes long-term cyclical patterns |
+| **Pattern Recognition Signal** | **20%** | Deep Learning Network | Extracts key cross-attention dependencies |
+| **Technical Indicator Signal A** | **20%** | Tree-Based Regressor | Evaluates technical indicators (RSI, MACD, EMA) |
+| **Technical Indicator Signal B** | **15%** | Boosted Trees | Computes non-linear local price splits |
+| **Sequential Pattern Signal** | **10%** | Recurrent Network | Captures sequential momentum memory |
 
 ---
 
 ## 📰 24/7 News Sentinel Agent
 
 Aura Finance continuously monitors live financial channels to maintain up-to-the-minute valuation targets:
-1. **ProsusAI FinBERT Sentiment**: Parses recent headlines and scores them between `-1.0` (Highly Bearish) and `+1.0` (Highly Bullish).
+1. **Sentiment Analysis Engine**: Parses recent headlines and scores them between `-1.0` (Highly Bearish) and `+1.0` (Highly Bullish).
 2. **Disaster Risk Scans**: Cross-checks headlines against 23 disruption categories (e.g. regulatory fines, geopolitical actions, default warnings).
 3. **Auto-Reprediction**: Whenever a new headline is indexed, the backend automatically triggers a pipeline refresh, updates PostgreSQL, and logs details in the dashboard sentinel feed.
 
@@ -178,8 +178,8 @@ Aura Finance continuously monitors live financial channels to maintain up-to-the
 graph TD
     A[Yahoo Finance / News APIs] --> B[News Sentinel Agent]
     B --> C{New Article?}
-    C -- Yes --> D[FinBERT Sentiment + Disaster Scorer]
-    D --> E[Ensemble ML Pipeline]
+    C -- Yes --> D[Sentiment Analysis + Disaster Scorer]
+    D --> E[Ensemble Signal Pipeline]
     E --> F[(PostgreSQL / Supabase)]
     F --> G[Flask Enterprise API]
     G --> H[React Glassmorphic Dashboard]
@@ -216,7 +216,7 @@ python app.py
 #### 2. Frontend Development Server
 Configure your local environment variables in a `.env` file in the root directory:
 ```env
-# API & Gemini Co-Pilot
+# API & Advisory Co-Pilot
 VITE_BACKEND_URL="http://localhost:5000"
 VITE_GEMINI_API_KEYS="your_key_1,your_key_2"
 
@@ -242,7 +242,7 @@ Open [http://localhost:5173/](http://localhost:5173/) in your browser.
 
 ## 🛡 Security, Latency, & Reliability
 * **CORS Access Protection**: Whitelisted origin access rules prevent unauthorized cross-origin API executions.
-* **Low-Latency Architecture**: By caching price histories in Supabase and fetching them locally on the backend, the payload size for chatAdvisor queries is reduced by **99%**, lowering Gemini model prompt latency.
+* **Low-Latency Architecture**: By caching price histories in Supabase and fetching them locally on the backend, the payload size for chatAdvisor queries is reduced by **99%**, lowering advisory model prompt latency.
 * **Error Resilience**: A global Flask error handler intercepts exceptions, mapping HTTP codes to clean JSON objects to safeguard system stability.
 
 ---
