@@ -651,8 +651,10 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
 
   // ─── Fetch Stock Data ──────────────────────────────────────────────────────
   
-  const fetchStockData = useCallback(async (ticker: string) => {
-    setIsLoadingData(true);
+  const fetchStockData = useCallback(async (ticker: string, silent = false) => {
+    if (!silent) {
+      setIsLoadingData(true);
+    }
     setErrorData(null);
     try {
       const response = await fetch(`${BACKEND_URL}/api/stock/${ticker}`);
@@ -694,7 +696,9 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
       setErrorData(friendlyMessage);
       console.error(err);
     } finally {
-      setIsLoadingData(false);
+      if (!silent) {
+        setIsLoadingData(false);
+      }
     }
   }, [addNotification]);
 
@@ -820,6 +824,7 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
                 price: newPrice,
                 change: newChange,
                 changePct: newChangePct,
+                prevPrice: Number((newPrice - newChange).toFixed(2)),
                 flashClass: fClass
               };
             }
@@ -861,6 +866,7 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
             price: newPrice,
             change: newChange,
             changePct: newChangePct,
+            prevPrice: basePrevPrice,
             flashClass: fClass
           };
         });
@@ -875,7 +881,7 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
     };
 
     // Intervals for updates
-    const pollInterval = setInterval(fetchWatchlist, 10000); // 10s backend poll
+    const pollInterval = setInterval(fetchWatchlist, 2000); // 2s backend poll
     const simInterval = setInterval(simulatePriceTick, 4000); // 4s local micro-fluctuations
 
     return () => {
@@ -883,6 +889,19 @@ const playNotificationSound = (type: 'risk' | 'info' | 'success') => {
       clearInterval(simInterval);
     };
   }, [fetchStockData, isAuthLoading, isAuthenticated]);
+
+  // Poll active stock data every 2 seconds silently in the background
+  useEffect(() => {
+    if (isAuthLoading || !isAuthenticated || !activeTicker) return;
+
+    const pollActiveStock = () => {
+      fetchStockData(activeTicker, true);
+    };
+
+    const intervalId = setInterval(pollActiveStock, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(intervalId);
+  }, [activeTicker, fetchStockData, isAuthLoading, isAuthenticated]);
 
   const sendAdvisorMessage = async (message: string) => {
     const newUserMsg: ChatMessage = {
